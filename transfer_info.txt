@@ -1,164 +1,75 @@
-[root@mep-mirror-280t-ga-az5-turbo-86 workspace]# cd /var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/
-[root@mep-mirror-280t-ga-az5-turbo-86 torch_ops_extension]# ls
-build_and_install.sh  custom_ops  setup.py
-[root@mep-mirror-280t-ga-az5-turbo-86 torch_ops_extension]# bash build_and_install.sh 
-Using 1 parallel jobs for compilation
-running build_ext
-building 'custom_ops.custom_ops_lib' extension
-creating /var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/build/temp.linux-aarch64-cpython-311/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc
-[1/27] c++ -MMD -MF /var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/build/temp.linux-aarch64-cpython-311/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/inplace_partial_rotary_mul.o.d -Wsign-compare -DNDEBUG -g -fwrapv -O3 -Wall -fPIC -I/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include -I/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc -I/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/hccl/inc -I/usr/local/python3.11.14/lib/python3.11/site-packages/torch/include -I/usr/local/python3.11.14/lib/python3.11/site-packages/torch/include/torch/csrc/api/include -I/usr/local/python3.11.14/include/python3.11 -c -c /var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/inplace_partial_rotary_mul.cpp -o /var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/build/temp.linux-aarch64-cpython-311/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/inplace_partial_rotary_mul.o -I/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc -O3 -march=native -ffast-math -fvisibility=hidden -flto -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=custom_ops_lib -std=c++17
-FAILED: [code=1] /var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/build/temp.linux-aarch64-cpython-311/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/inplace_partial_rotary_mul.o 
-c++ -MMD -MF /var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/build/temp.linux-aarch64-cpython-311/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/inplace_partial_rotary_mul.o.d -Wsign-compare -DNDEBUG -g -fwrapv -O3 -Wall -fPIC -I/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include -I/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc -I/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/hccl/inc -I/usr/local/python3.11.14/lib/python3.11/site-packages/torch/include -I/usr/local/python3.11.14/lib/python3.11/site-packages/torch/include/torch/csrc/api/include -I/usr/local/python3.11.14/include/python3.11 -c -c /var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/inplace_partial_rotary_mul.cpp -o /var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/build/temp.linux-aarch64-cpython-311/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/inplace_partial_rotary_mul.o -I/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc -O3 -march=native -ffast-math -fvisibility=hidden -flto -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=custom_ops_lib -std=c++17
-In file included from /usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/NPUStream.h:10,
-                 from /var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/ops_common.h:32,
-                 from /var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/inplace_partial_rotary_mul.cpp:13:
-/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/NPUCachingAllocator.h: In function ‘void c10_npu::NPUCachingAllocator::init()’:
-/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/NPUException.h:156:29: warning: unused variable ‘feature_not_support_warn_once’ [-Wunused-variable]
-  156 |                 static auto feature_not_support_warn_once = []() {               \
-      |                             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/NPUException.h:156:29: note: in definition of macro ‘NPU_CHECK_ERROR_CHECK_UCE’
-  156 |                 static auto feature_not_support_warn_once = []() {               \
-      |                             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/NPUCachingAllocator.h:305:5: note: in expansion of macro ‘NPU_CHECK_ERROR’
-  305 |     NPU_CHECK_ERROR(aclrtGetDeviceCount(&device_count));
-      |     ^~~~~~~~~~~~~~~
-/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/ops_common.h: At global scope:
-/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/ops_common.h:174:36: error: ‘ACL_FLOAT8_E5M2’ was not declared in this scope; did you mean ‘C_DT_FLOAT8_E5M2’?
-  174 |     _(at::ScalarType::Float8_e5m2, ACL_FLOAT8_E5M2)                                                                    \
-      |                                    ^~~~~~~~~~~~~~~
-/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/ops_common.h:202:28: note: in definition of macro ‘DEFINE_ENUM’
-  202 | #define DEFINE_ENUM(_1, n) n,
-      |                            ^
-/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/ops_common.h:203:9: note: in expansion of macro ‘AT_ALL_SCALAR_TYPE_AND_ACL_DATATYPE_PAIR’
-  203 |         AT_ALL_SCALAR_TYPE_AND_ACL_DATATYPE_PAIR(DEFINE_ENUM)
-      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/ops_common.h:175:38: error: ‘ACL_FLOAT8_E4M3FN’ was not declared in this scope; did you mean ‘C_DT_FLOAT8_E4M3FN’?
-  175 |     _(at::ScalarType::Float8_e4m3fn, ACL_FLOAT8_E4M3FN)                                                                \
-      |                                      ^~~~~~~~~~~~~~~~~
-/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/ops_common.h:202:28: note: in definition of macro ‘DEFINE_ENUM’
-  202 | #define DEFINE_ENUM(_1, n) n,
-      |                            ^
-/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/ops_common.h:203:9: note: in expansion of macro ‘AT_ALL_SCALAR_TYPE_AND_ACL_DATATYPE_PAIR’
-  203 |         AT_ALL_SCALAR_TYPE_AND_ACL_DATATYPE_PAIR(DEFINE_ENUM)
-      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/ops_common.h:195:39: error: ‘ACL_FLOAT8_E8M0’ was not declared in this scope; did you mean ‘C_DT_FLOAT8_E8M0’?
-  195 |     _(at::ScalarType::Float8_e8m0fnu, ACL_FLOAT8_E8M0)                                                                \
-      |                                       ^~~~~~~~~~~~~~~
-/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/ops_common.h:202:28: note: in definition of macro ‘DEFINE_ENUM’
-  202 | #define DEFINE_ENUM(_1, n) n,
-      |                            ^
-/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/ops_common.h:203:9: note: in expansion of macro ‘AT_ALL_SCALAR_TYPE_AND_ACL_DATATYPE_PAIR’
-  203 |         AT_ALL_SCALAR_TYPE_AND_ACL_DATATYPE_PAIR(DEFINE_ENUM)
-      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/ops_common.h:196:41: error: ‘ACL_FLOAT4_E2M1’ was not declared in this scope; did you mean ‘C_DT_FLOAT4_E2M1’?
-  196 |     _(at::ScalarType::Float4_e2m1fn_x2, ACL_FLOAT4_E2M1)                                                              \
-      |                                         ^~~~~~~~~~~~~~~
-/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/ops_common.h:202:28: note: in definition of macro ‘DEFINE_ENUM’
-  202 | #define DEFINE_ENUM(_1, n) n,
-      |                            ^
-/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/ops_common.h:203:9: note: in expansion of macro ‘AT_ALL_SCALAR_TYPE_AND_ACL_DATATYPE_PAIR’
-  203 |         AT_ALL_SCALAR_TYPE_AND_ACL_DATATYPE_PAIR(DEFINE_ENUM)
-      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/NPUException.h:86:20: warning: ‘std::string getCurrentTimestamp()’ declared ‘static’ but never defined [-Wunused-function]
-   86 | static std::string getCurrentTimestamp();
-      |                    ^~~~~~~~~~~~~~~~~~~
-In file included from /usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/npu_log.h:7,
-                 from /usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/NPUException.h:21:
-/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/register/OptionsManager.h:87:49: warning: ‘std::unordered_map<int, std::__cxx11::basic_string<char> > c10_npu::option::getAclOpInitMode()’ defined but not used [-Wunused-function]
-   87 | static std::unordered_map<int32_t, std::string> getAclOpInitMode()
-      |                                                 ^~~~~~~~~~~~~~~~
-/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/register/OptionsManager.h:81:49: warning: ‘std::unordered_map<int, std::__cxx11::basic_string<char> > c10_npu::option::getTaskQueueEnableMode()’ defined but not used [-Wunused-function]
-   81 | static std::unordered_map<int32_t, std::string> getTaskQueueEnableMode()
-      |                                                 ^~~~~~~~~~~~~~~~~~~~~~
-/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/register/OptionsManager.h:75:49: warning: ‘std::unordered_map<int, std::__cxx11::basic_string<char> > c10_npu::option::getMemoryCacheMode()’ defined but not used [-Wunused-function]
-   75 | static std::unordered_map<int32_t, std::string> getMemoryCacheMode()
-      |                                                 ^~~~~~~~~~~~~~~~~~
-/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/register/OptionsManager.h:69:49: warning: ‘std::unordered_map<int, std::__cxx11::basic_string<char> > c10_npu::option::getLogLevelMode()’ defined but not used [-Wunused-function]
-   69 | static std::unordered_map<int32_t, std::string> getLogLevelMode()
-      |                                                 ^~~~~~~~~~~~~~~
-/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/register/OptionsManager.h:63:49: warning: ‘std::unordered_map<int, std::__cxx11::basic_string<char> > c10_npu::option::getDesyncDebugMode()’ defined but not used [-Wunused-function]
-   63 | static std::unordered_map<int32_t, std::string> getDesyncDebugMode()
-      |                                                 ^~~~~~~~~~~~~~~~~~
-/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/register/OptionsManager.h:57:49: warning: ‘std::unordered_map<int, std::__cxx11::basic_string<char> > c10_npu::option::getAsyncErrorHandlingMode()’ defined but not used [-Wunused-function]
-   57 | static std::unordered_map<int32_t, std::string> getAsyncErrorHandlingMode()
-      |                                                 ^~~~~~~~~~~~~~~~~~~~~~~~~
-/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/register/OptionsManager.h:51:49: warning: ‘std::unordered_map<int, std::__cxx11::basic_string<char> > c10_npu::option::getLaunchBlockingMode()’ defined but not used [-Wunused-function]
-   51 | static std::unordered_map<int32_t, std::string> getLaunchBlockingMode()
-      |                                                 ^~~~~~~~~~~~~~~~~~~~~
-/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/register/OptionsManager.h:45:49: warning: ‘std::unordered_map<int, std::__cxx11::basic_string<char> > c10_npu::option::getCombinedEnableMode()’ defined but not used [-Wunused-function]
-   45 | static std::unordered_map<int32_t, std::string> getCombinedEnableMode()
-      |                                                 ^~~~~~~~~~~~~~~~~~~~~
-/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/register/OptionsManager.h:39:49: warning: ‘std::unordered_map<int, std::__cxx11::basic_string<char> > c10_npu::option::getDisableInfNanMode()’ defined but not used [-Wunused-function]
-   39 | static std::unordered_map<int32_t, std::string> getDisableInfNanMode()
-      |                                                 ^~~~~~~~~~~~~~~~~~~~
-/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/register/OptionsManager.h:33:49: warning: ‘std::unordered_map<int, std::__cxx11::basic_string<char> > c10_npu::option::getInfNanMode()’ defined but not used [-Wunused-function]
-   33 | static std::unordered_map<int32_t, std::string> getInfNanMode()
-      |                                                 ^~~~~~~~~~~~~
-/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/register/OptionsManager.h:27:49: warning: ‘std::unordered_map<int, std::__cxx11::basic_string<char> > c10_npu::option::getHcclZeroCopyMode()’ defined but not used [-Wunused-function]
-   27 | static std::unordered_map<int32_t, std::string> getHcclZeroCopyMode()
-      |                                                 ^~~~~~~~~~~~~~~~~~~
-ninja: build stopped: subcommand failed.
-Traceback (most recent call last):
-  File "/usr/local/python3.11.14/lib/python3.11/site-packages/torch/utils/cpp_extension.py", line 2597, in _run_ninja_build
-    subprocess.run(
-  File "/usr/local/python3.11.14/lib/python3.11/subprocess.py", line 571, in run
-    raise CalledProcessError(retcode, process.args,
-subprocess.CalledProcessError: Command '['ninja', '-v', '-j', '1']' returned non-zero exit status 1.
+[root@mep-mirror-280t-ga-az5-turbo-86 workspace]# vim test.py 
+[root@mep-mirror-280t-ga-az5-turbo-86 workspace]# python test.py 
+['ErrCode', 'Format', 'ORG_AUTOLOAD', 'ParallelStore', '_C', '_ShardedGradScaler', '__all__', '__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__', '__package__', '__path__', '__spec__', '__version__', '_add_collect_env_methods', '_add_intercept_methods', '_add_reductions_methods', '_add_serialization_methods', '_add_storage_methods', '_add_tensor_methods', '_afd', '_amp_foreach_non_finite_check', '_apply_class_patches', '_apply_distributed_methods_patch', '_apply_dlpack_patch', '_apply_fsdp_patch', '_apply_module_patch', '_apply_mstx_patch', '_apply_npu_format_patch', '_apply_npu_show_warning', '_apply_npugraph_tree_methods', '_apply_patches', '_apply_sharded_grad_scaler_patch', '_asd_patch', '_autoload', '_cann_package_check', '_compiler', '_conv_depthwise2d_backward', '_dropout_with_byte_mask', '_dropout_with_byte_mask_backward', '_dynamo_register_interface_for_device', '_except_handler', '_inductor_register_device_op_overrides', '_logging', '_meta_registrations', '_new_process_group_hccl_helper', '_new_process_group_lccl_helper', '_npu_ciou', '_npu_distribute_barrier', '_npu_dropout', '_npu_dropout_gen_mask', '_npu_dtype_cast', '_npu_dtype_cast_backward', '_npu_flash_attention', '_npu_flash_attention_qlens', '_npu_flash_attention_unpad', '_npu_format_cast', '_npu_fused_infer_attention_score_get_max_workspace', '_npu_fused_infer_attention_score_infer_output', '_npu_fused_infer_attention_score_v2_get_max_workspace', '_npu_fused_infer_attention_score_v2_infer_output', '_npu_group_topk', '_npu_index_add', '_npu_index_add_', '_npu_matmul_add_fp32', '_npu_moe_token_unpermute_with_routing_map', '_npu_paged_attention', '_npu_paged_attention_get_workspace', '_npu_paged_attention_mla', '_npu_paged_attention_quant', '_npu_paged_attention_splitfuse', '_npu_quant_rms_norm', '_npu_quantize_per_tensor', '_npu_reshape_and_cache', '_npu_reshape_and_cache_siso', '_npu_rotary_embedding', '_npu_shutdown', '_npu_silent_check', '_npu_silent_check_v2', '_npu_silent_check_v3', '_patch_npu_trace_rules', '_quantize_per_channel_impl', '_quantize_per_tensor_impl', '_register_distributed_backend_for_npu', '_register_ops_under_dtensor_rules', '_rpc_backend_registry', '_warn_msg', '_wrap_torch_error_func', '_wrap_torch_patch_warning_func', 'acc', 'add_dynamo_methods', 'add_optim_method', 'add_perf_dump_patch', 'all_monkey_patches', 'asd', 'atb', 'atexit', 'attention_worker_scheduler', 'attention_worker_scheduler_', 'batch_norm_gather_stats_update', 'batch_norm_reduce', 'contrib', 'copy_memory_', 'ctypes', 'distributed', 'dropout_with_byte_mask', 'dynamo', 'empty_with_format', 'empty_with_swapped_memory', 'erase_stream', 'fast_gelu', 'ffn_worker_scheduler', 'ffn_worker_scheduler_', 'fft_c2r_backward', 'fft_r2c_backward', 'fused_cross_entropy_loss_with_max_sum', 'fused_linear_cross_entropy_loss_with_max_sum_grad', 'fused_linear_online_max_sum', 'get_npu_format', 'get_storage_size', 'kl_div_backward', 'l1_loss_backward', 'matmul_checksum', 'matmul_double_backward', 'multiprocessing', 'name', 'npu', 'npu_add_layer_norm', 'npu_add_layer_norm_backward', 'npu_add_rms_norm', 'npu_add_rms_norm_cast', 'npu_add_rms_norm_dynamic_quant', 'npu_add_rms_norm_quant', 'npu_advance_step_flashattn', 'npu_all_gather_base_mm', 'npu_alloc_float_status', 'npu_alltoallv_gmm', 'npu_anchor_response_flags', 'npu_anti_quant', 'npu_apply_adam', 'npu_apply_adam_w', 'npu_apply_rotary_pos_emb', 'npu_attention_update', 'npu_attention_worker_combine', 'npu_attn_softmax_', 'npu_attn_softmax_backward_', 'npu_batch_gather_matmul', 'npu_batch_gather_matmul_', 'npu_batch_nms', 'npu_bert_apply_adam', 'npu_binary_cross_entropy_with_logits_backward', 'npu_bmmV2', 'npu_bmm_v2_mat1_backward', 'npu_bmm_v2_mat2_backward', 'npu_bounding_box_decode', 'npu_bounding_box_encode', 'npu_broadcast', 'npu_change_data_ptr', 'npu_ciou', 'npu_ciou_backward', 'npu_clear_float_status', 'npu_clipped_swiglu', 'npu_confusion_transpose', 'npu_confusion_transpose_backward', 'npu_conv2d', 'npu_conv2d_backward', 'npu_conv3d', 'npu_conv3d_backward', 'npu_conv_transpose2d', 'npu_conv_transpose2d_backward', 'npu_conv_transpose3d_backward', 'npu_convert_weight_to_int4pack', 'npu_convolution', 'npu_convolution_backward', 'npu_convolution_transpose', 'npu_convolution_transpose_backward', 'npu_cross_entropy_loss', 'npu_cross_entropy_loss_backward', 'npu_deep_norm', 'npu_deep_norm_backward', 'npu_deformable_conv2d', 'npu_deformable_conv2dbk', 'npu_dequant_bias', 'npu_dequant_rope_quant_kvcache', 'npu_dequant_swiglu_quant', 'npu_diou', 'npu_diou_backward', 'npu_dropout_backward', 'npu_dropout_do_mask', 'npu_dropout_gen_mask', 'npu_dropout_with_add_softmax', 'npu_dropout_with_add_softmax_backward', 'npu_dtype_cast', 'npu_dtype_cast_', 'npu_dtype_cast_backward', 'npu_dynamic_block_quant', 'npu_dynamic_quant', 'npu_dynamic_quant_asymmetric', 'npu_fast_gelu', 'npu_fast_gelu_backward', 'npu_ffn', 'npu_ffn_worker_batching', 'npu_format_cast', 'npu_format_cast_', 'npu_functional', 'npu_fused_attention_layernorm_qkv_fwd', 'npu_fused_attention_qkv_grad', 'npu_fused_attention_score', 'npu_fused_attention_score_backward', 'npu_fused_attention_score_fwd', 'npu_fused_attention_score_grad', 'npu_fused_infer_attention_score', 'npu_fused_infer_attention_score_v2', 'npu_fusion_attention', 'npu_fusion_attention_grad', 'npu_fusion_attention_grad_v2', 'npu_fusion_attention_v2', 'npu_gather_backward', 'npu_gather_sparse_index', 'npu_gather_sparse_index_backward', 'npu_geglu', 'npu_geglu_grad', 'npu_gelu', 'npu_gelu_backward', 'npu_gelu_mul', 'npu_gemma_rms_norm', 'npu_get_float_status', 'npu_giou', 'npu_giou_backward', 'npu_gmm_alltoallv', 'npu_grid_assign_positive', 'npu_group_norm_silu', 'npu_group_norm_swish', 'npu_group_norm_swish_grad', 'npu_group_quant', 'npu_grouped_matmul', 'npu_grouped_matmul_add', 'npu_grouped_matmul_add_', 'npu_grouped_matmul_finalize_routing', 'npu_grouped_matmul_swiglu_quant', 'npu_grouped_matmul_swiglu_quant_v2', 'npu_gru', 'npu_gru_backward', 'npu_hans_decode', 'npu_hans_encode', 'npu_ifmr', 'npu_incre_flash_attention', 'npu_indexing', 'npu_interleave_rope', 'npu_iou', 'npu_kronecker_quant', 'npu_kv_quant_sparse_flash_attention', 'npu_kv_rmsnorm_rope_cache', 'npu_kv_rmsnorm_rope_cache_v2', 'npu_kv_rmsnorm_rope_cache_v2_functional', 'npu_layer_norm_eval', 'npu_layernorm_grad', 'npu_lightning_indexer', 'npu_lightning_indexer_grad', 'npu_linear', 'npu_linear_backward', 'npu_lstm', 'npu_lstm_backward', 'npu_lstm_cell', 'npu_lstm_cell_backward', 'npu_lstm_data', 'npu_lstm_data_backward', 'npu_masked_fill_range', 'npu_masked_softmax_with_rel_pos_bias', 'npu_max', 'npu_max_backward', 'npu_min', 'npu_min_backward', 'npu_mish', 'npu_mish_backward', 'npu_mla_prolog', 'npu_mla_prolog_v2', 'npu_mla_prolog_v3', 'npu_mla_prolog_v3_functional', 'npu_mm_all_reduce_base', 'npu_mm_reduce_scatter_base', 'npu_modules', 'npu_moe_compute_expert_tokens', 'npu_moe_distribute_combine', 'npu_moe_distribute_combine_add_rms_norm', 'npu_moe_distribute_combine_v2', 'npu_moe_distribute_dispatch', 'npu_moe_distribute_dispatch_v2', 'npu_moe_finalize_routing', 'npu_moe_gating_top_k', 'npu_moe_gating_top_k_softmax', 'npu_moe_init_routing', 'npu_moe_init_routing_quant', 'npu_moe_init_routing_v2', 'npu_moe_re_routing', 'npu_moe_token_permute', 'npu_moe_token_permute_grad', 'npu_moe_token_permute_with_routing_map', 'npu_moe_token_permute_with_routing_map_grad', 'npu_moe_token_unpermute', 'npu_moe_token_unpermute_grad', 'npu_moe_token_unpermute_with_routing_map', 'npu_moe_token_unpermute_with_routing_map_grad', 'npu_moe_update_expert', 'npu_mrope', 'npu_multi_head_attention', 'npu_multi_head_attention_backward', 'npu_nms_rotated', 'npu_nms_v4', 'npu_nms_with_mask', 'npu_normalize_batch', 'npu_nsa_compress', 'npu_nsa_compress_attention', 'npu_nsa_compress_attention_infer', 'npu_nsa_compress_grad', 'npu_nsa_compress_infer', 'npu_nsa_select_attention', 'npu_nsa_select_attention_grad', 'npu_nsa_select_attention_infer', 'npu_one_hot', 'npu_pad', 'npu_prefetch', 'npu_prompt_flash_attention', 'npu_ps_roi_pooling', 'npu_ps_roi_pooling_backward', 'npu_ptiou', 'npu_quant_conv2d', 'npu_quant_grouped_matmul_dequant', 'npu_quant_lightning_indexer', 'npu_quant_matmul', 'npu_quant_matmul_dequant', 'npu_quant_matmul_reduce_sum', 'npu_quant_scatter', 'npu_quant_scatter_', 'npu_quantize', 'npu_random_choice_with_mask', 'npu_recurrent_gated_delta_rule', 'npu_recurrent_gated_delta_rule_functional', 'npu_reshape', 'npu_rms_norm', 'npu_rms_norm_backward', 'npu_rms_norm_quant', 'npu_roi_align', 'npu_roi_alignbk', 'npu_rope_quant_kvcache', 'npu_rotary_mul', 'npu_rotary_mul_backward', 'npu_rotated_box_decode', 'npu_rotated_box_encode', 'npu_rotated_iou', 'npu_rotated_overlaps', 'npu_scaled_masked_softmax', 'npu_scaled_masked_softmax_backward', 'npu_scatter', 'npu_scatter_list', 'npu_scatter_list_', 'npu_scatter_nd_update', 'npu_scatter_nd_update_', 'npu_scatter_pa_kv_cache', 'npu_scatter_pa_kv_cache_functional', 'npu_sign_bits_pack', 'npu_sign_bits_unpack', 'npu_silu', 'npu_silu_', 'npu_silu_backward', 'npu_sim_exponential_', 'npu_slice', 'npu_softmax_cross_entropy_with_logits', 'npu_softmax_cross_entropy_with_logits_backward', 'npu_sort_v2', 'npu_sparse_flash_attention', 'npu_sparse_flash_attention_grad', 'npu_sparse_lightning_indexer_grad_kl_loss', 'npu_stride_add', 'npu_stride_copy', 'npu_sub_sample', 'npu_swiglu', 'npu_swiglu_backward', 'npu_swiglu_quant', 'npu_top_k_top_p', 'npu_top_k_top_p_sample', 'npu_trans_quant_param', 'npu_transpose', 'npu_transpose_batchmatmul', 'npu_view_copy', 'npu_weight_quant_batchmatmul', 'npu_yolo_boxes_encode', 'obfuscation_calculate', 'obfuscation_finalize', 'obfuscation_initialize', 'one_', 'op_plugin', 'optim', 'os', 'profiler', 'pta_error', 'public_npu_functions', 'repeat_interleave_backward_int', 'repeat_interleave_backward_tensor', 'scatter_update', 'scatter_update_', 'sharded_grad_scaler', 'slow_conv_dilated2d_backward', 'slow_conv_transpose2d_backward', 'stft_backward', 'sys', 'torch', 'torch_npu', 'traceback', 'types', 'unsafe_empty_with_format', 'unsupported_dtype', 'utils', 'version', 'warnings', 'wraps']
+[root@mep-mirror-280t-ga-az5-turbo-86 workspace]# cat /usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_api/include/aclnn_gather_selection_kv_cache.h 
 
-The above exception was the direct cause of the following exception:
+/*
+ * calution: this file was generated automaticlly donot change it.
+*/
 
-Traceback (most recent call last):
-  File "/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/setup.py", line 48, in <module>
-    setup(
-  File "/usr/local/python3.11.14/lib/python3.11/site-packages/setuptools/__init__.py", line 117, in setup
-    return distutils.core.setup(**attrs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/python3.11.14/lib/python3.11/site-packages/setuptools/_distutils/core.py", line 186, in setup
-    return run_commands(dist)
-           ^^^^^^^^^^^^^^^^^^
-  File "/usr/local/python3.11.14/lib/python3.11/site-packages/setuptools/_distutils/core.py", line 202, in run_commands
-    dist.run_commands()
-  File "/usr/local/python3.11.14/lib/python3.11/site-packages/setuptools/_distutils/dist.py", line 1002, in run_commands
-    self.run_command(cmd)
-  File "/usr/local/python3.11.14/lib/python3.11/site-packages/setuptools/dist.py", line 1104, in run_command
-    super().run_command(command)
-  File "/usr/local/python3.11.14/lib/python3.11/site-packages/setuptools/_distutils/dist.py", line 1021, in run_command
-    cmd_obj.run()
-  File "/usr/local/python3.11.14/lib/python3.11/site-packages/setuptools/command/build_ext.py", line 99, in run
-    _build_ext.run(self)
-  File "/usr/local/python3.11.14/lib/python3.11/site-packages/setuptools/_distutils/command/build_ext.py", line 368, in run
-    self.build_extensions()
-  File "/usr/local/python3.11.14/lib/python3.11/site-packages/torch/utils/cpp_extension.py", line 1082, in build_extensions
-    build_ext.build_extensions(self)
-  File "/usr/local/python3.11.14/lib/python3.11/site-packages/setuptools/_distutils/command/build_ext.py", line 482, in build_extensions
-    self._build_extensions_parallel()
-  File "/usr/local/python3.11.14/lib/python3.11/site-packages/setuptools/_distutils/command/build_ext.py", line 505, in _build_extensions_parallel
-    fut.result()
-  File "/usr/local/python3.11.14/lib/python3.11/concurrent/futures/_base.py", line 456, in result
-    return self.__get_result()
-           ^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/python3.11.14/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result
-    raise self._exception
-  File "/usr/local/python3.11.14/lib/python3.11/concurrent/futures/thread.py", line 58, in run
-    result = self.fn(*self.args, **self.kwargs)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/python3.11.14/lib/python3.11/site-packages/setuptools/command/build_ext.py", line 264, in build_extension
-    _build_ext.build_extension(self, ext)
-  File "/usr/local/python3.11.14/lib/python3.11/site-packages/setuptools/_distutils/command/build_ext.py", line 565, in build_extension
-    objects = self.compiler.compile(
-              ^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/python3.11.14/lib/python3.11/site-packages/torch/utils/cpp_extension.py", line 866, in unix_wrap_ninja_compile
-    _write_ninja_file_and_compile_objects(
-  File "/usr/local/python3.11.14/lib/python3.11/site-packages/torch/utils/cpp_extension.py", line 2223, in _write_ninja_file_and_compile_objects
-    _run_ninja_build(
-  File "/usr/local/python3.11.14/lib/python3.11/site-packages/torch/utils/cpp_extension.py", line 2614, in _run_ninja_build
-    raise RuntimeError(message) from e
-RuntimeError: Error compiling objects for extension
-[ERROR] 2026-07-09-21:55:40 (PID:2110, Device:-1, RankID:-1) ERR99999 UNKNOWN applicaiton exception
-build_and_install.sh: line 28: cd: /var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/dist: No such file or directory
-WARNING: Requirement '*.whl' looks like a filename, but the file does not exist
+#ifndef ACLNN_GATHER_SELECTION_KV_CACHE_H_
+#define ACLNN_GATHER_SELECTION_KV_CACHE_H_
 
-[notice] A new release of pip is available: 26.0.1 -> 26.1.2
-[notice] To update, run: pip install --upgrade pip
-ERROR: Invalid wheel filename (wrong number of parts): '*'
-/workspace
+#include "aclnn/acl_meta.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* funtion: aclnnGatherSelectionKvCacheGetWorkspaceSize
+ * parameters :
+ * selectionKRopeRef : required
+ * selectionKvCacheRef : required
+ * selectionKvBlockTableRef : required
+ * selectionKvBlockStatusRef : required
+ * selectionTopkIndices : required
+ * fullKRope : required
+ * fullKvCache : required
+ * fullKvBlockTable : required
+ * fullKvActualSeq : required
+ * fullQActualSeq : required
+ * selectionTopkBlockSize : optional
+ * selectionKRopeRef : required
+ * selectionKvCacheRef : required
+ * selectionKvBlockTableRef : required
+ * selectionKvBlockStatusRef : required
+ * selectionKvActualSeqOut : required
+ * workspaceSize : size of workspace(output).
+ * executor : executor context(output).
+ */
+__attribute__((visibility("default")))
+aclnnStatus aclnnGatherSelectionKvCacheGetWorkspaceSize(
+    aclTensor *selectionKRopeRef,
+    aclTensor *selectionKvCacheRef,
+    aclTensor *selectionKvBlockTableRef,
+    aclTensor *selectionKvBlockStatusRef,
+    const aclTensor *selectionTopkIndices,
+    const aclTensor *fullKRope,
+    const aclTensor *fullKvCache,
+    const aclTensor *fullKvBlockTable,
+    const aclTensor *fullKvActualSeq,
+    const aclTensor *fullQActualSeq,
+    int64_t selectionTopkBlockSize,
+    const aclTensor *selectionKvActualSeqOut,
+    uint64_t *workspaceSize,
+    aclOpExecutor **executor);
+
+/* funtion: aclnnGatherSelectionKvCache
+ * parameters :
+ * workspace : workspace memory addr(input).
+ * workspaceSize : size of workspace(input).
+ * executor : executor context(input).
+ * stream : acl stream.
+ */
+__attribute__((visibility("default")))
+aclnnStatus aclnnGatherSelectionKvCache(
+    void *workspace,
+    uint64_t workspaceSize,
+    aclOpExecutor *executor,
+    aclrtStream stream);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
