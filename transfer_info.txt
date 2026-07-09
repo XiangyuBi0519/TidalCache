@@ -1,57 +1,11 @@
-[root@mep-mirror-280t-ga-az5-turbo-86 cann-recipes-infer]# bash ops/ascendc/output/CANN-custom_ops-none-linux.aarch64.run --install-for-all
-Verifying archive integrity...  100%   SHA256 checksums are OK. All good.
-Uncompressing version:1.0  100%  
-[ops_custom] [2026-07-09 21:35:45] [INFO] copy uninstall sh success
-[ops_custom] [2026-07-09 21:35:45] [INFO] upgrade framework
-[ops_custom] [2026-07-09 21:35:45] [INFO] no need to upgrade ops framework files
-[ops_custom] [2026-07-09 21:35:45] [INFO] upgrade op proto
-[ops_custom] [2026-07-09 21:35:45] [INFO] create /usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_proto.
-[ops_custom] [2026-07-09 21:35:45] [INFO] copy new ops op_proto files ......
-[ops_custom] [2026-07-09 21:35:45] [INFO] upgrade op impl
-[ops_custom] [2026-07-09 21:35:45] [INFO] create /usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_impl.
-[ops_custom] [2026-07-09 21:35:45] [INFO] copy new ops op_impl files ......
-[ops_custom] [2026-07-09 21:35:45] [INFO] upgrade op api
-[ops_custom] [2026-07-09 21:35:45] [INFO] create /usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_api.
-[ops_custom] [2026-07-09 21:35:45] [INFO] copy new ops op_api files ......
-[ops_custom] [2026-07-09 21:35:45] [INFO] upgrade version.info
-[ops_custom] [2026-07-09 21:35:45] [INFO] copy new version.info files ......
-[ops_custom] [2026-07-09 21:35:45] [INFO] no need to upgrade custom.proto files
-[ops_custom] [2026-07-09 21:35:45] [INFO] using requirements: when custom module install finished or before you run the custom module, execute the command [ export LD_LIBRARY_PATH=/usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_api/lib/:${LD_LIBRARY_PATH} ] to set the environment path
-SUCCESS
-[root@mep-mirror-280t-ga-az5-turbo-86 cann-recipes-infer]# find /usr/local/Ascend/cann-8.5.1/opp -name "*gather_selection*" 2>/dev/null
-/usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_impl/ai_core/tbe/kernel/config/ascend910b/gather_selection_kv_cache.json
-/usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_impl/ai_core/tbe/kernel/ascend910b/gather_selection_kv_cache
-/usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_impl/ai_core/tbe/customize_impl/ascendc/gather_selection_kv_cache
-/usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_impl/ai_core/tbe/customize_impl/ascendc/gather_selection_kv_cache/gather_selection_kv_cache_split_bs_reuse_vec.h
-/usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_impl/ai_core/tbe/customize_impl/ascendc/gather_selection_kv_cache/gather_selection_kv_cache_split_bs_reuse.h
-/usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_impl/ai_core/tbe/customize_impl/ascendc/gather_selection_kv_cache/gather_selection_kv_cache.cpp
-/usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_impl/ai_core/tbe/customize_impl/ascendc/gather_selection_kv_cache/op_kernel/gather_selection_kv_cache_split_bs_reuse_vec.h
-/usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_impl/ai_core/tbe/customize_impl/ascendc/gather_selection_kv_cache/op_kernel/gather_selection_kv_cache_split_bs_reuse.h
-/usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_impl/ai_core/tbe/customize_impl/ascendc/gather_selection_kv_cache/op_kernel/gather_selection_kv_cache.cpp
-/usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_impl/ai_core/tbe/customize_impl/dynamic/gather_selection_kv_cache.py
-/usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_proto/inc/gather_selection_kv_cache_proto.h
-/usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_api/include/aclnn_gather_selection_kv_cache.h
-[root@mep-mirror-280t-ga-az5-turbo-86 cann-recipes-infer]# ls /usr/local/Ascend/cann-8.5.1/opp/vendors/customize/ 2>/dev/null
-op_api  op_impl  op_proto  version.info
-[root@mep-mirror-280t-ga-az5-turbo-86 cann-recipes-infer]# cd
-[root@mep-mirror-280t-ga-az5-turbo-86 ~]# ll
-total 24
-drwxr-x--- 3 root root 4096 Jun 27 17:57 Ascend
-drwxr-x--- 1 root root 4096 May  1 00:40 ascend
-drwxr-x--- 3 root root 4096 Jun 27 17:57 atc_data
-drwxr-xr-x 1 root root 4096 May  1 00:40 log
-[root@mep-mirror-280t-ga-az5-turbo-86 ~]# cd /workspace
-[root@mep-mirror-280t-ga-az5-turbo-86 workspace]# ll
-total 4
--rw-r--r-- 1 root root 454 Jul  9 20:47 test.py
-[root@mep-mirror-280t-ga-az5-turbo-86 workspace]# vim test.py
-[root@mep-mirror-280t-ga-az5-turbo-86 workspace]# python test.py 
-Traceback (most recent call last):
-  File "/workspace/test.py", line 7, in <module>
-    lib = ctypes.CDLL("libcust_opapi.so")
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/python3.11.14/lib/python3.11/ctypes/__init__.py", line 376, in __init__
-    self._handle = _dlopen(self._name, mode)
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^
-OSError: libcust_opapi.so: cannot open shared object file: No such file or directory
-[ERROR] 2026-07-09-21:45:17 (PID:2096, Device:-1, RankID:-1) ERR99999 UNKNOWN applicaiton exception
+export LD_LIBRARY_PATH=/usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_api/lib/:${LD_LIBRARY_PATH}
+
+
+# 先确认 so 文件在不在
+ls /usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_api/lib/
+
+# 设置环境变量
+export LD_LIBRARY_PATH=/usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_api/lib/:${LD_LIBRARY_PATH}
+
+# 再跑验证
+python test.py
