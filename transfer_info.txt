@@ -1,11 +1,164 @@
-export LD_LIBRARY_PATH=/usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_api/lib/:${LD_LIBRARY_PATH}
+[root@mep-mirror-280t-ga-az5-turbo-86 workspace]# cd /var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/
+[root@mep-mirror-280t-ga-az5-turbo-86 torch_ops_extension]# ls
+build_and_install.sh  custom_ops  setup.py
+[root@mep-mirror-280t-ga-az5-turbo-86 torch_ops_extension]# bash build_and_install.sh 
+Using 1 parallel jobs for compilation
+running build_ext
+building 'custom_ops.custom_ops_lib' extension
+creating /var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/build/temp.linux-aarch64-cpython-311/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc
+[1/27] c++ -MMD -MF /var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/build/temp.linux-aarch64-cpython-311/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/inplace_partial_rotary_mul.o.d -Wsign-compare -DNDEBUG -g -fwrapv -O3 -Wall -fPIC -I/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include -I/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc -I/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/hccl/inc -I/usr/local/python3.11.14/lib/python3.11/site-packages/torch/include -I/usr/local/python3.11.14/lib/python3.11/site-packages/torch/include/torch/csrc/api/include -I/usr/local/python3.11.14/include/python3.11 -c -c /var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/inplace_partial_rotary_mul.cpp -o /var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/build/temp.linux-aarch64-cpython-311/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/inplace_partial_rotary_mul.o -I/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc -O3 -march=native -ffast-math -fvisibility=hidden -flto -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=custom_ops_lib -std=c++17
+FAILED: [code=1] /var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/build/temp.linux-aarch64-cpython-311/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/inplace_partial_rotary_mul.o 
+c++ -MMD -MF /var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/build/temp.linux-aarch64-cpython-311/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/inplace_partial_rotary_mul.o.d -Wsign-compare -DNDEBUG -g -fwrapv -O3 -Wall -fPIC -I/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include -I/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc -I/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/hccl/inc -I/usr/local/python3.11.14/lib/python3.11/site-packages/torch/include -I/usr/local/python3.11.14/lib/python3.11/site-packages/torch/include/torch/csrc/api/include -I/usr/local/python3.11.14/include/python3.11 -c -c /var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/inplace_partial_rotary_mul.cpp -o /var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/build/temp.linux-aarch64-cpython-311/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/inplace_partial_rotary_mul.o -I/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc -O3 -march=native -ffast-math -fvisibility=hidden -flto -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=custom_ops_lib -std=c++17
+In file included from /usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/NPUStream.h:10,
+                 from /var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/ops_common.h:32,
+                 from /var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/inplace_partial_rotary_mul.cpp:13:
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/NPUCachingAllocator.h: In function ‘void c10_npu::NPUCachingAllocator::init()’:
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/NPUException.h:156:29: warning: unused variable ‘feature_not_support_warn_once’ [-Wunused-variable]
+  156 |                 static auto feature_not_support_warn_once = []() {               \
+      |                             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/NPUException.h:156:29: note: in definition of macro ‘NPU_CHECK_ERROR_CHECK_UCE’
+  156 |                 static auto feature_not_support_warn_once = []() {               \
+      |                             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/NPUCachingAllocator.h:305:5: note: in expansion of macro ‘NPU_CHECK_ERROR’
+  305 |     NPU_CHECK_ERROR(aclrtGetDeviceCount(&device_count));
+      |     ^~~~~~~~~~~~~~~
+/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/ops_common.h: At global scope:
+/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/ops_common.h:174:36: error: ‘ACL_FLOAT8_E5M2’ was not declared in this scope; did you mean ‘C_DT_FLOAT8_E5M2’?
+  174 |     _(at::ScalarType::Float8_e5m2, ACL_FLOAT8_E5M2)                                                                    \
+      |                                    ^~~~~~~~~~~~~~~
+/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/ops_common.h:202:28: note: in definition of macro ‘DEFINE_ENUM’
+  202 | #define DEFINE_ENUM(_1, n) n,
+      |                            ^
+/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/ops_common.h:203:9: note: in expansion of macro ‘AT_ALL_SCALAR_TYPE_AND_ACL_DATATYPE_PAIR’
+  203 |         AT_ALL_SCALAR_TYPE_AND_ACL_DATATYPE_PAIR(DEFINE_ENUM)
+      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/ops_common.h:175:38: error: ‘ACL_FLOAT8_E4M3FN’ was not declared in this scope; did you mean ‘C_DT_FLOAT8_E4M3FN’?
+  175 |     _(at::ScalarType::Float8_e4m3fn, ACL_FLOAT8_E4M3FN)                                                                \
+      |                                      ^~~~~~~~~~~~~~~~~
+/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/ops_common.h:202:28: note: in definition of macro ‘DEFINE_ENUM’
+  202 | #define DEFINE_ENUM(_1, n) n,
+      |                            ^
+/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/ops_common.h:203:9: note: in expansion of macro ‘AT_ALL_SCALAR_TYPE_AND_ACL_DATATYPE_PAIR’
+  203 |         AT_ALL_SCALAR_TYPE_AND_ACL_DATATYPE_PAIR(DEFINE_ENUM)
+      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/ops_common.h:195:39: error: ‘ACL_FLOAT8_E8M0’ was not declared in this scope; did you mean ‘C_DT_FLOAT8_E8M0’?
+  195 |     _(at::ScalarType::Float8_e8m0fnu, ACL_FLOAT8_E8M0)                                                                \
+      |                                       ^~~~~~~~~~~~~~~
+/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/ops_common.h:202:28: note: in definition of macro ‘DEFINE_ENUM’
+  202 | #define DEFINE_ENUM(_1, n) n,
+      |                            ^
+/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/ops_common.h:203:9: note: in expansion of macro ‘AT_ALL_SCALAR_TYPE_AND_ACL_DATATYPE_PAIR’
+  203 |         AT_ALL_SCALAR_TYPE_AND_ACL_DATATYPE_PAIR(DEFINE_ENUM)
+      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/ops_common.h:196:41: error: ‘ACL_FLOAT4_E2M1’ was not declared in this scope; did you mean ‘C_DT_FLOAT4_E2M1’?
+  196 |     _(at::ScalarType::Float4_e2m1fn_x2, ACL_FLOAT4_E2M1)                                                              \
+      |                                         ^~~~~~~~~~~~~~~
+/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/ops_common.h:202:28: note: in definition of macro ‘DEFINE_ENUM’
+  202 | #define DEFINE_ENUM(_1, n) n,
+      |                            ^
+/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/custom_ops/csrc/ops_common.h:203:9: note: in expansion of macro ‘AT_ALL_SCALAR_TYPE_AND_ACL_DATATYPE_PAIR’
+  203 |         AT_ALL_SCALAR_TYPE_AND_ACL_DATATYPE_PAIR(DEFINE_ENUM)
+      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/NPUException.h:86:20: warning: ‘std::string getCurrentTimestamp()’ declared ‘static’ but never defined [-Wunused-function]
+   86 | static std::string getCurrentTimestamp();
+      |                    ^~~~~~~~~~~~~~~~~~~
+In file included from /usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/npu_log.h:7,
+                 from /usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/NPUException.h:21:
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/register/OptionsManager.h:87:49: warning: ‘std::unordered_map<int, std::__cxx11::basic_string<char> > c10_npu::option::getAclOpInitMode()’ defined but not used [-Wunused-function]
+   87 | static std::unordered_map<int32_t, std::string> getAclOpInitMode()
+      |                                                 ^~~~~~~~~~~~~~~~
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/register/OptionsManager.h:81:49: warning: ‘std::unordered_map<int, std::__cxx11::basic_string<char> > c10_npu::option::getTaskQueueEnableMode()’ defined but not used [-Wunused-function]
+   81 | static std::unordered_map<int32_t, std::string> getTaskQueueEnableMode()
+      |                                                 ^~~~~~~~~~~~~~~~~~~~~~
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/register/OptionsManager.h:75:49: warning: ‘std::unordered_map<int, std::__cxx11::basic_string<char> > c10_npu::option::getMemoryCacheMode()’ defined but not used [-Wunused-function]
+   75 | static std::unordered_map<int32_t, std::string> getMemoryCacheMode()
+      |                                                 ^~~~~~~~~~~~~~~~~~
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/register/OptionsManager.h:69:49: warning: ‘std::unordered_map<int, std::__cxx11::basic_string<char> > c10_npu::option::getLogLevelMode()’ defined but not used [-Wunused-function]
+   69 | static std::unordered_map<int32_t, std::string> getLogLevelMode()
+      |                                                 ^~~~~~~~~~~~~~~
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/register/OptionsManager.h:63:49: warning: ‘std::unordered_map<int, std::__cxx11::basic_string<char> > c10_npu::option::getDesyncDebugMode()’ defined but not used [-Wunused-function]
+   63 | static std::unordered_map<int32_t, std::string> getDesyncDebugMode()
+      |                                                 ^~~~~~~~~~~~~~~~~~
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/register/OptionsManager.h:57:49: warning: ‘std::unordered_map<int, std::__cxx11::basic_string<char> > c10_npu::option::getAsyncErrorHandlingMode()’ defined but not used [-Wunused-function]
+   57 | static std::unordered_map<int32_t, std::string> getAsyncErrorHandlingMode()
+      |                                                 ^~~~~~~~~~~~~~~~~~~~~~~~~
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/register/OptionsManager.h:51:49: warning: ‘std::unordered_map<int, std::__cxx11::basic_string<char> > c10_npu::option::getLaunchBlockingMode()’ defined but not used [-Wunused-function]
+   51 | static std::unordered_map<int32_t, std::string> getLaunchBlockingMode()
+      |                                                 ^~~~~~~~~~~~~~~~~~~~~
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/register/OptionsManager.h:45:49: warning: ‘std::unordered_map<int, std::__cxx11::basic_string<char> > c10_npu::option::getCombinedEnableMode()’ defined but not used [-Wunused-function]
+   45 | static std::unordered_map<int32_t, std::string> getCombinedEnableMode()
+      |                                                 ^~~~~~~~~~~~~~~~~~~~~
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/register/OptionsManager.h:39:49: warning: ‘std::unordered_map<int, std::__cxx11::basic_string<char> > c10_npu::option::getDisableInfNanMode()’ defined but not used [-Wunused-function]
+   39 | static std::unordered_map<int32_t, std::string> getDisableInfNanMode()
+      |                                                 ^~~~~~~~~~~~~~~~~~~~
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/register/OptionsManager.h:33:49: warning: ‘std::unordered_map<int, std::__cxx11::basic_string<char> > c10_npu::option::getInfNanMode()’ defined but not used [-Wunused-function]
+   33 | static std::unordered_map<int32_t, std::string> getInfNanMode()
+      |                                                 ^~~~~~~~~~~~~
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/register/OptionsManager.h:27:49: warning: ‘std::unordered_map<int, std::__cxx11::basic_string<char> > c10_npu::option::getHcclZeroCopyMode()’ defined but not used [-Wunused-function]
+   27 | static std::unordered_map<int32_t, std::string> getHcclZeroCopyMode()
+      |                                                 ^~~~~~~~~~~~~~~~~~~
+ninja: build stopped: subcommand failed.
+Traceback (most recent call last):
+  File "/usr/local/python3.11.14/lib/python3.11/site-packages/torch/utils/cpp_extension.py", line 2597, in _run_ninja_build
+    subprocess.run(
+  File "/usr/local/python3.11.14/lib/python3.11/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['ninja', '-v', '-j', '1']' returned non-zero exit status 1.
 
+The above exception was the direct cause of the following exception:
 
-# 先确认 so 文件在不在
-ls /usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_api/lib/
+Traceback (most recent call last):
+  File "/var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/setup.py", line 48, in <module>
+    setup(
+  File "/usr/local/python3.11.14/lib/python3.11/site-packages/setuptools/__init__.py", line 117, in setup
+    return distutils.core.setup(**attrs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.11.14/lib/python3.11/site-packages/setuptools/_distutils/core.py", line 186, in setup
+    return run_commands(dist)
+           ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.11.14/lib/python3.11/site-packages/setuptools/_distutils/core.py", line 202, in run_commands
+    dist.run_commands()
+  File "/usr/local/python3.11.14/lib/python3.11/site-packages/setuptools/_distutils/dist.py", line 1002, in run_commands
+    self.run_command(cmd)
+  File "/usr/local/python3.11.14/lib/python3.11/site-packages/setuptools/dist.py", line 1104, in run_command
+    super().run_command(command)
+  File "/usr/local/python3.11.14/lib/python3.11/site-packages/setuptools/_distutils/dist.py", line 1021, in run_command
+    cmd_obj.run()
+  File "/usr/local/python3.11.14/lib/python3.11/site-packages/setuptools/command/build_ext.py", line 99, in run
+    _build_ext.run(self)
+  File "/usr/local/python3.11.14/lib/python3.11/site-packages/setuptools/_distutils/command/build_ext.py", line 368, in run
+    self.build_extensions()
+  File "/usr/local/python3.11.14/lib/python3.11/site-packages/torch/utils/cpp_extension.py", line 1082, in build_extensions
+    build_ext.build_extensions(self)
+  File "/usr/local/python3.11.14/lib/python3.11/site-packages/setuptools/_distutils/command/build_ext.py", line 482, in build_extensions
+    self._build_extensions_parallel()
+  File "/usr/local/python3.11.14/lib/python3.11/site-packages/setuptools/_distutils/command/build_ext.py", line 505, in _build_extensions_parallel
+    fut.result()
+  File "/usr/local/python3.11.14/lib/python3.11/concurrent/futures/_base.py", line 456, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.11.14/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/usr/local/python3.11.14/lib/python3.11/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.11.14/lib/python3.11/site-packages/setuptools/command/build_ext.py", line 264, in build_extension
+    _build_ext.build_extension(self, ext)
+  File "/usr/local/python3.11.14/lib/python3.11/site-packages/setuptools/_distutils/command/build_ext.py", line 565, in build_extension
+    objects = self.compiler.compile(
+              ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.11.14/lib/python3.11/site-packages/torch/utils/cpp_extension.py", line 866, in unix_wrap_ninja_compile
+    _write_ninja_file_and_compile_objects(
+  File "/usr/local/python3.11.14/lib/python3.11/site-packages/torch/utils/cpp_extension.py", line 2223, in _write_ninja_file_and_compile_objects
+    _run_ninja_build(
+  File "/usr/local/python3.11.14/lib/python3.11/site-packages/torch/utils/cpp_extension.py", line 2614, in _run_ninja_build
+    raise RuntimeError(message) from e
+RuntimeError: Error compiling objects for extension
+[ERROR] 2026-07-09-21:55:40 (PID:2110, Device:-1, RankID:-1) ERR99999 UNKNOWN applicaiton exception
+build_and_install.sh: line 28: cd: /var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ops/ascendc/torch_ops_extension/dist: No such file or directory
+WARNING: Requirement '*.whl' looks like a filename, but the file does not exist
 
-# 设置环境变量
-export LD_LIBRARY_PATH=/usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_api/lib/:${LD_LIBRARY_PATH}
-
-# 再跑验证
-python test.py
+[notice] A new release of pip is available: 26.0.1 -> 26.1.2
+[notice] To update, run: pip install --upgrade pip
+ERROR: Invalid wheel filename (wrong number of parts): '*'
+/workspace
