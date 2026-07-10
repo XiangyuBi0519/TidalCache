@@ -10,3 +10,7 @@ Traceback (most recent call last):
   File "<string>", line 1, in <module>
 ImportError: /workspace/test_gather/gather_kv_wrapper.cpython-311-aarch64-linux-gnu.so: undefined symbol: _ZNK7c10_npu9NPUStream6streamEv
 [ERROR] 2026-07-10-15:54:44 (PID:3011, Device:-1, RankID:-1) ERR99999 UNKNOWN applicaiton exception
+
+
+# 先看 torch_npu 的 lib 目录有什么
+ls /usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/lib/libtorch_npu*
