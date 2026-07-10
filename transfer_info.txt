@@ -1,8 +1,4 @@
-[root@mep-mirror-280t-ga-az5-turbo-86 test_gather]# nm -D /usr/local/Ascend/cann-8.5.1/lib64/libopapi.so 2>/dev/null | grep "aclCreateTensor\|aclDestroyTensor" | head -5
-nm -D /usr/local/Ascend/cann-8.5.1/lib64/libascendcl.so 2>/dev/null | grep "aclCreateTensor\|aclDestroyTensor" | head -5
-                 U aclCreateTensor
-                 U aclCreateTensorList
-                 U aclDestroyTensor
-                 U aclDestroyTensorList
-0000000000018408 T aclCreateTensorDesc
-00000000000184e0 T aclDestroyTensorDesc
+# 在 lib64 下所有 so 里找定义（T 标记）
+for f in /usr/local/Ascend/cann-8.5.1/lib64/*.so; do
+  nm -D "$f" 2>/dev/null | grep -q "T aclCreateTensor$" && echo "$f"
+done
