@@ -1,17 +1,47 @@
 #include <torch/extension.h>
-
 #include <torch_npu/csrc/core/npu/NPUStream.h>
-#include <torch_npu/csrc/framework/OpCommand.h>
-#include <torch_npu/csrc/framework/utils/OpPreparation.h>
 
-// Include the custom op's aclnn header (installed via the .run package)
+#include "acl/acl.h"
+#include "acl/acl_rt.h"
+#include "aclnn/acl_meta.h"
 #include "aclnn_gather_selection_kv_cache.h"
 
-// EXEC_NPU_CMD is provided by torch_npu's op_api headers.
-// If not available, we include it explicitly.
-#ifndef EXEC_NPU_CMD
-#include "aclnn_torch_adapter/op_api_common.h"
-#endif
+namespace {
+
+aclDataType torchDtypeToAcl(at::ScalarType dtype) {
+    switch (dtype) {
+        case at::kHalf:    return ACL_FLOAT16;
+        case at::kBFloat16: return ACL_BF16;
+        case at::kFloat:   return ACL_FLOAT;
+        case at::kInt:     return ACL_INT32;
+        case at::kLong:    return ACL_INT64;
+        case at::kChar:    return ACL_INT8;
+        case at::kByte:    return ACL_UINT8;
+        default:
+            TORCH_CHECK(false, "Unsupported dtype: ", dtype);
+    }
+}
+
+aclTensor* createAclTensor(const at::Tensor& tensor) {
+    auto contiguous = tensor.contiguous();
+    auto sizes = contiguous.sizes();
+    auto strides = contiguous.strides();
+
+    std::vector<int64_t> dims(sizes.begin(), sizes.end());
+    std::vector<int64_t> str(strides.begin(), strides.end());
+    std::vector<int64_t> storageDims = dims;
+
+    return aclCreateTensor(
+        dims.data(), dims.size(),
+        torchDtypeToAcl(contiguous.scalar_type()),
+        str.data(),
+        contiguous.storage_offset(),
+        ACL_FORMAT_ND,
+        storageDims.data(), storageDims.size(),
+        contiguous.data_ptr());
+}
+
+} // namespace
 
 at::Tensor npu_gather_selection_kv_cache(
     at::Tensor& selection_k_rope,
@@ -30,19 +60,53 @@ at::Tensor npu_gather_selection_kv_cache(
         {selection_kv_block_table.size(0)},
         selection_topk_indices.options());
 
-    EXEC_NPU_CMD(aclnnGatherSelectionKvCache,
-        selection_k_rope,
-        selection_kv_cache,
-        selection_kv_block_table,
-        selection_kv_block_status,
-        selection_topk_indices,
-        full_k_rope,
-        full_kv_cache,
-        full_kv_block_table,
-        full_kv_actual_seq,
-        full_q_actual_seq,
+    auto* t0  = createAclTensor(selection_k_rope);
+    auto* t1  = createAclTensor(selection_kv_cache);
+    auto* t2  = createAclTensor(selection_kv_block_table);
+    auto* t3  = createAclTensor(selection_kv_block_status);
+    auto* t4  = createAclTensor(selection_topk_indices);
+    auto* t5  = createAclTensor(full_k_rope);
+    auto* t6  = createAclTensor(full_kv_cache);
+    auto* t7  = createAclTensor(full_kv_block_table);
+    auto* t8  = createAclTensor(full_kv_actual_seq);
+    auto* t9  = createAclTensor(full_q_actual_seq);
+    auto* t10 = createAclTensor(selection_kv_actual_seq);
+
+    uint64_t workspaceSize = 0;
+    aclOpExecutor* executor = nullptr;
+
+    auto ret = aclnnGatherSelectionKvCacheGetWorkspaceSize(
+        t0, t1, t2, t3, t4, t5, t6, t7, t8, t9,
         selection_topk_block_size,
-        selection_kv_actual_seq);
+        t10,
+        &workspaceSize, &executor);
+    TORCH_CHECK(ret == 0,
+        "aclnnGatherSelectionKvCacheGetWorkspaceSize failed, ret=", ret);
+
+    void* workspace = nullptr;
+    at::Tensor ws_tensor;
+    if (workspaceSize > 0) {
+        ws_tensor = at::empty({static_cast<int64_t>(workspaceSize)},
+            at::TensorOptions().dtype(at::kByte).device(selection_k_rope.device()));
+        workspace = ws_tensor.data_ptr();
+    }
+
+    aclrtStream stream = c10_npu::getCurrentNPUStream().stream();
+    ret = aclnnGatherSelectionKvCache(workspace, workspaceSize, executor, stream);
+    TORCH_CHECK(ret == 0,
+        "aclnnGatherSelectionKvCache execute failed, ret=", ret);
+
+    aclDestroyTensor(t0);
+    aclDestroyTensor(t1);
+    aclDestroyTensor(t2);
+    aclDestroyTensor(t3);
+    aclDestroyTensor(t4);
+    aclDestroyTensor(t5);
+    aclDestroyTensor(t6);
+    aclDestroyTensor(t7);
+    aclDestroyTensor(t8);
+    aclDestroyTensor(t9);
+    aclDestroyTensor(t10);
 
     return selection_kv_actual_seq;
 }
