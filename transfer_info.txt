@@ -1,3 +1,5 @@
-cd /workspace/test_gather
+[root@mep-mirror-280t-ga-az5-turbo-86 test_gather]# cd /workspace/test_gather
 export LD_LIBRARY_PATH=/usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_api/lib/:/usr/local/Ascend/cann-8.5.1/lib64/:${LD_LIBRARY_PATH}
 python3 test_gather_op.py
+ERROR: gather_kv_wrapper not found. Build first with:
+  python setup.py build_ext --inplace
