@@ -39,7 +39,7 @@ setup(
             sources=["gather_wrapper.cpp"],
             include_dirs=include_dirs,
             library_dirs=library_dirs,
-            libraries=["cust_opapi", "nnopbase", "ascendcl"],
+            libraries=["torch_npu", "cust_opapi", "nnopbase", "ascendcl"],
             extra_compile_args=["-std=c++17"],
         )
     ],
