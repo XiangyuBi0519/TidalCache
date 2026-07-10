@@ -1,20 +1,11 @@
-# 加上 torch 的 lib 路径
-export LD_LIBRARY_PATH=/usr/local/python3.11.14/lib/python3.11/site-packages/torch/lib:/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/lib:${LD_LIBRARY_PATH}
-
-python3 -c "import torch; import torch_npu; import gather_kv_wrapper; print('OK')"
-
-
-[root@mep-mirror-280t-ga-az5-turbo-86 test_gather]# export LD_LIBRARY_PATH=/usr/local/python3.11.14/lib/python3.11/site-packages/torch/lib:/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/lib:${LD_LIBRARY_PATH}
-[root@mep-mirror-280t-ga-az5-turbo-86 test_gather]# python3 -c "import torch; import torch_npu; import gather_kv_wrapper; print('OK')"
+[root@mep-mirror-280t-ga-az5-turbo-86 test_gather]# python3 setup.py build_ext --inplace 2>&1 | tail -5
+running build_ext
+building 'gather_kv_wrapper' extension
+ninja: no work to do.
+g++ -Wsign-compare -DNDEBUG -g -fwrapv -O3 -Wall -shared /workspace/test_gather/build/temp.linux-aarch64-cpython-311/gather_wrapper.o -L/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/lib -L/usr/local/Ascend/cann-8.5.1/lib64 -L/usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_api/lib -L/usr/local/python3.11.14/lib/python3.11/site-packages/torch/lib -L/usr/local/python3.11.14/lib -ltorch_npu -lcust_opapi -lnnopbase -lascendcl -lc10 -ltorch -ltorch_cpu -ltorch_python -o build/lib.linux-aarch64-cpython-311/gather_kv_wrapper.cpython-311-aarch64-linux-gnu.so
+copying build/lib.linux-aarch64-cpython-311/gather_kv_wrapper.cpython-311-aarch64-linux-gnu.so -> 
+[root@mep-mirror-280t-ga-az5-turbo-86 test_gather]# python3 -c "import torch; import torch_npu; import gather_kv_wrapper; print("OK")"
 Traceback (most recent call last):
   File "<string>", line 1, in <module>
-ImportError: /workspace/test_gather/gather_kv_wrapper.cpython-311-aarch64-linux-gnu.so: undefined symbol: _ZNK7c10_npu9NPUStream6streamEv
-[ERROR] 2026-07-10-15:54:44 (PID:3011, Device:-1, RankID:-1) ERR99999 UNKNOWN applicaiton exception
-
-
-# 先看 torch_npu 的 lib 目录有什么
-ls /usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/lib/libtorch_npu*
-
-
-[root@mep-mirror-280t-ga-az5-turbo-86 test_gather]# ls /usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/lib/libtorch_npu*
-/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/lib/libtorch_npu.so
+NameError: name 'OK' is not defined
+[ERROR] 2026-07-10-16:06:27 (PID:3035, Device:-1, RankID:-1) ERR99999 UNKNOWN applicaiton exception
