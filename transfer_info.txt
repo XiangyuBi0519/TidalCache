@@ -1,5 +1,41 @@
-# 看 torch_npu 的 include 目录结构
-find /usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include -name "*.h" | head -30
-
-# 看有没有 OpCommand 或 OpApiFunc 相关的头文件
-grep -rl "OpCommand\|OpApiFunc\|op_plugin\|OpPreparation" /usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/ 2>/dev/null | head -10
+[root@mep-mirror-280t-ga-az5-turbo-86 test_gather]# find /usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include -name "*.h" | head -30
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc/graph/inference_context.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc/graph/ascend_string.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc/graph/ge_error_codes.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc/graph/c_types.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc/graph/operator_reg.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc/graph/operator.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc/graph/resource_context.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc/graph/tensor.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc/graph/graph.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc/graph/attr_value.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc/graph/types.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc/graph/gnode.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc/graph/operator_factory.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc/acl/acl_tdt_queue.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc/acl/ops/acl_fv.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc/acl/ops/acl_cblas.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc/acl/ops/acl_dvpp.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc/acl/acl_rt.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc/acl/acl_op.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc/acl/acl_prof.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc/acl/acl_rt_allocator.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc/acl/acl_op_compiler.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc/acl/error_codes/rt_error_codes.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc/acl/acl.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc/acl/acl_mdl.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc/acl/acl_tdt.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc/acl/acl_base.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc/aml/aml_fwk_detect.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc/ge/ge_error_codes.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc/ge/ge_api_types.h
+[root@mep-mirror-280t-ga-az5-turbo-86 test_gather]# grep -rl "OpCommand\|OpApiFunc\|op_plugin\|OpPreparation" /usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/ 2>/dev/null | head -10
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/aten/NPUOpApiNativeFunctions.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/framework/utils/OpAdapter.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/framework/utils/OpPreparation.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/framework/OpParamMaker.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/framework/OpCommand.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/framework/contiguous/ContiguousOpt.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/framework/OpCmdHelper.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/include/ops.h
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/custom_dtype/Init.h
