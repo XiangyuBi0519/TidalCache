@@ -1,8 +1,32 @@
-[root@mep-mirror-280t-ga-az5-turbo-86 test_gather]# grep -rn "aclCreateTensor\b" /usr/local/Ascend/cann-8.5.1/include/ 2>/dev/null | head -10
-grep -rn "aclCreateTensor\b" /usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/ 2>/dev/null | head -10
-/usr/local/Ascend/cann-8.5.1/include/aclnn/acl_meta.h:62:ACL_FUNC_VISIBILITY aclTensor *aclCreateTensor(const int64_t *viewDims, uint64_t viewDimsNum, aclDataType dataType,
-/usr/local/Ascend/cann-8.5.1/include/aclnn/opdev/common_types.h:136:    friend aclTensor *aclCreateTensor(const int64_t *viewDims, uint64_t viewDimsNum, aclDataType dataType,
-[root@mep-mirror-280t-ga-az5-turbo-86 test_gather]# find /usr/local/Ascend/cann-8.5.1/include -name "*aclnn*" -o -name "*op_api*" 2>/dev/null | head -10
+[root@mep-mirror-280t-ga-az5-turbo-86 test_gather]# sed -n '50,80p' /usr/local/Ascend/cann-8.5.1/include/aclnn/acl_meta.h
+typedef struct aclTensor aclTensor;
+typedef struct aclScalar aclScalar;
+typedef struct aclIntArray aclIntArray;
+typedef struct aclFloatArray aclFloatArray;
+typedef struct aclBoolArray aclBoolArray;
+typedef struct aclTensorList aclTensorList;
+typedef struct aclScalarList aclScalarList;
 
+typedef int32_t aclnnStatus;
+constexpr aclnnStatus OK = 0;
+#endif
 
-sed -n '50,80p' /usr/local/Ascend/cann-8.5.1/include/aclnn/acl_meta.h
+ACL_FUNC_VISIBILITY aclTensor *aclCreateTensor(const int64_t *viewDims, uint64_t viewDimsNum, aclDataType dataType,
+                                               const int64_t *stride, int64_t offset, aclFormat format,
+                                               const int64_t *storageDims, uint64_t storageDimsNum,
+                                               void *tensorData);
+
+ACL_FUNC_VISIBILITY aclScalar *aclCreateScalar(void *value, aclDataType dataType);
+ACL_FUNC_VISIBILITY aclIntArray *aclCreateIntArray(const int64_t *value, uint64_t size);
+ACL_FUNC_VISIBILITY aclFloatArray *aclCreateFloatArray(const float *value, uint64_t size);
+ACL_FUNC_VISIBILITY aclBoolArray *aclCreateBoolArray(const bool *value, uint64_t size);
+ACL_FUNC_VISIBILITY aclTensorList *aclCreateTensorList(const aclTensor *const *value, uint64_t size);
+ACL_FUNC_VISIBILITY aclScalarList *aclCreateScalarList(const aclScalar *const *value, uint64_t size);
+
+ACL_FUNC_VISIBILITY aclnnStatus aclDestroyTensor(const aclTensor *tensor);
+ACL_FUNC_VISIBILITY aclnnStatus aclDestroyScalar(const aclScalar *scalar);
+ACL_FUNC_VISIBILITY aclnnStatus aclDestroyIntArray(const aclIntArray *array);
+ACL_FUNC_VISIBILITY aclnnStatus aclDestroyFloatArray(const aclFloatArray *array);
+ACL_FUNC_VISIBILITY aclnnStatus aclDestroyBoolArray(const aclBoolArray *array);
+ACL_FUNC_VISIBILITY aclnnStatus aclDestroyTensorList(const aclTensorList *array);
+ACL_FUNC_VISIBILITY aclnnStatus aclDestroyScalarList(const aclScalarList *array);
