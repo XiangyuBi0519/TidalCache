@@ -1,4 +1,1 @@
-[root@mep-mirror-280t-ga-az5-turbo-86 test_gather]# find /usr/local/Ascend/cann-8.5.1/opp/built-in/op_api -name "*.h" 2>/dev/null | head -20
-[root@mep-mirror-280t-ga-az5-turbo-86 test_gather]# grep -rl "EXEC_NPU_CMD" /usr/local/Ascend/cann-8.5.1/ 2>/dev/null | head -10
-[root@mep-mirror-280t-ga-az5-turbo-86 test_gather]# grep -rl "EXEC_NPU_CMD" /usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/ 2>/dev/null | head -10
-/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/lib/libtorch_npu.so
+grep -n "aclCreateTensor" /usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc/acl/acl_base.h 2>/dev/null
