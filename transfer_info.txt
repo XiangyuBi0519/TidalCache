@@ -3,3 +3,6 @@ grep -rn "aclCreateTensor\b" /usr/local/python3.11.14/lib/python3.11/site-packag
 /usr/local/Ascend/cann-8.5.1/include/aclnn/acl_meta.h:62:ACL_FUNC_VISIBILITY aclTensor *aclCreateTensor(const int64_t *viewDims, uint64_t viewDimsNum, aclDataType dataType,
 /usr/local/Ascend/cann-8.5.1/include/aclnn/opdev/common_types.h:136:    friend aclTensor *aclCreateTensor(const int64_t *viewDims, uint64_t viewDimsNum, aclDataType dataType,
 [root@mep-mirror-280t-ga-az5-turbo-86 test_gather]# find /usr/local/Ascend/cann-8.5.1/include -name "*aclnn*" -o -name "*op_api*" 2>/dev/null | head -10
+
+
+sed -n '50,80p' /usr/local/Ascend/cann-8.5.1/include/aclnn/acl_meta.h
