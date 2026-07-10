@@ -1,1 +1,2 @@
-grep -n "aclCreateTensor" /usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc/acl/acl_base.h 2>/dev/null
+[root@mep-mirror-280t-ga-az5-turbo-86 test_gather]# grep -n "aclCreateTensor" /usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc/acl/acl_base.h 2>/dev/null
+353:ACL_FUNC_VISIBILITY aclTensorDesc *aclCreateTensorDesc(aclDataType dataType,
