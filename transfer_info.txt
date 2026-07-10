@@ -1,5 +1,27 @@
-# 用更广的搜索
-find /usr/local/Ascend/cann-8.5.1 -name "*.so" 2>/dev/null | xargs grep -l "aclCreateTensor" 2>/dev/null | head -5
-
-# 或者直接看 lib64 下有哪些库
-ls /usr/local/Ascend/cann-8.5.1/lib64/*.so 2>/dev/null | head -20
+[root@mep-mirror-280t-ga-az5-turbo-86 test_gather]# find /usr/local/Ascend/cann-8.5.1 -name "*.so" 2>/dev/null | xargs grep -l "aclCreateTensor" 2>/dev/null | head -5
+/usr/local/Ascend/cann-8.5.1/opp/built-in/op_impl/ai_core/tbe/op_tiling/lib/linux/x86_64/liboptiling.so
+/usr/local/Ascend/cann-8.5.1/opp/built-in/op_impl/ai_core/tbe/op_tiling/lib/linux/aarch64/liboptiling.so
+/usr/local/Ascend/cann-8.5.1/opp/built-in/op_impl/ai_core/tbe/op_host/lib/linux/x86_64/libophost_legacy.so
+/usr/local/Ascend/cann-8.5.1/opp/built-in/op_impl/ai_core/tbe/op_host/lib/linux/aarch64/libophost_legacy.so
+/usr/local/Ascend/cann-8.5.1/opp/built-in/op_impl/ai_core/tbe/op_host/lib/linux/aarch64/libophost_transformer.so
+[root@mep-mirror-280t-ga-az5-turbo-86 test_gather]# ls /usr/local/Ascend/cann-8.5.1/lib64/*.so 2>/dev/null | head -20
+/usr/local/Ascend/cann-8.5.1/lib64/lib_caffe_parser.so
+/usr/local/Ascend/cann-8.5.1/lib64/libacl_audio_mpi.so
+/usr/local/Ascend/cann-8.5.1/lib64/libacl_cblas.so
+/usr/local/Ascend/cann-8.5.1/lib64/libacl_dvpp.so
+/usr/local/Ascend/cann-8.5.1/lib64/libacl_dvpp_mpi.so
+/usr/local/Ascend/cann-8.5.1/lib64/libacl_dvpp_op.so
+/usr/local/Ascend/cann-8.5.1/lib64/libacl_hdmi_mpi.so
+/usr/local/Ascend/cann-8.5.1/lib64/libacl_isp_ae_mpi.so
+/usr/local/Ascend/cann-8.5.1/lib64/libacl_isp_awb_mpi.so
+/usr/local/Ascend/cann-8.5.1/lib64/libacl_isp_mpi.so
+/usr/local/Ascend/cann-8.5.1/lib64/libacl_mdl.so
+/usr/local/Ascend/cann-8.5.1/lib64/libacl_mdl_impl.so
+/usr/local/Ascend/cann-8.5.1/lib64/libacl_mfusion_mpi.so
+/usr/local/Ascend/cann-8.5.1/lib64/libacl_op_compiler.so
+/usr/local/Ascend/cann-8.5.1/lib64/libacl_op_executor.so
+/usr/local/Ascend/cann-8.5.1/lib64/libacl_op_executor_impl.so
+/usr/local/Ascend/cann-8.5.1/lib64/libacl_retr.so
+/usr/local/Ascend/cann-8.5.1/lib64/libacl_rt.so
+/usr/local/Ascend/cann-8.5.1/lib64/libacl_rt_impl.so
+/usr/local/Ascend/cann-8.5.1/lib64/libacl_rtc.so
