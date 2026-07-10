@@ -1,2 +1,9 @@
-# 找 EXEC_NPU_CMD 定义在哪个头文件
-find /usr/local/Ascend /usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu -name "*.h" 2>/dev/null | xargs grep -l "EXEC_NPU_CMD" 2>/dev/null | head -10
+# 搜索更广的范围
+find /usr/local/Ascend -name "op_api_common*" 2>/dev/null
+find /usr/local/python3.11.14 -name "op_api_common*" 2>/dev/null
+
+# 看看 opp 目录下有什么 op_api 相关的
+find /usr/local/Ascend/cann-8.5.1/opp -name "*.h" | head -30
+
+# 直接搜 EXEC_NPU_CMD 或 OpApiFunc
+grep -rl "define EXEC_NPU_CMD\|define DO_COMPATIBILITY" /usr/local/Ascend/cann-8.5.1/opp/ 2>/dev/null | head -10
