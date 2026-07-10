@@ -66,20 +66,23 @@ def create_test_data(
     # Add some extra blocks for padding
     total_full_blocks = num_full_blocks + 4
 
-    # Fill with identifiable pattern: block_id * 1000 + token_offset
+    # Fill with identifiable pattern
+    # For initial test, put full cache on Device too (Host offload tested separately)
     full_k_rope = torch.zeros(total_full_blocks, full_block_size, k_rope_dim,
-                              dtype=dtype, pin_memory=True)
+                              dtype=dtype)
     full_kv_cache = torch.zeros(total_full_blocks, full_block_size, kv_cache_dim,
-                                dtype=dtype, pin_memory=True)
+                                dtype=dtype)
 
     for blk in range(num_full_blocks):
         for tok in range(full_block_size):
             global_tok_id = blk * full_block_size + tok
             if global_tok_id < full_seq_len:
-                # Fill with a recognizable value
-                val = float(global_tok_id + 1)  # 1-indexed for easy identification
+                val = float(global_tok_id + 1)
                 full_k_rope[blk, tok, :] = val
                 full_kv_cache[blk, tok, :] = val
+
+    full_k_rope = full_k_rope.to(device)
+    full_kv_cache = full_kv_cache.to(device)
 
     # Block table: maps logical block index -> physical block index
     # Simple 1:1 mapping for test
@@ -142,8 +145,8 @@ def create_test_data(
     print(f"  kv_cache_dim={kv_cache_dim}, k_rope_dim={k_rope_dim}")
     print(f"  num_full_blocks={num_full_blocks}, total_sel_blocks={total_sel_blocks}")
     print(f"  topk_indices={topk_indices_values}")
-    print(f"  full_k_rope: shape={full_k_rope.shape}, device=cpu(pinned)")
-    print(f"  full_kv_cache: shape={full_kv_cache.shape}, device=cpu(pinned)")
+    print(f"  full_k_rope: shape={full_k_rope.shape}, device={full_k_rope.device}")
+    print(f"  full_kv_cache: shape={full_kv_cache.shape}, device={full_kv_cache.device}")
     print(f"  selection_k_rope: shape={selection_k_rope.shape}, device={device}")
     print(f"  selection_kv_cache: shape={selection_kv_cache.shape}, device={device}")
     print(f"  selection_kv_block_table: shape={selection_kv_block_table.shape}")
