@@ -12,9 +12,9 @@ Test configuration:
   full_seq_len=1024, full_block_size=128
   kv_cache_dim=512, k_rope_dim=64
   num_full_blocks=8, total_sel_blocks=12
-  topk_indices=[4, 9, 10, 14]
-  full_k_rope: shape=torch.Size([12, 128, 64]), device=cpu(pinned)
-  full_kv_cache: shape=torch.Size([12, 128, 512]), device=cpu(pinned)
+  topk_indices=[1, 3, 4, 5]
+  full_k_rope: shape=torch.Size([12, 128, 64]), device=npu:0
+  full_kv_cache: shape=torch.Size([12, 128, 512]), device=npu:0
   selection_k_rope: shape=torch.Size([12, 64, 64]), device=npu:0
   selection_kv_cache: shape=torch.Size([12, 64, 512]), device=npu:0
   selection_kv_block_table: shape=torch.Size([1, 4])
@@ -22,43 +22,55 @@ Test configuration:
   selection_topk_indices: shape=torch.Size([1, 1, 1, 4])
 
 Calling GatherSelectionKvCache...
-Traceback (most recent call last):
-  File "/workspace/test_gather/test_gather_op.py", line 323, in <module>
-    results.append(("Basic Gather", test_basic_gather()))
-                                    ^^^^^^^^^^^^^^^^^^^
-  File "/workspace/test_gather/test_gather_op.py", line 193, in test_basic_gather
-    torch.npu.synchronize()
-  File "/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/npu/utils.py", line 72, in synchronize
-    return torch_npu._C._npu_synchronize()
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-RuntimeError: npuSynchronizeDevice:build/CMakeFiles/torch_npu.dir/compiler_depend.ts:575 NPU function error: AclrtSynchronizeDeviceWithTimeout, error code is 507035
-[ERROR] 2026-07-10-16:09:24 (PID:3043, Device:0, RankID:-1) ERR00100 PTA call acl api failed
-[Error]: The vector core execution is abnormal. 
-        Rectify the fault based on the error information in the ascend log.
-[PID: 3043] 2026-07-10-16:09:24.750.836 Invalid_Argument(EL0003): The argument is invalid.
-        Solution: Try again with a valid argument.
-        TraceBack (most recent call last):
-        The error from device(chipId:0, dieId:0), serial number is 1, there is an exception of aivec error, core id is 38, error code = 0x800000, dump info: pc start: 0x12c041400000, current: 0x12c041401b84, vec error info: 0x52159f0189, mte error info: 0x503008004, ifu error info: 0x2d25db6792e00, ccu error info: 0x96638c4303377269, cube error info: 0, biu error info: 0, aic error mask: 0x6500020bd00028c, para base: 0x12c100403000.[FUNC:PrintCoreInfo][FILE:device_error_core_proc.cc][LINE:347]
-        The extend info: errcode:(0x800000, 0, 0) errorStr: The DDR address of the MTE instruction is out of range. fixp_error0 info: 0x3008004, fixp_error1 info: 0x5, fsmId:0, tslot:0, thread:0, ctxid:0, blk:0, sublk:0, subErrType:4.[FUNC:PrintCoreInfo][FILE:device_error_core_proc.cc][LINE:360]
-        Kernel task happen error, retCode=0x31, [vector core exception].[FUNC:PreCheckTaskErr][FILE:davinci_kernel_task.cc][LINE:1582]
-        The argument is invalid.
-        rtMemGetInfoByType execution failed, reason=driver error:invalid handle[FUNC:FuncErrorReason][FILE:error_message_manage.cc][LINE:61]
-        rtDeviceSynchronizeWithTimeout execution failed, reason=vector core exception[FUNC:FuncErrorReason][FILE:error_message_manage.cc][LINE:61]
-        wait for compute device to finish failed, runtime result = 507035.[FUNC:ReportCallError][FILE:log_inner.cpp][LINE:148]
 
-[W710 16:09:24.939437171 compiler_depend.ts:595] Warning: NPU warning, error code is 507035[Error]: 
-[Error]: The vector core execution is abnormal. 
-        Rectify the fault based on the error information in the ascend log.
-EE9999: Inner Error!
-EE9999[PID: 3043] 2026-07-10-16:09:24.764.948 (EE9999):  rtDeviceSynchronizeWithTimeout execution failed, reason=vector core exception[FUNC:FuncErrorReason][FILE:error_message_manage.cc][LINE:61]
-        TraceBack (most recent call last):
-       wait for compute device to finish failed, runtime result = 507035.[FUNC:ReportCallError][FILE:log_inner.cpp][LINE:148]
- (function npuSynchronizeUsedDevices)
-[W710 16:09:24.940093552 compiler_depend.ts:577] Warning: NPU warning, error code is 507035[Error]: 
-[Error]: The vector core execution is abnormal. 
-        Rectify the fault based on the error information in the ascend log.
-EE9999: Inner Error!
-EE9999[PID: 3043] 2026-07-10-16:09:24.765.671 (EE9999):  rtDeviceSynchronizeWithTimeout execution failed, reason=vector core exception[FUNC:FuncErrorReason][FILE:error_message_manage.cc][LINE:61]
-        TraceBack (most recent call last):
-       wait for compute device to finish failed, runtime result = 507035.[FUNC:ReportCallError][FILE:log_inner.cpp][LINE:148]
- (function npuSynchronizeDevice)
+selection_kv_actual_seq: tensor([256], dtype=torch.int32)
+selection_kv_block_status:
+tensor([[[[  1,   3,   4,   5, 256]]]], dtype=torch.int32)
+  OK: group 1, sel_blk 0, value=65.0 (expected 65.0)
+  OK: group 3, sel_blk 1, value=193.0 (expected 193.0)
+  OK: group 4, sel_blk 2, value=257.0 (expected 257.0)
+  OK: group 5, sel_blk 3, value=321.0 (expected 321.0)
+
+TEST 1 PASSED
+
+============================================================
+TEST 2: Cache Reuse
+============================================================
+Test configuration:
+  batch_size=1, num_heads=1, topk=4
+  sel_topk_block_size=64
+  full_seq_len=1024, full_block_size=128
+  kv_cache_dim=512, k_rope_dim=64
+  num_full_blocks=8, total_sel_blocks=12
+  topk_indices=[3, 4, 11, 12]
+  full_k_rope: shape=torch.Size([12, 128, 64]), device=npu:0
+  full_kv_cache: shape=torch.Size([12, 128, 512]), device=npu:0
+  selection_k_rope: shape=torch.Size([12, 64, 64]), device=npu:0
+  selection_kv_cache: shape=torch.Size([12, 64, 512]), device=npu:0
+  selection_kv_block_table: shape=torch.Size([1, 4])
+  selection_kv_block_status: shape=torch.Size([1, 1, 1, 5])
+  selection_topk_indices: shape=torch.Size([1, 1, 1, 4])
+
+First gather call...
+After first call - block_status:
+tensor([[[[  3,   4,  11,  12, 256]]]], dtype=torch.int32)
+
+Second call: old_indices=[3, 4, 11, 12], new_indices=[0, 1, 3, 4]
+  Overlapping: [3, 4] (should be reused)
+  New: [0, 1] (should be fetched from host)
+
+Second gather call...
+After second call - block_status:
+tensor([[[[  3,   1,   0,   4, 256]]]], dtype=torch.int32)
+  FAIL [NEW]: group 0, expected 1.0, got 193.0
+  OK [NEW]: group 1, value=65.0
+  FAIL [REUSED]: group 3, expected 193.0, got 1.0
+  OK [REUSED]: group 4, value=257.0
+
+TEST 2 FAILED
+
+============================================================
+SUMMARY
+============================================================
+  Basic Gather: PASSED
+  Cache Reuse: FAILED
