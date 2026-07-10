@@ -14,3 +14,7 @@ ImportError: /workspace/test_gather/gather_kv_wrapper.cpython-311-aarch64-linux-
 
 # 先看 torch_npu 的 lib 目录有什么
 ls /usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/lib/libtorch_npu*
+
+
+[root@mep-mirror-280t-ga-az5-turbo-86 test_gather]# ls /usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/lib/libtorch_npu*
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/lib/libtorch_npu.so
