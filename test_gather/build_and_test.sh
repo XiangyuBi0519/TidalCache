@@ -1,51 +1,38 @@
-#!/bin/bash
-# Build and test GatherSelectionKvCache operator wrapper
-# Run this on the NPU machine
+[root@mep-mirror-280t-ga-az5-turbo-86 test_gather]# export ASCEND_HOME_PATH=/usr/local/Ascend/cann-8.5.1 
+[root@mep-mirror-280t-ga-az5-turbo-86 test_gather]# export LD_LIBRARY_PATH=${ASCEND_HOME_PATH}/opp/vendors/customize/op_api/lib/:${LD_LIBRARY_PATH}
+[root@mep-mirror-280t-ga-az5-turbo-86 test_gather]# bash build_and_test.sh
+=== Environment ===
+ASCEND_HOME_PATH: /usr/local/Ascend/cann-8.5.1
+Python: Python 3.11.14
 
-set -e
+=== Checking prerequisites ===
+torch: 2.9.0+cpu
+torch_npu: 2.9.0.post1+gitee7ba04
+Custom op header: FOUND
+Custom op library: FOUND
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-cd "$SCRIPT_DIR"
+=== Building wrapper ===
+    self.build_extensions()
+  File "/usr/local/python3.11.14/lib/python3.11/site-packages/torch/utils/cpp_extension.py", line 1082, in build_extensions
+    build_ext.build_extensions(self)
+  File "/usr/local/python3.11.14/lib/python3.11/site-packages/setuptools/_distutils/command/build_ext.py", line 484, in build_extensions
+    self._build_extensions_serial()
+  File "/usr/local/python3.11.14/lib/python3.11/site-packages/setuptools/_distutils/command/build_ext.py", line 510, in _build_extensions_serial
+    self.build_extension(ext)
+  File "/usr/local/python3.11.14/lib/python3.11/site-packages/setuptools/command/build_ext.py", line 264, in build_extension
+    _build_ext.build_extension(self, ext)
+  File "/usr/local/python3.11.14/lib/python3.11/site-packages/setuptools/_distutils/command/build_ext.py", line 565, in build_extension
+    objects = self.compiler.compile(
+              ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.11.14/lib/python3.11/site-packages/torch/utils/cpp_extension.py", line 866, in unix_wrap_ninja_compile
+    _write_ninja_file_and_compile_objects(
+  File "/usr/local/python3.11.14/lib/python3.11/site-packages/torch/utils/cpp_extension.py", line 2223, in _write_ninja_file_and_compile_objects
+    _run_ninja_build(
+  File "/usr/local/python3.11.14/lib/python3.11/site-packages/torch/utils/cpp_extension.py", line 2614, in _run_ninja_build
+    raise RuntimeError(message) from e
+RuntimeError: Error compiling objects for extension
+[ERROR] 2026-07-10-15:05:00 (PID:2306, Device:-1, RankID:-1) ERR99999 UNKNOWN applicaiton exception
 
-# Set environment
-export ASCEND_HOME_PATH=${ASCEND_HOME_PATH:-/usr/local/Ascend/cann-8.5.1}
-export LD_LIBRARY_PATH=${ASCEND_HOME_PATH}/opp/vendors/customize/op_api/lib/:${ASCEND_HOME_PATH}/lib64/:${LD_LIBRARY_PATH}
-
-echo "=== Environment ==="
-echo "ASCEND_HOME_PATH: $ASCEND_HOME_PATH"
-echo "Python: $(python3 --version)"
-echo ""
-
-# Check prerequisites
-echo "=== Checking prerequisites ==="
-python3 -c "import torch; print(f'torch: {torch.__version__}')"
-python3 -c "import torch_npu; print(f'torch_npu: {torch_npu.__version__}')"
-
-CUSTOM_OP_HEADER="${ASCEND_HOME_PATH}/opp/vendors/customize/op_api/include/aclnn_gather_selection_kv_cache.h"
-if [ -f "$CUSTOM_OP_HEADER" ]; then
-    echo "Custom op header: FOUND"
-else
-    echo "ERROR: Custom op header not found at: $CUSTOM_OP_HEADER"
-    echo "Did you install the operator .run package?"
-    exit 1
-fi
-
-CUSTOM_OP_LIB="${ASCEND_HOME_PATH}/opp/vendors/customize/op_api/lib/libcust_opapi.so"
-if [ -f "$CUSTOM_OP_LIB" ]; then
-    echo "Custom op library: FOUND"
-else
-    echo "ERROR: Custom op library not found at: $CUSTOM_OP_LIB"
-    exit 1
-fi
-
-echo ""
-
-# Build
-echo "=== Building wrapper ==="
-python3 setup.py build_ext --inplace 2>&1 | tail -20
-
-echo ""
-
-# Test
-echo "=== Running tests ==="
-python3 test_gather_op.py
+=== Running tests ===
+ERROR: gather_kv_wrapper not found. Build first with:
+  python setup.py build_ext --inplace
