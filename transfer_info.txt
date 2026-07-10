@@ -1,2 +1,5 @@
-# 查找包含 aclCreateTensor 符号的库
-find /usr/local/Ascend/cann-8.5.1/lib64 -name "*.so" -exec sh -c 'nm -D "$1" 2>/dev/null | grep -q "aclCreateTensor" && echo "$1"' _ {} \;
+# 用更广的搜索
+find /usr/local/Ascend/cann-8.5.1 -name "*.so" 2>/dev/null | xargs grep -l "aclCreateTensor" 2>/dev/null | head -5
+
+# 或者直接看 lib64 下有哪些库
+ls /usr/local/Ascend/cann-8.5.1/lib64/*.so 2>/dev/null | head -20
