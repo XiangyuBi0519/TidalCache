@@ -1,25 +1,7 @@
-[root@mep-mirror-280t-ga-az5-turbo-86 cann-8.5.1]# cat /usr/local/Ascend/cann-8.5.1/version.cfg
-cat: /usr/local/Ascend/cann-8.5.1/version.cfg: No such file or directory
-[root@mep-mirror-280t-ga-az5-turbo-86 cann-8.5.1]# python3 -c "import torch_npu; print(torch_npu.__version__)"
-2.9.0.post1+gitee7ba04
-[root@mep-mirror-280t-ga-az5-turbo-86 cann-8.5.1]# grep -r "FLOAT8\|float8\|FP8" /usr/local/Ascend/cann-8.5.1/include/ | head -20
-/usr/local/Ascend/cann-8.5.1/include/aicpu/cpu_types.h:    DT_HIFLOAT8 = 34,       // hifloat8 type
-/usr/local/Ascend/cann-8.5.1/include/aicpu/cpu_types.h:    DT_FLOAT8_E5M2 = 35,     // float8_e5m2 type
-/usr/local/Ascend/cann-8.5.1/include/aicpu/cpu_types.h:    DT_FLOAT8_E4M3FN = 36,   // float8_e4m3fn type
-/usr/local/Ascend/cann-8.5.1/include/aicpu/cpu_types.h:    DT_FLOAT8_E8M0 = 37,     // float8_e8m0 type
-/usr/local/Ascend/cann-8.5.1/include/aicpu/cpu_types.h:        { DT_UINT2,   1},      { DT_INT4,   1},         { DT_COMPLEX32, 4 },      { DT_HIFLOAT8, 1},
-/usr/local/Ascend/cann-8.5.1/include/aicpu/cpu_types.h:        { DT_FLOAT8_E4M3FN, 1},{ DT_FLOAT8_E5M2, 1},    { DT_FLOAT4_E2M1, 1},     { DT_FLOAT4_E1M2, 1},
-/usr/local/Ascend/cann-8.5.1/include/aicpu/cpu_types.h:        { DT_FLOAT8_E8M0, 1}
-/usr/local/Ascend/cann-8.5.1/include/proto/ge_ir.proto:    DT_HIFLOAT8 = 33;          // hifloat8 type
-/usr/local/Ascend/cann-8.5.1/include/proto/ge_ir.proto:    DT_FLOAT8_E5M2 = 34;       // float8_e5m2 type
-/usr/local/Ascend/cann-8.5.1/include/proto/ge_ir.proto:    DT_FLOAT8_E4M3FN = 35;     // float8_e4m3fn type
-/usr/local/Ascend/cann-8.5.1/include/proto/ge_ir.proto:    DT_FLOAT8_E8M0 = 36;       // float8_e8m0 type
-/usr/local/Ascend/cann-8.5.1/include/proto/ge_onnx.proto:    // FP8 Formats for Deep Learning, https://arxiv.org/abs/2209.05433,
-/usr/local/Ascend/cann-8.5.1/include/proto/ge_onnx.proto:    // Operators supported FP8 are Cast, CastLike, QuantizeLinear, DequantizeLinear.
-/usr/local/Ascend/cann-8.5.1/include/proto/ge_onnx.proto:    FLOAT8E4M3FN = 17;    // float 8, mostly used for coefficients, supports nan, not inf
-/usr/local/Ascend/cann-8.5.1/include/proto/ge_onnx.proto:    FLOAT8E5M2 = 19;      // follows IEEE 754, supports nan, inf, mostly used for gradients
-/usr/local/Ascend/cann-8.5.1/include/graph/c_types.h:  C_DT_HIFLOAT8 = 34,        // hifloat8 type
-/usr/local/Ascend/cann-8.5.1/include/graph/c_types.h:  C_DT_FLOAT8_E5M2 = 35,     // float8_e5m2 type
-/usr/local/Ascend/cann-8.5.1/include/graph/c_types.h:  C_DT_FLOAT8_E4M3FN = 36,   // float8_e4m3fn type
-/usr/local/Ascend/cann-8.5.1/include/graph/c_types.h:  C_DT_FLOAT8_E8M0 = 37,     // float8_e8m0 type
-/usr/local/Ascend/cann-8.5.1/include/graph/types.h:  DT_HIFLOAT8 = ::C_DT_HIFLOAT8,
+[root@mep-mirror-280t-ga-az5-turbo-86 cann-8.5.1]# grep -r "ACL_FLOAT8\|ACL_FLOAT4" /usr/local/Ascend/cann-8.5.1/include/acl/ | head -10
+/usr/local/Ascend/cann-8.5.1/include/acl/acl_base_rt.h:  ACL_FLOAT8_E5M2 = 35,
+/usr/local/Ascend/cann-8.5.1/include/acl/acl_base_rt.h:  ACL_FLOAT8_E4M3FN = 36,
+/usr/local/Ascend/cann-8.5.1/include/acl/acl_base_rt.h:  ACL_FLOAT8_E8M0 = 37,
+/usr/local/Ascend/cann-8.5.1/include/acl/acl_base_rt.h:  ACL_FLOAT4_E2M1 = 40,
+/usr/local/Ascend/cann-8.5.1/include/acl/acl_base_rt.h:  ACL_FLOAT4_E1M2 = 41,
+[root@mep-mirror-280t-ga-az5-turbo-86 cann-8.5.1]# find / -name "ops_common.h" -path "*/torch_npu/*" 2>/dev/null
