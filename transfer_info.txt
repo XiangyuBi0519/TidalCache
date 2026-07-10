@@ -1,34 +1,5 @@
-[root@mep-mirror-280t-ga-az5-turbo-86 test_gather]# find /usr/local/Ascend -name "op_api_common*" 2>/dev/null
-find /usr/local/python3.11.14 -name "op_api_common*" 2>/dev/null
-[root@mep-mirror-280t-ga-az5-turbo-86 test_gather]# find /usr/local/Ascend/cann-8.5.1/opp -name "*.h" | head -30
-/usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_impl/ai_core/tbe/customize_impl/ascendc/gather_selection_kv_cache/gather_selection_kv_cache_split_bs_reuse_vec.h
-/usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_impl/ai_core/tbe/customize_impl/ascendc/gather_selection_kv_cache/gather_selection_kv_cache_split_bs_reuse.h
-/usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_impl/ai_core/tbe/customize_impl/ascendc/gather_selection_kv_cache/op_kernel/gather_selection_kv_cache_split_bs_reuse_vec.h
-/usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_impl/ai_core/tbe/customize_impl/ascendc/gather_selection_kv_cache/op_kernel/gather_selection_kv_cache_split_bs_reuse.h
-/usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_proto/inc/gather_selection_kv_cache_proto.h
-/usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_api/include/aclnn_gather_selection_kv_cache.h
-/usr/local/Ascend/cann-8.5.1/opp/built-in/op_impl/ai_core/tbe/impl/ops_oam/ascendc/detect_flash_attention_score/detect_flash_attention_var_len_score.h
-/usr/local/Ascend/cann-8.5.1/opp/built-in/op_impl/ai_core/tbe/impl/ops_oam/ascendc/detect_flash_attention_score/detect_flash_attention_score_s1_bn2gs1.h
-/usr/local/Ascend/cann-8.5.1/opp/built-in/op_impl/ai_core/tbe/impl/ops_oam/ascendc/detect_flash_attention_score/detect_flash_attention_score_s1s2_bn2gs1.h
-/usr/local/Ascend/cann-8.5.1/opp/built-in/op_impl/ai_core/tbe/impl/ops_oam/ascendc/detect_flash_attention_score/detect_flash_attention_score_empty_tensor.h
-/usr/local/Ascend/cann-8.5.1/opp/built-in/op_impl/ai_core/tbe/impl/ops_oam/ascendc/detect_flash_attention_score/detect_flash_attention_pse.h
-/usr/local/Ascend/cann-8.5.1/opp/built-in/op_impl/ai_core/tbe/impl/ops_oam/ascendc/detect_flash_attention_score/detect_flash_attention_score_bn2gs1s2_b.h
-/usr/local/Ascend/cann-8.5.1/opp/built-in/op_impl/ai_core/tbe/impl/ops_oam/ascendc/detect_flash_attention_score/detect_flash_attention_score_drop_mask_adapter.h
-/usr/local/Ascend/cann-8.5.1/opp/built-in/op_impl/ai_core/tbe/impl/ops_oam/ascendc/detect_flash_attention_score/detect_flash_attention_util.h
-/usr/local/Ascend/cann-8.5.1/opp/built-in/op_impl/ai_core/tbe/impl/ops_oam/ascendc/detect_flash_attention_score/detect_flash_attention_score_common.h
-/usr/local/Ascend/cann-8.5.1/opp/built-in/op_impl/ai_core/tbe/impl/ops_oam/ascendc/detect_flash_attention_score/detect_flash_attention_dropmask.h
-/usr/local/Ascend/cann-8.5.1/opp/built-in/op_impl/ai_core/tbe/impl/ops_oam/ascendc/detect_mat_mul/mat_mul_bl1_full_load_stress_detect.h
-/usr/local/Ascend/cann-8.5.1/opp/built-in/op_impl/ai_core/tbe/impl/ops_oam/ascendc/detect_mat_mul/mat_mul_optimized_fixpipe_algorithm_stress_detect.h
-/usr/local/Ascend/cann-8.5.1/opp/built-in/op_impl/ai_core/tbe/impl/ops_oam/ascendc/detect_mat_mul/mat_mul_block_stress_detect.h
-/usr/local/Ascend/cann-8.5.1/opp/built-in/op_impl/ai_core/tbe/impl/ops_oam/ascendc/detect_mat_mul/mat_mul_asw_kernel_stress_detect.h
-/usr/local/Ascend/cann-8.5.1/opp/built-in/op_impl/ai_core/tbe/impl/ops_oam/ascendc/detect_mat_mul/detect_mat_mul.h
-/usr/local/Ascend/cann-8.5.1/opp/built-in/op_impl/ai_core/tbe/impl/ops_oam/ascendc/detect_mat_mul/mat_mul_kernel_stress_detect.h
-/usr/local/Ascend/cann-8.5.1/opp/built-in/op_impl/ai_core/tbe/impl/ops_oam/ascendc/detect_mat_mul/mat_mul_nd2nz_stress_detect.h
-/usr/local/Ascend/cann-8.5.1/opp/built-in/op_impl/ai_core/tbe/impl/ops_oam/ascendc/detect_mat_mul/mat_mul_asw_block_stress_detect.h
-/usr/local/Ascend/cann-8.5.1/opp/built-in/op_impl/ai_core/tbe/impl/ops_oam/ascendc/detect_flash_attention_score_grad/detect_flash_attention_score_grad_sfmg.h
-/usr/local/Ascend/cann-8.5.1/opp/built-in/op_impl/ai_core/tbe/impl/ops_oam/ascendc/detect_flash_attention_score_grad/detect_flash_attention_score_grad_post.h
-/usr/local/Ascend/cann-8.5.1/opp/built-in/op_impl/ai_core/tbe/impl/ops_oam/ascendc/detect_flash_attention_score_grad/detect_flash_attention_score_grad_s1s2_bn2.h
-/usr/local/Ascend/cann-8.5.1/opp/built-in/op_impl/ai_core/tbe/impl/ops_oam/ascendc/detect_flash_attention_score_grad/detect_flash_attention_score_grad_empty_tensor.h
-/usr/local/Ascend/cann-8.5.1/opp/built-in/op_impl/ai_core/tbe/impl/ops_oam/ascendc/detect_flash_attention_score_grad/detect_flash_attention_score_grad_pre.h
-/usr/local/Ascend/cann-8.5.1/opp/built-in/op_impl/ai_core/tbe/impl/ops_oam/ascendc/detect_flash_attention_score_grad/detect_flash_attention_score_grad_bngs1s2_b.h
-[root@mep-mirror-280t-ga-az5-turbo-86 test_gather]# grep -rl "define EXEC_NPU_CMD\|define DO_COMPATIBILITY" /usr/local/Ascend/cann-8.5.1/opp/ 2>/dev/null | head -10
+# 看 torch_npu 的 include 目录结构
+find /usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include -name "*.h" | head -30
+
+# 看有没有 OpCommand 或 OpApiFunc 相关的头文件
+grep -rl "OpCommand\|OpApiFunc\|op_plugin\|OpPreparation" /usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/ 2>/dev/null | head -10
