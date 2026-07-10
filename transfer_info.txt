@@ -5,3 +5,6 @@
 /usr/local/Ascend/cann-8.5.1/include/acl/acl_base_rt.h:  ACL_FLOAT4_E2M1 = 40,
 /usr/local/Ascend/cann-8.5.1/include/acl/acl_base_rt.h:  ACL_FLOAT4_E1M2 = 41,
 [root@mep-mirror-280t-ga-az5-turbo-86 cann-8.5.1]# find / -name "ops_common.h" -path "*/torch_npu/*" 2>/dev/null
+
+
+find /var/lib/docker/gather_selection_kv_cache/cann-recipes-infer/ -name "ops_common.h" 2>/dev/null
