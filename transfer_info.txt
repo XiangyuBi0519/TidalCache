@@ -1,41 +1,10 @@
-[root@mep-mirror-280t-ga-az5-turbo-86 test_gather]# python3 setup.py build_ext --inplace 2>&1 | head -40
+[root@mep-mirror-280t-ga-az5-turbo-86 test_gather]# python3 setup.py build_ext --inplace 2>&1 | tail -10
 Include dirs: ['/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include', '/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc', '/usr/local/Ascend/cann-8.5.1/include', '/usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_api/include']
 Library dirs: ['/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/lib', '/usr/local/Ascend/cann-8.5.1/lib64', '/usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_api/lib']
 running build_ext
 building 'gather_kv_wrapper' extension
-[1/1] c++ -MMD -MF /workspace/test_gather/build/temp.linux-aarch64-cpython-311/gather_wrapper.o.d -Wsign-compare -DNDEBUG -g -fwrapv -O3 -Wall -fPIC -I/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include -I/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/third_party/acl/inc -I/usr/local/Ascend/cann-8.5.1/include -I/usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_api/include -I/usr/local/python3.11.14/lib/python3.11/site-packages/torch/include -I/usr/local/python3.11.14/lib/python3.11/site-packages/torch/include/torch/csrc/api/include -I/usr/local/python3.11.14/include/python3.11 -c -c /workspace/test_gather/gather_wrapper.cpp -o /workspace/test_gather/build/temp.linux-aarch64-cpython-311/gather_wrapper.o -std=c++17 -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=gather_kv_wrapper
-In file included from /usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/NPUStream.h:10,
-                 from /workspace/test_gather/gather_wrapper.cpp:2:
-/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/NPUException.h:86:20: warning: ‘std::string getCurrentTimestamp()’ declared ‘static’ but never defined [-Wunused-function]
-   86 | static std::string getCurrentTimestamp();
-      |                    ^~~~~~~~~~~~~~~~~~~
-In file included from /usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/npu_log.h:7,
-                 from /usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/NPUException.h:21:
-/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/register/OptionsManager.h:87:49: warning: ‘std::unordered_map<int, std::__cxx11::basic_string<char> > c10_npu::option::getAclOpInitMode()’ defined but not used [-Wunused-function]
-   87 | static std::unordered_map<int32_t, std::string> getAclOpInitMode()
-      |                                                 ^~~~~~~~~~~~~~~~
-/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/register/OptionsManager.h:81:49: warning: ‘std::unordered_map<int, std::__cxx11::basic_string<char> > c10_npu::option::getTaskQueueEnableMode()’ defined but not used [-Wunused-function]
-   81 | static std::unordered_map<int32_t, std::string> getTaskQueueEnableMode()
-      |                                                 ^~~~~~~~~~~~~~~~~~~~~~
-/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/register/OptionsManager.h:75:49: warning: ‘std::unordered_map<int, std::__cxx11::basic_string<char> > c10_npu::option::getMemoryCacheMode()’ defined but not used [-Wunused-function]
-   75 | static std::unordered_map<int32_t, std::string> getMemoryCacheMode()
-      |                                                 ^~~~~~~~~~~~~~~~~~
-/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/register/OptionsManager.h:69:49: warning: ‘std::unordered_map<int, std::__cxx11::basic_string<char> > c10_npu::option::getLogLevelMode()’ defined but not used [-Wunused-function]
-   69 | static std::unordered_map<int32_t, std::string> getLogLevelMode()
-      |                                                 ^~~~~~~~~~~~~~~
-/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/register/OptionsManager.h:63:49: warning: ‘std::unordered_map<int, std::__cxx11::basic_string<char> > c10_npu::option::getDesyncDebugMode()’ defined but not used [-Wunused-function]
-   63 | static std::unordered_map<int32_t, std::string> getDesyncDebugMode()
-      |                                                 ^~~~~~~~~~~~~~~~~~
-/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/register/OptionsManager.h:57:49: warning: ‘std::unordered_map<int, std::__cxx11::basic_string<char> > c10_npu::option::getAsyncErrorHandlingMode()’ defined but not used [-Wunused-function]
-   57 | static std::unordered_map<int32_t, std::string> getAsyncErrorHandlingMode()
-      |                                                 ^~~~~~~~~~~~~~~~~~~~~~~~~
-/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/register/OptionsManager.h:51:49: warning: ‘std::unordered_map<int, std::__cxx11::basic_string<char> > c10_npu::option::getLaunchBlockingMode()’ defined but not used [-Wunused-function]
-   51 | static std::unordered_map<int32_t, std::string> getLaunchBlockingMode()
-      |                                                 ^~~~~~~~~~~~~~~~~~~~~
-/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/register/OptionsManager.h:45:49: warning: ‘std::unordered_map<int, std::__cxx11::basic_string<char> > c10_npu::option::getCombinedEnableMode()’ defined but not used [-Wunused-function]
-   45 | static std::unordered_map<int32_t, std::string> getCombinedEnableMode()
-      |                                                 ^~~~~~~~~~~~~~~~~~~~~
-/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/register/OptionsManager.h:39:49: warning: ‘std::unordered_map<int, std::__cxx11::basic_string<char> > c10_npu::option::getDisableInfNanMode()’ defined but not used [-Wunused-function]
-   39 | static std::unordered_map<int32_t, std::string> getDisableInfNanMode()
-      |                                                 ^~~~~~~~~~~~~~~~~~~~
-/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/include/torch_npu/csrc/core/npu/register/OptionsManager.h:33:49: warning: ‘std::unordered_map<int, std::__cxx11::basic_string<char> > c10_npu::option::getInfNanMode()’ defined but not used [-Wunused-function]
+ninja: no work to do.
+g++ -Wsign-compare -DNDEBUG -g -fwrapv -O3 -Wall -shared /workspace/test_gather/build/temp.linux-aarch64-cpython-311/gather_wrapper.o -L/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/lib -L/usr/local/Ascend/cann-8.5.1/lib64 -L/usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_api/lib -L/usr/local/python3.11.14/lib/python3.11/site-packages/torch/lib -L/usr/local/python3.11.14/lib -lcust_opapi -lnnopbase -lascendcl -lc10 -ltorch -ltorch_cpu -ltorch_python -o build/lib.linux-aarch64-cpython-311/gather_kv_wrapper.cpython-311-aarch64-linux-gnu.so
+copying build/lib.linux-aarch64-cpython-311/gather_kv_wrapper.cpython-311-aarch64-linux-gnu.so -> 
+[root@mep-mirror-280t-ga-az5-turbo-86 test_gather]# ls -la /workspace/test_gather/*.so
+-rwxr-xr-x 1 root root 10070320 Jul 10 15:47 /workspace/test_gather/gather_kv_wrapper.cpython-311-aarch64-linux-gnu.so
