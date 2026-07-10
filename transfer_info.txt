@@ -1,8 +1,4 @@
-# CANN built-in op_api 目录
-find /usr/local/Ascend/cann-8.5.1/opp/built-in/op_api -name "*.h" 2>/dev/null | head -20
-
-# 直接在整个 Ascend 目录搜 EXEC_NPU_CMD
-grep -rl "EXEC_NPU_CMD" /usr/local/Ascend/cann-8.5.1/ 2>/dev/null | head -10
-
-# 在 torch_npu 里搜
-grep -rl "EXEC_NPU_CMD" /usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/ 2>/dev/null | head -10
+[root@mep-mirror-280t-ga-az5-turbo-86 test_gather]# find /usr/local/Ascend/cann-8.5.1/opp/built-in/op_api -name "*.h" 2>/dev/null | head -20
+[root@mep-mirror-280t-ga-az5-turbo-86 test_gather]# grep -rl "EXEC_NPU_CMD" /usr/local/Ascend/cann-8.5.1/ 2>/dev/null | head -10
+[root@mep-mirror-280t-ga-az5-turbo-86 test_gather]# grep -rl "EXEC_NPU_CMD" /usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/ 2>/dev/null | head -10
+/usr/local/python3.11.14/lib/python3.11/site-packages/torch_npu/lib/libtorch_npu.so
