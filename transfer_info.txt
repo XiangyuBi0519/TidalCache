@@ -3,3 +3,11 @@ find /usr/local/Ascend/cann-8.5.1/opp -path "*/op_api/lib*" -name "*.so" 2>/dev/
 
 # 也检查一下 libascendcl 或 libopapi
 ls /usr/local/Ascend/cann-8.5.1/lib64/libascendcl* /usr/local/Ascend/cann-8.5.1/lib64/libopapi* /usr/local/Ascend/cann-8.5.1/lib64/libaclnn* 2>/dev/null
+
+
+[root@mep-mirror-280t-ga-az5-turbo-86 test_gather]# find /usr/local/Ascend/cann-8.5.1/opp -path "*/op_api/lib*" -name "*.so" 2>/dev/null
+/usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_api/lib/libcust_opapi.so
+/usr/local/Ascend/cann-8.5.1/opp/built-in/op_impl/ai_core/tbe/op_api/lib/linux/aarch64/libopapi.so
+[root@mep-mirror-280t-ga-az5-turbo-86 test_gather]# ls /usr/local/Ascend/cann-8.5.1/lib64/libascendcl* /usr/local/Ascend/cann-8.5.1/lib64/libopapi* /usr/local/Ascend/cann-8.5.1/lib64/libaclnn* 2>/dev/null
+ /usr/local/Ascend/cann-8.5.1/lib64/libascendcl.so   /usr/local/Ascend/cann-8.5.1/lib64/libopapi_cv.so     /usr/local/Ascend/cann-8.5.1/lib64/libopapi_nn.so    /usr/local/Ascend/cann-8.5.1/lib64/libopapi_transformer.so
+ /usr/local/Ascend/cann-8.5.1/lib64/libopapi.so      /usr/local/Ascend/cann-8.5.1/lib64/libopapi_math.so   /usr/local/Ascend/cann-8.5.1/lib64/libopapi_oam.so
