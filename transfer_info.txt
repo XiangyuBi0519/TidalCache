@@ -1,75 +1,25 @@
-[root@mep-mirror-280t-ga-az5-turbo-86 workspace]# vim test.py 
-[root@mep-mirror-280t-ga-az5-turbo-86 workspace]# python test.py 
-['ErrCode', 'Format', 'ORG_AUTOLOAD', 'ParallelStore', '_C', '_ShardedGradScaler', '__all__', '__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__', '__package__', '__path__', '__spec__', '__version__', '_add_collect_env_methods', '_add_intercept_methods', '_add_reductions_methods', '_add_serialization_methods', '_add_storage_methods', '_add_tensor_methods', '_afd', '_amp_foreach_non_finite_check', '_apply_class_patches', '_apply_distributed_methods_patch', '_apply_dlpack_patch', '_apply_fsdp_patch', '_apply_module_patch', '_apply_mstx_patch', '_apply_npu_format_patch', '_apply_npu_show_warning', '_apply_npugraph_tree_methods', '_apply_patches', '_apply_sharded_grad_scaler_patch', '_asd_patch', '_autoload', '_cann_package_check', '_compiler', '_conv_depthwise2d_backward', '_dropout_with_byte_mask', '_dropout_with_byte_mask_backward', '_dynamo_register_interface_for_device', '_except_handler', '_inductor_register_device_op_overrides', '_logging', '_meta_registrations', '_new_process_group_hccl_helper', '_new_process_group_lccl_helper', '_npu_ciou', '_npu_distribute_barrier', '_npu_dropout', '_npu_dropout_gen_mask', '_npu_dtype_cast', '_npu_dtype_cast_backward', '_npu_flash_attention', '_npu_flash_attention_qlens', '_npu_flash_attention_unpad', '_npu_format_cast', '_npu_fused_infer_attention_score_get_max_workspace', '_npu_fused_infer_attention_score_infer_output', '_npu_fused_infer_attention_score_v2_get_max_workspace', '_npu_fused_infer_attention_score_v2_infer_output', '_npu_group_topk', '_npu_index_add', '_npu_index_add_', '_npu_matmul_add_fp32', '_npu_moe_token_unpermute_with_routing_map', '_npu_paged_attention', '_npu_paged_attention_get_workspace', '_npu_paged_attention_mla', '_npu_paged_attention_quant', '_npu_paged_attention_splitfuse', '_npu_quant_rms_norm', '_npu_quantize_per_tensor', '_npu_reshape_and_cache', '_npu_reshape_and_cache_siso', '_npu_rotary_embedding', '_npu_shutdown', '_npu_silent_check', '_npu_silent_check_v2', '_npu_silent_check_v3', '_patch_npu_trace_rules', '_quantize_per_channel_impl', '_quantize_per_tensor_impl', '_register_distributed_backend_for_npu', '_register_ops_under_dtensor_rules', '_rpc_backend_registry', '_warn_msg', '_wrap_torch_error_func', '_wrap_torch_patch_warning_func', 'acc', 'add_dynamo_methods', 'add_optim_method', 'add_perf_dump_patch', 'all_monkey_patches', 'asd', 'atb', 'atexit', 'attention_worker_scheduler', 'attention_worker_scheduler_', 'batch_norm_gather_stats_update', 'batch_norm_reduce', 'contrib', 'copy_memory_', 'ctypes', 'distributed', 'dropout_with_byte_mask', 'dynamo', 'empty_with_format', 'empty_with_swapped_memory', 'erase_stream', 'fast_gelu', 'ffn_worker_scheduler', 'ffn_worker_scheduler_', 'fft_c2r_backward', 'fft_r2c_backward', 'fused_cross_entropy_loss_with_max_sum', 'fused_linear_cross_entropy_loss_with_max_sum_grad', 'fused_linear_online_max_sum', 'get_npu_format', 'get_storage_size', 'kl_div_backward', 'l1_loss_backward', 'matmul_checksum', 'matmul_double_backward', 'multiprocessing', 'name', 'npu', 'npu_add_layer_norm', 'npu_add_layer_norm_backward', 'npu_add_rms_norm', 'npu_add_rms_norm_cast', 'npu_add_rms_norm_dynamic_quant', 'npu_add_rms_norm_quant', 'npu_advance_step_flashattn', 'npu_all_gather_base_mm', 'npu_alloc_float_status', 'npu_alltoallv_gmm', 'npu_anchor_response_flags', 'npu_anti_quant', 'npu_apply_adam', 'npu_apply_adam_w', 'npu_apply_rotary_pos_emb', 'npu_attention_update', 'npu_attention_worker_combine', 'npu_attn_softmax_', 'npu_attn_softmax_backward_', 'npu_batch_gather_matmul', 'npu_batch_gather_matmul_', 'npu_batch_nms', 'npu_bert_apply_adam', 'npu_binary_cross_entropy_with_logits_backward', 'npu_bmmV2', 'npu_bmm_v2_mat1_backward', 'npu_bmm_v2_mat2_backward', 'npu_bounding_box_decode', 'npu_bounding_box_encode', 'npu_broadcast', 'npu_change_data_ptr', 'npu_ciou', 'npu_ciou_backward', 'npu_clear_float_status', 'npu_clipped_swiglu', 'npu_confusion_transpose', 'npu_confusion_transpose_backward', 'npu_conv2d', 'npu_conv2d_backward', 'npu_conv3d', 'npu_conv3d_backward', 'npu_conv_transpose2d', 'npu_conv_transpose2d_backward', 'npu_conv_transpose3d_backward', 'npu_convert_weight_to_int4pack', 'npu_convolution', 'npu_convolution_backward', 'npu_convolution_transpose', 'npu_convolution_transpose_backward', 'npu_cross_entropy_loss', 'npu_cross_entropy_loss_backward', 'npu_deep_norm', 'npu_deep_norm_backward', 'npu_deformable_conv2d', 'npu_deformable_conv2dbk', 'npu_dequant_bias', 'npu_dequant_rope_quant_kvcache', 'npu_dequant_swiglu_quant', 'npu_diou', 'npu_diou_backward', 'npu_dropout_backward', 'npu_dropout_do_mask', 'npu_dropout_gen_mask', 'npu_dropout_with_add_softmax', 'npu_dropout_with_add_softmax_backward', 'npu_dtype_cast', 'npu_dtype_cast_', 'npu_dtype_cast_backward', 'npu_dynamic_block_quant', 'npu_dynamic_quant', 'npu_dynamic_quant_asymmetric', 'npu_fast_gelu', 'npu_fast_gelu_backward', 'npu_ffn', 'npu_ffn_worker_batching', 'npu_format_cast', 'npu_format_cast_', 'npu_functional', 'npu_fused_attention_layernorm_qkv_fwd', 'npu_fused_attention_qkv_grad', 'npu_fused_attention_score', 'npu_fused_attention_score_backward', 'npu_fused_attention_score_fwd', 'npu_fused_attention_score_grad', 'npu_fused_infer_attention_score', 'npu_fused_infer_attention_score_v2', 'npu_fusion_attention', 'npu_fusion_attention_grad', 'npu_fusion_attention_grad_v2', 'npu_fusion_attention_v2', 'npu_gather_backward', 'npu_gather_sparse_index', 'npu_gather_sparse_index_backward', 'npu_geglu', 'npu_geglu_grad', 'npu_gelu', 'npu_gelu_backward', 'npu_gelu_mul', 'npu_gemma_rms_norm', 'npu_get_float_status', 'npu_giou', 'npu_giou_backward', 'npu_gmm_alltoallv', 'npu_grid_assign_positive', 'npu_group_norm_silu', 'npu_group_norm_swish', 'npu_group_norm_swish_grad', 'npu_group_quant', 'npu_grouped_matmul', 'npu_grouped_matmul_add', 'npu_grouped_matmul_add_', 'npu_grouped_matmul_finalize_routing', 'npu_grouped_matmul_swiglu_quant', 'npu_grouped_matmul_swiglu_quant_v2', 'npu_gru', 'npu_gru_backward', 'npu_hans_decode', 'npu_hans_encode', 'npu_ifmr', 'npu_incre_flash_attention', 'npu_indexing', 'npu_interleave_rope', 'npu_iou', 'npu_kronecker_quant', 'npu_kv_quant_sparse_flash_attention', 'npu_kv_rmsnorm_rope_cache', 'npu_kv_rmsnorm_rope_cache_v2', 'npu_kv_rmsnorm_rope_cache_v2_functional', 'npu_layer_norm_eval', 'npu_layernorm_grad', 'npu_lightning_indexer', 'npu_lightning_indexer_grad', 'npu_linear', 'npu_linear_backward', 'npu_lstm', 'npu_lstm_backward', 'npu_lstm_cell', 'npu_lstm_cell_backward', 'npu_lstm_data', 'npu_lstm_data_backward', 'npu_masked_fill_range', 'npu_masked_softmax_with_rel_pos_bias', 'npu_max', 'npu_max_backward', 'npu_min', 'npu_min_backward', 'npu_mish', 'npu_mish_backward', 'npu_mla_prolog', 'npu_mla_prolog_v2', 'npu_mla_prolog_v3', 'npu_mla_prolog_v3_functional', 'npu_mm_all_reduce_base', 'npu_mm_reduce_scatter_base', 'npu_modules', 'npu_moe_compute_expert_tokens', 'npu_moe_distribute_combine', 'npu_moe_distribute_combine_add_rms_norm', 'npu_moe_distribute_combine_v2', 'npu_moe_distribute_dispatch', 'npu_moe_distribute_dispatch_v2', 'npu_moe_finalize_routing', 'npu_moe_gating_top_k', 'npu_moe_gating_top_k_softmax', 'npu_moe_init_routing', 'npu_moe_init_routing_quant', 'npu_moe_init_routing_v2', 'npu_moe_re_routing', 'npu_moe_token_permute', 'npu_moe_token_permute_grad', 'npu_moe_token_permute_with_routing_map', 'npu_moe_token_permute_with_routing_map_grad', 'npu_moe_token_unpermute', 'npu_moe_token_unpermute_grad', 'npu_moe_token_unpermute_with_routing_map', 'npu_moe_token_unpermute_with_routing_map_grad', 'npu_moe_update_expert', 'npu_mrope', 'npu_multi_head_attention', 'npu_multi_head_attention_backward', 'npu_nms_rotated', 'npu_nms_v4', 'npu_nms_with_mask', 'npu_normalize_batch', 'npu_nsa_compress', 'npu_nsa_compress_attention', 'npu_nsa_compress_attention_infer', 'npu_nsa_compress_grad', 'npu_nsa_compress_infer', 'npu_nsa_select_attention', 'npu_nsa_select_attention_grad', 'npu_nsa_select_attention_infer', 'npu_one_hot', 'npu_pad', 'npu_prefetch', 'npu_prompt_flash_attention', 'npu_ps_roi_pooling', 'npu_ps_roi_pooling_backward', 'npu_ptiou', 'npu_quant_conv2d', 'npu_quant_grouped_matmul_dequant', 'npu_quant_lightning_indexer', 'npu_quant_matmul', 'npu_quant_matmul_dequant', 'npu_quant_matmul_reduce_sum', 'npu_quant_scatter', 'npu_quant_scatter_', 'npu_quantize', 'npu_random_choice_with_mask', 'npu_recurrent_gated_delta_rule', 'npu_recurrent_gated_delta_rule_functional', 'npu_reshape', 'npu_rms_norm', 'npu_rms_norm_backward', 'npu_rms_norm_quant', 'npu_roi_align', 'npu_roi_alignbk', 'npu_rope_quant_kvcache', 'npu_rotary_mul', 'npu_rotary_mul_backward', 'npu_rotated_box_decode', 'npu_rotated_box_encode', 'npu_rotated_iou', 'npu_rotated_overlaps', 'npu_scaled_masked_softmax', 'npu_scaled_masked_softmax_backward', 'npu_scatter', 'npu_scatter_list', 'npu_scatter_list_', 'npu_scatter_nd_update', 'npu_scatter_nd_update_', 'npu_scatter_pa_kv_cache', 'npu_scatter_pa_kv_cache_functional', 'npu_sign_bits_pack', 'npu_sign_bits_unpack', 'npu_silu', 'npu_silu_', 'npu_silu_backward', 'npu_sim_exponential_', 'npu_slice', 'npu_softmax_cross_entropy_with_logits', 'npu_softmax_cross_entropy_with_logits_backward', 'npu_sort_v2', 'npu_sparse_flash_attention', 'npu_sparse_flash_attention_grad', 'npu_sparse_lightning_indexer_grad_kl_loss', 'npu_stride_add', 'npu_stride_copy', 'npu_sub_sample', 'npu_swiglu', 'npu_swiglu_backward', 'npu_swiglu_quant', 'npu_top_k_top_p', 'npu_top_k_top_p_sample', 'npu_trans_quant_param', 'npu_transpose', 'npu_transpose_batchmatmul', 'npu_view_copy', 'npu_weight_quant_batchmatmul', 'npu_yolo_boxes_encode', 'obfuscation_calculate', 'obfuscation_finalize', 'obfuscation_initialize', 'one_', 'op_plugin', 'optim', 'os', 'profiler', 'pta_error', 'public_npu_functions', 'repeat_interleave_backward_int', 'repeat_interleave_backward_tensor', 'scatter_update', 'scatter_update_', 'sharded_grad_scaler', 'slow_conv_dilated2d_backward', 'slow_conv_transpose2d_backward', 'stft_backward', 'sys', 'torch', 'torch_npu', 'traceback', 'types', 'unsafe_empty_with_format', 'unsupported_dtype', 'utils', 'version', 'warnings', 'wraps']
-[root@mep-mirror-280t-ga-az5-turbo-86 workspace]# cat /usr/local/Ascend/cann-8.5.1/opp/vendors/customize/op_api/include/aclnn_gather_selection_kv_cache.h 
-
-/*
- * calution: this file was generated automaticlly donot change it.
-*/
-
-#ifndef ACLNN_GATHER_SELECTION_KV_CACHE_H_
-#define ACLNN_GATHER_SELECTION_KV_CACHE_H_
-
-#include "aclnn/acl_meta.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/* funtion: aclnnGatherSelectionKvCacheGetWorkspaceSize
- * parameters :
- * selectionKRopeRef : required
- * selectionKvCacheRef : required
- * selectionKvBlockTableRef : required
- * selectionKvBlockStatusRef : required
- * selectionTopkIndices : required
- * fullKRope : required
- * fullKvCache : required
- * fullKvBlockTable : required
- * fullKvActualSeq : required
- * fullQActualSeq : required
- * selectionTopkBlockSize : optional
- * selectionKRopeRef : required
- * selectionKvCacheRef : required
- * selectionKvBlockTableRef : required
- * selectionKvBlockStatusRef : required
- * selectionKvActualSeqOut : required
- * workspaceSize : size of workspace(output).
- * executor : executor context(output).
- */
-__attribute__((visibility("default")))
-aclnnStatus aclnnGatherSelectionKvCacheGetWorkspaceSize(
-    aclTensor *selectionKRopeRef,
-    aclTensor *selectionKvCacheRef,
-    aclTensor *selectionKvBlockTableRef,
-    aclTensor *selectionKvBlockStatusRef,
-    const aclTensor *selectionTopkIndices,
-    const aclTensor *fullKRope,
-    const aclTensor *fullKvCache,
-    const aclTensor *fullKvBlockTable,
-    const aclTensor *fullKvActualSeq,
-    const aclTensor *fullQActualSeq,
-    int64_t selectionTopkBlockSize,
-    const aclTensor *selectionKvActualSeqOut,
-    uint64_t *workspaceSize,
-    aclOpExecutor **executor);
-
-/* funtion: aclnnGatherSelectionKvCache
- * parameters :
- * workspace : workspace memory addr(input).
- * workspaceSize : size of workspace(input).
- * executor : executor context(input).
- * stream : acl stream.
- */
-__attribute__((visibility("default")))
-aclnnStatus aclnnGatherSelectionKvCache(
-    void *workspace,
-    uint64_t workspaceSize,
-    aclOpExecutor *executor,
-    aclrtStream stream);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
+[root@mep-mirror-280t-ga-az5-turbo-86 cann-8.5.1]# cat /usr/local/Ascend/cann-8.5.1/version.cfg
+cat: /usr/local/Ascend/cann-8.5.1/version.cfg: No such file or directory
+[root@mep-mirror-280t-ga-az5-turbo-86 cann-8.5.1]# python3 -c "import torch_npu; print(torch_npu.__version__)"
+2.9.0.post1+gitee7ba04
+[root@mep-mirror-280t-ga-az5-turbo-86 cann-8.5.1]# grep -r "FLOAT8\|float8\|FP8" /usr/local/Ascend/cann-8.5.1/include/ | head -20
+/usr/local/Ascend/cann-8.5.1/include/aicpu/cpu_types.h:    DT_HIFLOAT8 = 34,       // hifloat8 type
+/usr/local/Ascend/cann-8.5.1/include/aicpu/cpu_types.h:    DT_FLOAT8_E5M2 = 35,     // float8_e5m2 type
+/usr/local/Ascend/cann-8.5.1/include/aicpu/cpu_types.h:    DT_FLOAT8_E4M3FN = 36,   // float8_e4m3fn type
+/usr/local/Ascend/cann-8.5.1/include/aicpu/cpu_types.h:    DT_FLOAT8_E8M0 = 37,     // float8_e8m0 type
+/usr/local/Ascend/cann-8.5.1/include/aicpu/cpu_types.h:        { DT_UINT2,   1},      { DT_INT4,   1},         { DT_COMPLEX32, 4 },      { DT_HIFLOAT8, 1},
+/usr/local/Ascend/cann-8.5.1/include/aicpu/cpu_types.h:        { DT_FLOAT8_E4M3FN, 1},{ DT_FLOAT8_E5M2, 1},    { DT_FLOAT4_E2M1, 1},     { DT_FLOAT4_E1M2, 1},
+/usr/local/Ascend/cann-8.5.1/include/aicpu/cpu_types.h:        { DT_FLOAT8_E8M0, 1}
+/usr/local/Ascend/cann-8.5.1/include/proto/ge_ir.proto:    DT_HIFLOAT8 = 33;          // hifloat8 type
+/usr/local/Ascend/cann-8.5.1/include/proto/ge_ir.proto:    DT_FLOAT8_E5M2 = 34;       // float8_e5m2 type
+/usr/local/Ascend/cann-8.5.1/include/proto/ge_ir.proto:    DT_FLOAT8_E4M3FN = 35;     // float8_e4m3fn type
+/usr/local/Ascend/cann-8.5.1/include/proto/ge_ir.proto:    DT_FLOAT8_E8M0 = 36;       // float8_e8m0 type
+/usr/local/Ascend/cann-8.5.1/include/proto/ge_onnx.proto:    // FP8 Formats for Deep Learning, https://arxiv.org/abs/2209.05433,
+/usr/local/Ascend/cann-8.5.1/include/proto/ge_onnx.proto:    // Operators supported FP8 are Cast, CastLike, QuantizeLinear, DequantizeLinear.
+/usr/local/Ascend/cann-8.5.1/include/proto/ge_onnx.proto:    FLOAT8E4M3FN = 17;    // float 8, mostly used for coefficients, supports nan, not inf
+/usr/local/Ascend/cann-8.5.1/include/proto/ge_onnx.proto:    FLOAT8E5M2 = 19;      // follows IEEE 754, supports nan, inf, mostly used for gradients
+/usr/local/Ascend/cann-8.5.1/include/graph/c_types.h:  C_DT_HIFLOAT8 = 34,        // hifloat8 type
+/usr/local/Ascend/cann-8.5.1/include/graph/c_types.h:  C_DT_FLOAT8_E5M2 = 35,     // float8_e5m2 type
+/usr/local/Ascend/cann-8.5.1/include/graph/c_types.h:  C_DT_FLOAT8_E4M3FN = 36,   // float8_e4m3fn type
+/usr/local/Ascend/cann-8.5.1/include/graph/c_types.h:  C_DT_FLOAT8_E8M0 = 37,     // float8_e8m0 type
+/usr/local/Ascend/cann-8.5.1/include/graph/types.h:  DT_HIFLOAT8 = ::C_DT_HIFLOAT8,
