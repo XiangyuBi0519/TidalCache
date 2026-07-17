@@ -1,567 +1,234 @@
-(EngineCore pid=138789) INFO 07-17 10:06:29 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=8192, running=0, waiting=1, max_num_running_reqs=10
-(EngineCore pid=138789) INFO 07-17 10:06:29 [scheduler.py:565] [PCP-DEBUG] waiting scheduling: token_budget=8192, running=0/10, waiting=1
-(EngineCore pid=138789) INFO 07-17 10:06:29 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=8192, running=1, waiting=0, max_num_running_reqs=10
-(Worker_PCP0_TP0 pid=138816) ERROR 07-17 10:06:29 [multiproc_executor.py:962] WorkerProc hit an exception.
-(Worker_PCP0_TP0 pid=138816) ERROR 07-17 10:06:29 [multiproc_executor.py:962] Traceback (most recent call last):
-(Worker_PCP0_TP0 pid=138816) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
-(Worker_PCP0_TP0 pid=138816) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = func(*args, **kwargs)
-(Worker_PCP0_TP0 pid=138816) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP0 pid=138816) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
-(Worker_PCP0_TP0 pid=138816) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
-(Worker_PCP0_TP0 pid=138816) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP0 pid=138816) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
-(Worker_PCP0_TP0 pid=138816) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
-(Worker_PCP0_TP0 pid=138816) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP0 pid=138816) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
-(Worker_PCP0_TP0 pid=138816) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return func(*args, **kwargs)
-(Worker_PCP0_TP0 pid=138816) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP0 pid=138816) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
-(Worker_PCP0_TP0 pid=138816) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
-(Worker_PCP0_TP0 pid=138816) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     ^^^^^^^^^
-(Worker_PCP0_TP0 pid=138816) ERROR 07-17 10:06:29 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
-(Worker_PCP0_TP0 pid=138816) ERROR 07-17 10:06:29 [multiproc_executor.py:962] Traceback (most recent call last):
-(Worker_PCP0_TP0 pid=138816) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
-(Worker_PCP0_TP0 pid=138816) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = func(*args, **kwargs)
-(Worker_PCP0_TP0 pid=138816) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP0 pid=138816) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
-(Worker_PCP0_TP0 pid=138816) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
-(Worker_PCP0_TP0 pid=138816) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP0 pid=138816) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
-(Worker_PCP0_TP0 pid=138816) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
-(Worker_PCP0_TP0 pid=138816) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP0 pid=138816) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
-(Worker_PCP0_TP0 pid=138816) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return func(*args, **kwargs)
-(Worker_PCP0_TP0 pid=138816) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP0 pid=138816) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
-(Worker_PCP0_TP0 pid=138816) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
-(Worker_PCP0_TP0 pid=138816) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     ^^^^^^^^^
-(Worker_PCP0_TP0 pid=138816) ERROR 07-17 10:06:29 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
-(Worker_PCP0_TP0 pid=138816) ERROR 07-17 10:06:29 [multiproc_executor.py:962] 
-(Worker_PCP2_TP3 pid=139375) ERROR 07-17 10:06:29 [multiproc_executor.py:962] WorkerProc hit an exception.
-(Worker_PCP2_TP3 pid=139375) ERROR 07-17 10:06:29 [multiproc_executor.py:962] Traceback (most recent call last):
-(Worker_PCP2_TP3 pid=139375) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
-(Worker_PCP2_TP3 pid=139375) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = func(*args, **kwargs)
-(Worker_PCP2_TP3 pid=139375) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP2_TP3 pid=139375) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
-(Worker_PCP2_TP3 pid=139375) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
-(Worker_PCP2_TP3 pid=139375) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP2_TP3 pid=139375) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
-(Worker_PCP2_TP3 pid=139375) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
-(Worker_PCP2_TP3 pid=139375) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP2_TP3 pid=139375) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
-(Worker_PCP2_TP3 pid=139375) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return func(*args, **kwargs)
-(Worker_PCP2_TP3 pid=139375) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP2_TP3 pid=139375) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
-(Worker_PCP2_TP3 pid=139375) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
-(Worker_PCP2_TP3 pid=139375) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     ^^^^^^^^^
-(Worker_PCP2_TP3 pid=139375) ERROR 07-17 10:06:29 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
-(Worker_PCP2_TP3 pid=139375) ERROR 07-17 10:06:29 [multiproc_executor.py:962] Traceback (most recent call last):
-(Worker_PCP2_TP3 pid=139375) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
-(Worker_PCP2_TP3 pid=139375) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = func(*args, **kwargs)
-(Worker_PCP2_TP3 pid=139375) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP2_TP3 pid=139375) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
-(Worker_PCP2_TP3 pid=139375) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
-(Worker_PCP2_TP3 pid=139375) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP2_TP3 pid=139375) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
-(Worker_PCP2_TP3 pid=139375) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
-(Worker_PCP2_TP3 pid=139375) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP2_TP3 pid=139375) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
-(Worker_PCP2_TP3 pid=139375) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return func(*args, **kwargs)
-(Worker_PCP2_TP3 pid=139375) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP2_TP3 pid=139375) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
-(Worker_PCP2_TP3 pid=139375) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
-(Worker_PCP2_TP3 pid=139375) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     ^^^^^^^^^
-(Worker_PCP2_TP3 pid=139375) ERROR 07-17 10:06:29 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
-(Worker_PCP2_TP3 pid=139375) ERROR 07-17 10:06:29 [multiproc_executor.py:962] 
-(Worker_PCP1_TP2 pid=139103) ERROR 07-17 10:06:29 [multiproc_executor.py:962] WorkerProc hit an exception.
-(Worker_PCP1_TP2 pid=139103) ERROR 07-17 10:06:29 [multiproc_executor.py:962] Traceback (most recent call last):
-(Worker_PCP1_TP2 pid=139103) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
-(Worker_PCP1_TP2 pid=139103) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = func(*args, **kwargs)
-(Worker_PCP1_TP2 pid=139103) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP1_TP2 pid=139103) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
-(Worker_PCP1_TP2 pid=139103) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
-(Worker_PCP1_TP2 pid=139103) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP1_TP2 pid=139103) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
-(Worker_PCP1_TP2 pid=139103) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
-(Worker_PCP1_TP2 pid=139103) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP1_TP2 pid=139103) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
-(Worker_PCP1_TP2 pid=139103) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return func(*args, **kwargs)
-(Worker_PCP1_TP2 pid=139103) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP1_TP2 pid=139103) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
-(Worker_PCP1_TP2 pid=139103) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
-(Worker_PCP1_TP2 pid=139103) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     ^^^^^^^^^
-(Worker_PCP1_TP2 pid=139103) ERROR 07-17 10:06:29 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
-(Worker_PCP1_TP2 pid=139103) ERROR 07-17 10:06:29 [multiproc_executor.py:962] Traceback (most recent call last):
-(Worker_PCP1_TP2 pid=139103) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
-(Worker_PCP1_TP2 pid=139103) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = func(*args, **kwargs)
-(Worker_PCP1_TP2 pid=139103) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP1_TP2 pid=139103) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
-(Worker_PCP1_TP2 pid=139103) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
-(Worker_PCP1_TP2 pid=139103) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP1_TP2 pid=139103) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
-(Worker_PCP1_TP2 pid=139103) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
-(Worker_PCP1_TP2 pid=139103) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP1_TP2 pid=139103) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
-(Worker_PCP1_TP2 pid=139103) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return func(*args, **kwargs)
-(Worker_PCP1_TP2 pid=139103) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP1_TP2 pid=139103) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
-(Worker_PCP1_TP2 pid=139103) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
-(Worker_PCP1_TP2 pid=139103) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     ^^^^^^^^^
-(Worker_PCP1_TP2 pid=139103) ERROR 07-17 10:06:29 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
-(Worker_PCP1_TP2 pid=139103) ERROR 07-17 10:06:29 [multiproc_executor.py:962] 
-(Worker_PCP2_TP2 pid=139320) ERROR 07-17 10:06:29 [multiproc_executor.py:962] WorkerProc hit an exception.
-(Worker_PCP2_TP2 pid=139320) ERROR 07-17 10:06:29 [multiproc_executor.py:962] Traceback (most recent call last):
-(Worker_PCP2_TP2 pid=139320) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
-(Worker_PCP2_TP2 pid=139320) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = func(*args, **kwargs)
-(Worker_PCP2_TP2 pid=139320) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP2_TP2 pid=139320) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
-(Worker_PCP2_TP2 pid=139320) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
-(Worker_PCP2_TP2 pid=139320) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP2_TP2 pid=139320) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
-(Worker_PCP2_TP2 pid=139320) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
-(Worker_PCP2_TP2 pid=139320) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP2_TP2 pid=139320) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
-(Worker_PCP2_TP2 pid=139320) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return func(*args, **kwargs)
-(Worker_PCP2_TP2 pid=139320) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP2_TP2 pid=139320) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
-(Worker_PCP2_TP2 pid=139320) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
-(Worker_PCP2_TP2 pid=139320) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     ^^^^^^^^^
-(Worker_PCP2_TP2 pid=139320) ERROR 07-17 10:06:29 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
-(Worker_PCP2_TP2 pid=139320) ERROR 07-17 10:06:29 [multiproc_executor.py:962] Traceback (most recent call last):
-(Worker_PCP2_TP2 pid=139320) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
-(Worker_PCP2_TP2 pid=139320) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = func(*args, **kwargs)
-(Worker_PCP2_TP2 pid=139320) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP2_TP2 pid=139320) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
-(Worker_PCP2_TP2 pid=139320) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
-(Worker_PCP2_TP2 pid=139320) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP2_TP2 pid=139320) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
-(Worker_PCP2_TP2 pid=139320) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
-(Worker_PCP2_TP2 pid=139320) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP2_TP2 pid=139320) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
-(Worker_PCP2_TP2 pid=139320) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return func(*args, **kwargs)
-(Worker_PCP2_TP2 pid=139320) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP2_TP2 pid=139320) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
-(Worker_PCP2_TP2 pid=139320) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
-(Worker_PCP2_TP2 pid=139320) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     ^^^^^^^^^
-(Worker_PCP2_TP2 pid=139320) ERROR 07-17 10:06:29 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
-(Worker_PCP2_TP2 pid=139320) ERROR 07-17 10:06:29 [multiproc_executor.py:962] 
-(Worker_PCP3_TP3 pid=139595) ERROR 07-17 10:06:29 [multiproc_executor.py:962] WorkerProc hit an exception.
-(Worker_PCP3_TP3 pid=139595) ERROR 07-17 10:06:29 [multiproc_executor.py:962] Traceback (most recent call last):
-(Worker_PCP3_TP3 pid=139595) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
-(Worker_PCP3_TP3 pid=139595) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = func(*args, **kwargs)
-(Worker_PCP3_TP3 pid=139595) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP3_TP3 pid=139595) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
-(Worker_PCP3_TP3 pid=139595) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
-(Worker_PCP3_TP3 pid=139595) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP3_TP3 pid=139595) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
-(Worker_PCP3_TP3 pid=139595) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
-(Worker_PCP3_TP3 pid=139595) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP3_TP3 pid=139595) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
-(Worker_PCP3_TP3 pid=139595) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return func(*args, **kwargs)
-(Worker_PCP3_TP3 pid=139595) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP3_TP3 pid=139595) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
-(Worker_PCP3_TP3 pid=139595) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
-(Worker_PCP3_TP3 pid=139595) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     ^^^^^^^^^
-(Worker_PCP3_TP3 pid=139595) ERROR 07-17 10:06:29 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
-(Worker_PCP3_TP3 pid=139595) ERROR 07-17 10:06:29 [multiproc_executor.py:962] Traceback (most recent call last):
-(Worker_PCP3_TP3 pid=139595) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
-(Worker_PCP3_TP3 pid=139595) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = func(*args, **kwargs)
-(Worker_PCP3_TP3 pid=139595) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP3_TP3 pid=139595) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
-(Worker_PCP3_TP3 pid=139595) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
-(Worker_PCP3_TP3 pid=139595) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP3_TP3 pid=139595) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
-(Worker_PCP3_TP3 pid=139595) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
-(Worker_PCP3_TP3 pid=139595) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP3_TP3 pid=139595) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
-(Worker_PCP3_TP3 pid=139595) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return func(*args, **kwargs)
-(Worker_PCP3_TP3 pid=139595) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP3_TP3 pid=139595) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
-(Worker_PCP3_TP3 pid=139595) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
-(Worker_PCP3_TP3 pid=139595) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     ^^^^^^^^^
-(Worker_PCP3_TP3 pid=139595) ERROR 07-17 10:06:29 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
-(Worker_PCP3_TP3 pid=139595) ERROR 07-17 10:06:29 [multiproc_executor.py:962] 
-(Worker_PCP0_TP1 pid=138835) ERROR 07-17 10:06:29 [multiproc_executor.py:962] WorkerProc hit an exception.
-(Worker_PCP0_TP1 pid=138835) ERROR 07-17 10:06:29 [multiproc_executor.py:962] Traceback (most recent call last):
-(Worker_PCP0_TP1 pid=138835) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
-(Worker_PCP0_TP1 pid=138835) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = func(*args, **kwargs)
-(Worker_PCP0_TP1 pid=138835) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP1 pid=138835) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
-(Worker_PCP0_TP1 pid=138835) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
-(Worker_PCP0_TP1 pid=138835) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP1 pid=138835) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
-(Worker_PCP0_TP1 pid=138835) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
-(Worker_PCP0_TP1 pid=138835) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP1 pid=138835) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
-(Worker_PCP0_TP1 pid=138835) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return func(*args, **kwargs)
-(Worker_PCP0_TP1 pid=138835) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP1 pid=138835) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
-(Worker_PCP0_TP1 pid=138835) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
-(Worker_PCP0_TP1 pid=138835) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     ^^^^^^^^^
-(Worker_PCP0_TP1 pid=138835) ERROR 07-17 10:06:29 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
-(Worker_PCP0_TP1 pid=138835) ERROR 07-17 10:06:29 [multiproc_executor.py:962] Traceback (most recent call last):
-(Worker_PCP0_TP1 pid=138835) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
-(Worker_PCP0_TP1 pid=138835) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = func(*args, **kwargs)
-(Worker_PCP0_TP1 pid=138835) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP1 pid=138835) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
-(Worker_PCP0_TP1 pid=138835) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
-(Worker_PCP0_TP1 pid=138835) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP1 pid=138835) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
-(Worker_PCP0_TP1 pid=138835) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
-(Worker_PCP0_TP1 pid=138835) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP1 pid=138835) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
-(Worker_PCP0_TP1 pid=138835) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return func(*args, **kwargs)
-(Worker_PCP0_TP1 pid=138835) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP1 pid=138835) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
-(Worker_PCP0_TP1 pid=138835) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
-(Worker_PCP0_TP1 pid=138835) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     ^^^^^^^^^
-(Worker_PCP0_TP1 pid=138835) ERROR 07-17 10:06:29 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
-(Worker_PCP0_TP1 pid=138835) ERROR 07-17 10:06:29 [multiproc_executor.py:962] 
-(Worker_PCP0_TP3 pid=138941) ERROR 07-17 10:06:29 [multiproc_executor.py:962] WorkerProc hit an exception.
-(Worker_PCP0_TP3 pid=138941) ERROR 07-17 10:06:29 [multiproc_executor.py:962] Traceback (most recent call last):
-(Worker_PCP0_TP3 pid=138941) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
-(Worker_PCP0_TP3 pid=138941) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = func(*args, **kwargs)
-(Worker_PCP0_TP3 pid=138941) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP3 pid=138941) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
-(Worker_PCP0_TP3 pid=138941) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
-(Worker_PCP0_TP3 pid=138941) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP3 pid=138941) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
-(Worker_PCP0_TP3 pid=138941) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
-(Worker_PCP0_TP3 pid=138941) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP3 pid=138941) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
-(Worker_PCP0_TP3 pid=138941) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return func(*args, **kwargs)
-(Worker_PCP0_TP3 pid=138941) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP3 pid=138941) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
-(Worker_PCP0_TP3 pid=138941) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
-(Worker_PCP0_TP3 pid=138941) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     ^^^^^^^^^
-(Worker_PCP0_TP3 pid=138941) ERROR 07-17 10:06:29 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
-(Worker_PCP0_TP3 pid=138941) ERROR 07-17 10:06:29 [multiproc_executor.py:962] Traceback (most recent call last):
-(Worker_PCP0_TP3 pid=138941) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
-(Worker_PCP0_TP3 pid=138941) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = func(*args, **kwargs)
-(Worker_PCP0_TP3 pid=138941) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP3 pid=138941) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
-(Worker_PCP0_TP3 pid=138941) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
-(Worker_PCP0_TP3 pid=138941) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP3 pid=138941) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
-(Worker_PCP0_TP3 pid=138941) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
-(Worker_PCP0_TP3 pid=138941) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP3 pid=138941) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
-(Worker_PCP0_TP3 pid=138941) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return func(*args, **kwargs)
-(Worker_PCP0_TP3 pid=138941) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP3 pid=138941) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
-(Worker_PCP0_TP3 pid=138941) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
-(Worker_PCP0_TP3 pid=138941) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     ^^^^^^^^^
-(Worker_PCP0_TP3 pid=138941) ERROR 07-17 10:06:29 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
-(Worker_PCP0_TP3 pid=138941) ERROR 07-17 10:06:29 [multiproc_executor.py:962] 
-(Worker_PCP0_TP2 pid=138887) ERROR 07-17 10:06:29 [multiproc_executor.py:962] WorkerProc hit an exception.
-(Worker_PCP0_TP2 pid=138887) ERROR 07-17 10:06:29 [multiproc_executor.py:962] Traceback (most recent call last):
-(Worker_PCP0_TP2 pid=138887) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
-(Worker_PCP0_TP2 pid=138887) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = func(*args, **kwargs)
-(Worker_PCP0_TP2 pid=138887) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP2 pid=138887) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
-(Worker_PCP0_TP2 pid=138887) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
-(Worker_PCP0_TP2 pid=138887) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP2 pid=138887) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
-(Worker_PCP0_TP2 pid=138887) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
-(Worker_PCP0_TP2 pid=138887) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP2 pid=138887) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
-(Worker_PCP0_TP2 pid=138887) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return func(*args, **kwargs)
-(Worker_PCP0_TP2 pid=138887) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP2 pid=138887) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
-(Worker_PCP0_TP2 pid=138887) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
-(Worker_PCP0_TP2 pid=138887) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     ^^^^^^^^^
-(Worker_PCP0_TP2 pid=138887) ERROR 07-17 10:06:29 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
-(Worker_PCP0_TP2 pid=138887) ERROR 07-17 10:06:29 [multiproc_executor.py:962] Traceback (most recent call last):
-(Worker_PCP0_TP2 pid=138887) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
-(Worker_PCP0_TP2 pid=138887) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = func(*args, **kwargs)
-(Worker_PCP0_TP2 pid=138887) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP2 pid=138887) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
-(Worker_PCP0_TP2 pid=138887) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
-(Worker_PCP0_TP2 pid=138887) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP2 pid=138887) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
-(Worker_PCP0_TP2 pid=138887) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
-(Worker_PCP0_TP2 pid=138887) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP2 pid=138887) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
-(Worker_PCP0_TP2 pid=138887) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return func(*args, **kwargs)
-(Worker_PCP0_TP2 pid=138887) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP2 pid=138887) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
-(Worker_PCP0_TP2 pid=138887) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
-(Worker_PCP0_TP2 pid=138887) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     ^^^^^^^^^
-(Worker_PCP0_TP2 pid=138887) ERROR 07-17 10:06:29 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
-(Worker_PCP0_TP2 pid=138887) ERROR 07-17 10:06:29 [multiproc_executor.py:962] 
-(Worker_PCP3_TP0 pid=139429) ERROR 07-17 10:06:29 [multiproc_executor.py:962] WorkerProc hit an exception.
-(Worker_PCP3_TP0 pid=139429) ERROR 07-17 10:06:29 [multiproc_executor.py:962] Traceback (most recent call last):
-(Worker_PCP3_TP0 pid=139429) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
-(Worker_PCP3_TP0 pid=139429) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = func(*args, **kwargs)
-(Worker_PCP3_TP0 pid=139429) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP3_TP0 pid=139429) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
-(Worker_PCP3_TP0 pid=139429) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
-(Worker_PCP3_TP0 pid=139429) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP3_TP0 pid=139429) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
-(Worker_PCP3_TP0 pid=139429) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
-(Worker_PCP3_TP0 pid=139429) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP3_TP0 pid=139429) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
-(Worker_PCP3_TP0 pid=139429) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return func(*args, **kwargs)
-(Worker_PCP3_TP0 pid=139429) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP3_TP0 pid=139429) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
-(Worker_PCP3_TP0 pid=139429) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
-(Worker_PCP3_TP0 pid=139429) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     ^^^^^^^^^
-(Worker_PCP3_TP0 pid=139429) ERROR 07-17 10:06:29 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
-(Worker_PCP3_TP0 pid=139429) ERROR 07-17 10:06:29 [multiproc_executor.py:962] Traceback (most recent call last):
-(Worker_PCP3_TP0 pid=139429) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
-(Worker_PCP3_TP0 pid=139429) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = func(*args, **kwargs)
-(Worker_PCP3_TP0 pid=139429) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP3_TP0 pid=139429) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
-(Worker_PCP3_TP0 pid=139429) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
-(Worker_PCP3_TP0 pid=139429) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP3_TP0 pid=139429) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
-(Worker_PCP3_TP0 pid=139429) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
-(Worker_PCP3_TP0 pid=139429) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP3_TP0 pid=139429) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
-(Worker_PCP3_TP0 pid=139429) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return func(*args, **kwargs)
-(Worker_PCP3_TP0 pid=139429) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP3_TP0 pid=139429) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
-(Worker_PCP3_TP0 pid=139429) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
-(Worker_PCP3_TP0 pid=139429) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     ^^^^^^^^^
-(Worker_PCP3_TP0 pid=139429) ERROR 07-17 10:06:29 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
-(Worker_PCP3_TP0 pid=139429) ERROR 07-17 10:06:29 [multiproc_executor.py:962] 
-(Worker_PCP3_TP1 pid=139485) ERROR 07-17 10:06:29 [multiproc_executor.py:962] WorkerProc hit an exception.
-(Worker_PCP3_TP1 pid=139485) ERROR 07-17 10:06:29 [multiproc_executor.py:962] Traceback (most recent call last):
-(Worker_PCP3_TP1 pid=139485) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
-(Worker_PCP3_TP1 pid=139485) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = func(*args, **kwargs)
-(Worker_PCP3_TP1 pid=139485) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP3_TP1 pid=139485) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
-(Worker_PCP3_TP1 pid=139485) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
-(Worker_PCP3_TP1 pid=139485) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP3_TP1 pid=139485) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
-(Worker_PCP3_TP1 pid=139485) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
-(Worker_PCP3_TP1 pid=139485) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP3_TP1 pid=139485) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
-(Worker_PCP3_TP1 pid=139485) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return func(*args, **kwargs)
-(Worker_PCP3_TP1 pid=139485) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP3_TP1 pid=139485) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
-(Worker_PCP3_TP1 pid=139485) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
-(Worker_PCP3_TP1 pid=139485) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     ^^^^^^^^^
-(Worker_PCP3_TP1 pid=139485) ERROR 07-17 10:06:29 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
-(Worker_PCP3_TP1 pid=139485) ERROR 07-17 10:06:29 [multiproc_executor.py:962] Traceback (most recent call last):
-(Worker_PCP3_TP1 pid=139485) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
-(Worker_PCP3_TP1 pid=139485) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = func(*args, **kwargs)
-(Worker_PCP3_TP1 pid=139485) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP3_TP1 pid=139485) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
-(Worker_PCP3_TP1 pid=139485) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
-(Worker_PCP3_TP1 pid=139485) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP3_TP1 pid=139485) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
-(Worker_PCP3_TP1 pid=139485) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
-(Worker_PCP3_TP1 pid=139485) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP3_TP1 pid=139485) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
-(Worker_PCP3_TP1 pid=139485) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return func(*args, **kwargs)
-(Worker_PCP3_TP1 pid=139485) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP3_TP1 pid=139485) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
-(Worker_PCP3_TP1 pid=139485) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
-(Worker_PCP3_TP1 pid=139485) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     ^^^^^^^^^
-(Worker_PCP3_TP1 pid=139485) ERROR 07-17 10:06:29 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
-(Worker_PCP3_TP1 pid=139485) ERROR 07-17 10:06:29 [multiproc_executor.py:962] 
-(Worker_PCP3_TP2 pid=139540) ERROR 07-17 10:06:29 [multiproc_executor.py:962] WorkerProc hit an exception.
-(Worker_PCP3_TP2 pid=139540) ERROR 07-17 10:06:29 [multiproc_executor.py:962] Traceback (most recent call last):
-(Worker_PCP3_TP2 pid=139540) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
-(Worker_PCP3_TP2 pid=139540) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = func(*args, **kwargs)
-(Worker_PCP3_TP2 pid=139540) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP3_TP2 pid=139540) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
-(Worker_PCP3_TP2 pid=139540) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
-(Worker_PCP3_TP2 pid=139540) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP3_TP2 pid=139540) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
-(Worker_PCP3_TP2 pid=139540) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
-(Worker_PCP3_TP2 pid=139540) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP3_TP2 pid=139540) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
-(Worker_PCP3_TP2 pid=139540) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return func(*args, **kwargs)
-(Worker_PCP3_TP2 pid=139540) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP3_TP2 pid=139540) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
-(Worker_PCP3_TP2 pid=139540) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
-(Worker_PCP3_TP2 pid=139540) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     ^^^^^^^^^
-(Worker_PCP3_TP2 pid=139540) ERROR 07-17 10:06:29 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
-(Worker_PCP3_TP2 pid=139540) ERROR 07-17 10:06:29 [multiproc_executor.py:962] Traceback (most recent call last):
-(Worker_PCP3_TP2 pid=139540) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
-(Worker_PCP3_TP2 pid=139540) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = func(*args, **kwargs)
-(Worker_PCP3_TP2 pid=139540) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP3_TP2 pid=139540) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
-(Worker_PCP3_TP2 pid=139540) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
-(Worker_PCP3_TP2 pid=139540) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP3_TP2 pid=139540) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
-(Worker_PCP3_TP2 pid=139540) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
-(Worker_PCP3_TP2 pid=139540) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP3_TP2 pid=139540) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
-(Worker_PCP3_TP2 pid=139540) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return func(*args, **kwargs)
-(Worker_PCP3_TP2 pid=139540) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP3_TP2 pid=139540) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
-(Worker_PCP3_TP2 pid=139540) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
-(Worker_PCP3_TP2 pid=139540) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     ^^^^^^^^^
-(Worker_PCP3_TP2 pid=139540) ERROR 07-17 10:06:29 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
-(Worker_PCP3_TP2 pid=139540) ERROR 07-17 10:06:29 [multiproc_executor.py:962] 
-(Worker_PCP1_TP3 pid=139158) ERROR 07-17 10:06:29 [multiproc_executor.py:962] WorkerProc hit an exception.
-(Worker_PCP1_TP3 pid=139158) ERROR 07-17 10:06:29 [multiproc_executor.py:962] Traceback (most recent call last):
-(Worker_PCP1_TP3 pid=139158) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
-(Worker_PCP1_TP3 pid=139158) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = func(*args, **kwargs)
-(Worker_PCP1_TP3 pid=139158) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP1_TP3 pid=139158) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
-(Worker_PCP1_TP3 pid=139158) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
-(Worker_PCP1_TP3 pid=139158) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP1_TP3 pid=139158) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
-(Worker_PCP1_TP3 pid=139158) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
-(Worker_PCP1_TP3 pid=139158) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP1_TP3 pid=139158) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
-(Worker_PCP1_TP3 pid=139158) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return func(*args, **kwargs)
-(Worker_PCP1_TP3 pid=139158) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP1_TP3 pid=139158) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
-(Worker_PCP1_TP3 pid=139158) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
-(Worker_PCP1_TP3 pid=139158) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     ^^^^^^^^^
-(Worker_PCP1_TP3 pid=139158) ERROR 07-17 10:06:29 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
-(Worker_PCP1_TP3 pid=139158) ERROR 07-17 10:06:29 [multiproc_executor.py:962] Traceback (most recent call last):
-(Worker_PCP1_TP3 pid=139158) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
-(Worker_PCP1_TP3 pid=139158) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = func(*args, **kwargs)
-(Worker_PCP1_TP3 pid=139158) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP1_TP3 pid=139158) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
-(Worker_PCP1_TP3 pid=139158) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
-(Worker_PCP1_TP3 pid=139158) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP1_TP3 pid=139158) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
-(Worker_PCP1_TP3 pid=139158) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
-(Worker_PCP1_TP3 pid=139158) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP1_TP3 pid=139158) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
-(Worker_PCP1_TP3 pid=139158) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return func(*args, **kwargs)
-(Worker_PCP1_TP3 pid=139158) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP1_TP3 pid=139158) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
-(Worker_PCP1_TP3 pid=139158) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
-(Worker_PCP1_TP3 pid=139158) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     ^^^^^^^^^
-(Worker_PCP1_TP3 pid=139158) ERROR 07-17 10:06:29 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
-(Worker_PCP1_TP3 pid=139158) ERROR 07-17 10:06:29 [multiproc_executor.py:962] 
-(Worker_PCP1_TP1 pid=139049) ERROR 07-17 10:06:29 [multiproc_executor.py:962] WorkerProc hit an exception.
-(Worker_PCP1_TP1 pid=139049) ERROR 07-17 10:06:29 [multiproc_executor.py:962] Traceback (most recent call last):
-(Worker_PCP1_TP1 pid=139049) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
-(Worker_PCP1_TP1 pid=139049) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = func(*args, **kwargs)
-(Worker_PCP1_TP1 pid=139049) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP1_TP1 pid=139049) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
-(Worker_PCP1_TP1 pid=139049) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
-(Worker_PCP1_TP1 pid=139049) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP1_TP1 pid=139049) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
-(Worker_PCP1_TP1 pid=139049) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
-(Worker_PCP1_TP1 pid=139049) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP1_TP1 pid=139049) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
-(Worker_PCP1_TP1 pid=139049) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return func(*args, **kwargs)
-(Worker_PCP1_TP1 pid=139049) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP1_TP1 pid=139049) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
-(Worker_PCP1_TP1 pid=139049) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
-(Worker_PCP1_TP1 pid=139049) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     ^^^^^^^^^
-(Worker_PCP1_TP1 pid=139049) ERROR 07-17 10:06:29 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
-(Worker_PCP1_TP1 pid=139049) ERROR 07-17 10:06:29 [multiproc_executor.py:962] Traceback (most recent call last):
-(Worker_PCP1_TP1 pid=139049) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
-(Worker_PCP1_TP1 pid=139049) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = func(*args, **kwargs)
-(Worker_PCP1_TP1 pid=139049) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP1_TP1 pid=139049) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
-(Worker_PCP1_TP1 pid=139049) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
-(Worker_PCP1_TP1 pid=139049) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP1_TP1 pid=139049) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
-(Worker_PCP1_TP1 pid=139049) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
-(Worker_PCP1_TP1 pid=139049) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP1_TP1 pid=139049) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
-(Worker_PCP1_TP1 pid=139049) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return func(*args, **kwargs)
-(Worker_PCP1_TP1 pid=139049) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP1_TP1 pid=139049) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
-(Worker_PCP1_TP1 pid=139049) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
-(Worker_PCP1_TP1 pid=139049) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     ^^^^^^^^^
-(Worker_PCP1_TP1 pid=139049) ERROR 07-17 10:06:29 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
-(Worker_PCP1_TP1 pid=139049) ERROR 07-17 10:06:29 [multiproc_executor.py:962] 
-(Worker_PCP2_TP0 pid=139212) ERROR 07-17 10:06:29 [multiproc_executor.py:962] WorkerProc hit an exception.
-(Worker_PCP2_TP0 pid=139212) ERROR 07-17 10:06:29 [multiproc_executor.py:962] Traceback (most recent call last):
-(Worker_PCP2_TP0 pid=139212) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
-(Worker_PCP2_TP0 pid=139212) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = func(*args, **kwargs)
-(Worker_PCP2_TP0 pid=139212) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP2_TP0 pid=139212) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
-(Worker_PCP2_TP0 pid=139212) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
-(Worker_PCP2_TP0 pid=139212) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP2_TP0 pid=139212) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
-(Worker_PCP2_TP0 pid=139212) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
-(Worker_PCP2_TP0 pid=139212) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP2_TP0 pid=139212) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
-(Worker_PCP2_TP0 pid=139212) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return func(*args, **kwargs)
-(Worker_PCP2_TP0 pid=139212) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP2_TP0 pid=139212) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
-(Worker_PCP2_TP0 pid=139212) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
-(Worker_PCP2_TP0 pid=139212) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     ^^^^^^^^^
-(Worker_PCP2_TP0 pid=139212) ERROR 07-17 10:06:29 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
-(Worker_PCP2_TP0 pid=139212) ERROR 07-17 10:06:29 [multiproc_executor.py:962] Traceback (most recent call last):
-(Worker_PCP2_TP0 pid=139212) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
-(Worker_PCP2_TP0 pid=139212) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = func(*args, **kwargs)
-(Worker_PCP2_TP0 pid=139212) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP2_TP0 pid=139212) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
-(Worker_PCP2_TP0 pid=139212) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
-(Worker_PCP2_TP0 pid=139212) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP2_TP0 pid=139212) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
-(Worker_PCP2_TP0 pid=139212) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
-(Worker_PCP2_TP0 pid=139212) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP2_TP0 pid=139212) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
-(Worker_PCP2_TP0 pid=139212) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return func(*args, **kwargs)
-(Worker_PCP2_TP0 pid=139212) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP2_TP0 pid=139212) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
-(Worker_PCP2_TP0 pid=139212) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
-(Worker_PCP2_TP0 pid=139212) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     ^^^^^^^^^
-(Worker_PCP2_TP0 pid=139212) ERROR 07-17 10:06:29 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
-(Worker_PCP2_TP0 pid=139212) ERROR 07-17 10:06:29 [multiproc_executor.py:962] 
-(Worker_PCP2_TP1 pid=139266) ERROR 07-17 10:06:29 [multiproc_executor.py:962] WorkerProc hit an exception.
-(Worker_PCP2_TP1 pid=139266) ERROR 07-17 10:06:29 [multiproc_executor.py:962] Traceback (most recent call last):
-(Worker_PCP2_TP1 pid=139266) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
-(Worker_PCP2_TP1 pid=139266) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = func(*args, **kwargs)
-(Worker_PCP2_TP1 pid=139266) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP2_TP1 pid=139266) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
-(Worker_PCP2_TP1 pid=139266) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
-(Worker_PCP2_TP1 pid=139266) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP2_TP1 pid=139266) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
-(Worker_PCP2_TP1 pid=139266) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
-(Worker_PCP2_TP1 pid=139266) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP2_TP1 pid=139266) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
-(Worker_PCP2_TP1 pid=139266) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return func(*args, **kwargs)
-(Worker_PCP2_TP1 pid=139266) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP2_TP1 pid=139266) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
-(Worker_PCP2_TP1 pid=139266) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
-(Worker_PCP2_TP1 pid=139266) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     ^^^^^^^^^
-(Worker_PCP2_TP1 pid=139266) ERROR 07-17 10:06:29 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
-(Worker_PCP2_TP1 pid=139266) ERROR 07-17 10:06:29 [multiproc_executor.py:962] Traceback (most recent call last):
-(Worker_PCP2_TP1 pid=139266) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
-(Worker_PCP2_TP1 pid=139266) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = func(*args, **kwargs)
-(Worker_PCP2_TP1 pid=139266) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP2_TP1 pid=139266) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
-(Worker_PCP2_TP1 pid=139266) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
-(Worker_PCP2_TP1 pid=139266) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP2_TP1 pid=139266) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
-(Worker_PCP2_TP1 pid=139266) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
-(Worker_PCP2_TP1 pid=139266) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP2_TP1 pid=139266) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
-(Worker_PCP2_TP1 pid=139266) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return func(*args, **kwargs)
-(Worker_PCP2_TP1 pid=139266) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP2_TP1 pid=139266) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
-(Worker_PCP2_TP1 pid=139266) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
-(Worker_PCP2_TP1 pid=139266) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     ^^^^^^^^^
-(Worker_PCP2_TP1 pid=139266) ERROR 07-17 10:06:29 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
-(Worker_PCP2_TP1 pid=139266) ERROR 07-17 10:06:29 [multiproc_executor.py:962] 
-(Worker_PCP1_TP0 pid=138995) ERROR 07-17 10:06:29 [multiproc_executor.py:962] WorkerProc hit an exception.
-(Worker_PCP1_TP0 pid=138995) ERROR 07-17 10:06:29 [multiproc_executor.py:962] Traceback (most recent call last):
-(Worker_PCP1_TP0 pid=138995) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
-(Worker_PCP1_TP0 pid=138995) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = func(*args, **kwargs)
-(Worker_PCP1_TP0 pid=138995) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP1_TP0 pid=138995) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
-(Worker_PCP1_TP0 pid=138995) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
-(Worker_PCP1_TP0 pid=138995) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP1_TP0 pid=138995) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
-(Worker_PCP1_TP0 pid=138995) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
-(Worker_PCP1_TP0 pid=138995) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP1_TP0 pid=138995) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
-(Worker_PCP1_TP0 pid=138995) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return func(*args, **kwargs)
-(Worker_PCP1_TP0 pid=138995) ERROR 07-17 10:06:29 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP1_TP0 pid=138995) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
-(Worker_PCP1_TP0 pid=138995) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
-(Worker_PCP1_TP0 pid=138995) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     ^^^^^^^^^
-(Worker_PCP1_TP0 pid=138995) ERROR 07-17 10:06:29 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
-(Worker_PCP1_TP0 pid=138995) ERROR 07-17 10:06:29 [multiproc_executor.py:962] Traceback (most recent call last):
-(Worker_PCP1_TP0 pid=138995) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
-(Worker_PCP1_TP0 pid=138995) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     output = func(*args, **kwargs)
-(Worker_PCP1_TP0 pid=138995) ERROR 07-17 10:06:29 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP1_TP0 pid=138995) ERROR 07-17 10:06:29 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
-(Worker_PCP1_TP0 pid=138995) ERROR 07-17 10:06:29 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
+(Worker_PCP3_TP2 pid=149938) ERROR 07-17 11:05:09 [multiproc_executor.py:962] WorkerProc hit an exception.
+(Worker_PCP3_TP2 pid=149938) ERROR 07-17 11:05:09 [multiproc_executor.py:962] Traceback (most recent call last):
+(Worker_PCP3_TP2 pid=149938) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
+(Worker_PCP3_TP2 pid=149938) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     output = func(*args, **kwargs)
+(Worker_PCP3_TP2 pid=149938) ERROR 07-17 11:05:09 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP3_TP2 pid=149938) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
+(Worker_PCP3_TP2 pid=149938) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
+(Worker_PCP3_TP2 pid=149938) ERROR 07-17 11:05:09 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP3_TP2 pid=149938) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
+(Worker_PCP3_TP2 pid=149938) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
+(Worker_PCP3_TP2 pid=149938) ERROR 07-17 11:05:09 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP3_TP2 pid=149938) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+(Worker_PCP3_TP2 pid=149938) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     return func(*args, **kwargs)
+(Worker_PCP3_TP2 pid=149938) ERROR 07-17 11:05:09 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP3_TP2 pid=149938) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
+(Worker_PCP3_TP2 pid=149938) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
+(Worker_PCP3_TP2 pid=149938) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     ^^^^^^^^^
+(Worker_PCP3_TP2 pid=149938) ERROR 07-17 11:05:09 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
+(Worker_PCP3_TP2 pid=149938) ERROR 07-17 11:05:09 [multiproc_executor.py:962] Traceback (most recent call last):
+(Worker_PCP3_TP2 pid=149938) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
+(Worker_PCP3_TP2 pid=149938) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     output = func(*args, **kwargs)
+(Worker_PCP3_TP2 pid=149938) ERROR 07-17 11:05:09 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP3_TP2 pid=149938) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
+(Worker_PCP3_TP2 pid=149938) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
+(Worker_PCP3_TP2 pid=149938) ERROR 07-17 11:05:09 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP3_TP2 pid=149938) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
+(Worker_PCP3_TP2 pid=149938) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
+(Worker_PCP3_TP2 pid=149938) ERROR 07-17 11:05:09 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP3_TP2 pid=149938) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+(Worker_PCP3_TP2 pid=149938) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     return func(*args, **kwargs)
+(Worker_PCP3_TP2 pid=149938) ERROR 07-17 11:05:09 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP3_TP2 pid=149938) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
+(Worker_PCP3_TP2 pid=149938) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
+(Worker_PCP3_TP2 pid=149938) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     ^^^^^^^^^
+(Worker_PCP3_TP2 pid=149938) ERROR 07-17 11:05:09 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
+(Worker_PCP3_TP2 pid=149938) ERROR 07-17 11:05:09 [multiproc_executor.py:962] 
+(Worker_PCP1_TP0 pid=149394) ERROR 07-17 11:05:09 [multiproc_executor.py:962] WorkerProc hit an exception.
+(Worker_PCP1_TP0 pid=149394) ERROR 07-17 11:05:09 [multiproc_executor.py:962] Traceback (most recent call last):
+(Worker_PCP1_TP0 pid=149394) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
+(Worker_PCP1_TP0 pid=149394) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     output = func(*args, **kwargs)
+(Worker_PCP1_TP0 pid=149394) ERROR 07-17 11:05:09 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP1_TP0 pid=149394) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
+(Worker_PCP1_TP0 pid=149394) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
+(Worker_PCP1_TP0 pid=149394) ERROR 07-17 11:05:09 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP1_TP0 pid=149394) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
+(Worker_PCP1_TP0 pid=149394) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
+(Worker_PCP1_TP0 pid=149394) ERROR 07-17 11:05:09 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP1_TP0 pid=149394) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+(Worker_PCP1_TP0 pid=149394) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     return func(*args, **kwargs)
+(Worker_PCP1_TP0 pid=149394) ERROR 07-17 11:05:09 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP1_TP0 pid=149394) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
+(Worker_PCP1_TP0 pid=149394) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
+(Worker_PCP1_TP0 pid=149394) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     ^^^^^^^^^
+(Worker_PCP1_TP0 pid=149394) ERROR 07-17 11:05:09 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
+(Worker_PCP1_TP0 pid=149394) ERROR 07-17 11:05:09 [multiproc_executor.py:962] Traceback (most recent call last):
+(Worker_PCP1_TP0 pid=149394) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
+(Worker_PCP1_TP0 pid=149394) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     output = func(*args, **kwargs)
+(Worker_PCP1_TP0 pid=149394) ERROR 07-17 11:05:09 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP1_TP0 pid=149394) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
+(Worker_PCP1_TP0 pid=149394) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
+(Worker_PCP1_TP0 pid=149394) ERROR 07-17 11:05:09 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP1_TP0 pid=149394) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
+(Worker_PCP1_TP0 pid=149394) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
+(Worker_PCP1_TP0 pid=149394) ERROR 07-17 11:05:09 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP1_TP0 pid=149394) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+(Worker_PCP1_TP0 pid=149394) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     return func(*args, **kwargs)
+(Worker_PCP1_TP0 pid=149394) ERROR 07-17 11:05:09 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP1_TP0 pid=149394) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
+(Worker_PCP1_TP0 pid=149394) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
+(Worker_PCP1_TP0 pid=149394) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     ^^^^^^^^^
+(Worker_PCP1_TP0 pid=149394) ERROR 07-17 11:05:09 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
+(Worker_PCP1_TP0 pid=149394) ERROR 07-17 11:05:09 [multiproc_executor.py:962] 
+(Worker_PCP3_TP1 pid=149883) ERROR 07-17 11:05:09 [multiproc_executor.py:962] WorkerProc hit an exception.
+(Worker_PCP3_TP1 pid=149883) ERROR 07-17 11:05:09 [multiproc_executor.py:962] Traceback (most recent call last):
+(Worker_PCP3_TP1 pid=149883) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
+(Worker_PCP3_TP1 pid=149883) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     output = func(*args, **kwargs)
+(Worker_PCP3_TP1 pid=149883) ERROR 07-17 11:05:09 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP3_TP1 pid=149883) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
+(Worker_PCP3_TP1 pid=149883) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
+(Worker_PCP3_TP1 pid=149883) ERROR 07-17 11:05:09 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP3_TP1 pid=149883) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
+(Worker_PCP3_TP1 pid=149883) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
+(Worker_PCP3_TP1 pid=149883) ERROR 07-17 11:05:09 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP3_TP1 pid=149883) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+(Worker_PCP3_TP1 pid=149883) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     return func(*args, **kwargs)
+(Worker_PCP3_TP1 pid=149883) ERROR 07-17 11:05:09 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP3_TP1 pid=149883) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
+(Worker_PCP3_TP1 pid=149883) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
+(Worker_PCP3_TP1 pid=149883) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     ^^^^^^^^^
+(Worker_PCP3_TP1 pid=149883) ERROR 07-17 11:05:09 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
+(Worker_PCP3_TP1 pid=149883) ERROR 07-17 11:05:09 [multiproc_executor.py:962] Traceback (most recent call last):
+(Worker_PCP3_TP1 pid=149883) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
+(Worker_PCP3_TP1 pid=149883) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     output = func(*args, **kwargs)
+(Worker_PCP3_TP1 pid=149883) ERROR 07-17 11:05:09 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP3_TP1 pid=149883) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
+(Worker_PCP3_TP1 pid=149883) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
+(Worker_PCP3_TP1 pid=149883) ERROR 07-17 11:05:09 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP3_TP1 pid=149883) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
+(Worker_PCP3_TP1 pid=149883) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
+(Worker_PCP3_TP1 pid=149883) ERROR 07-17 11:05:09 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP3_TP1 pid=149883) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+(Worker_PCP3_TP1 pid=149883) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     return func(*args, **kwargs)
+(Worker_PCP3_TP1 pid=149883) ERROR 07-17 11:05:09 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP3_TP1 pid=149883) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
+(Worker_PCP3_TP1 pid=149883) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
+(Worker_PCP3_TP1 pid=149883) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     ^^^^^^^^^
+(Worker_PCP3_TP1 pid=149883) ERROR 07-17 11:05:09 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
+(Worker_PCP3_TP1 pid=149883) ERROR 07-17 11:05:09 [multiproc_executor.py:962] 
+(Worker_PCP1_TP2 pid=149502) ERROR 07-17 11:05:09 [multiproc_executor.py:962] WorkerProc hit an exception.
+(Worker_PCP1_TP2 pid=149502) ERROR 07-17 11:05:09 [multiproc_executor.py:962] Traceback (most recent call last):
+(Worker_PCP1_TP2 pid=149502) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
+(Worker_PCP1_TP2 pid=149502) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     output = func(*args, **kwargs)
+(Worker_PCP1_TP2 pid=149502) ERROR 07-17 11:05:09 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP1_TP2 pid=149502) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
+(Worker_PCP1_TP2 pid=149502) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
+(Worker_PCP1_TP2 pid=149502) ERROR 07-17 11:05:09 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP1_TP2 pid=149502) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
+(Worker_PCP1_TP2 pid=149502) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
+(Worker_PCP1_TP2 pid=149502) ERROR 07-17 11:05:09 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP1_TP2 pid=149502) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+(Worker_PCP1_TP2 pid=149502) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     return func(*args, **kwargs)
+(Worker_PCP1_TP2 pid=149502) ERROR 07-17 11:05:09 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP1_TP2 pid=149502) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
+(Worker_PCP1_TP2 pid=149502) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
+(Worker_PCP1_TP2 pid=149502) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     ^^^^^^^^^
+(Worker_PCP1_TP2 pid=149502) ERROR 07-17 11:05:09 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
+(Worker_PCP1_TP2 pid=149502) ERROR 07-17 11:05:09 [multiproc_executor.py:962] Traceback (most recent call last):
+(Worker_PCP1_TP2 pid=149502) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
+(Worker_PCP1_TP2 pid=149502) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     output = func(*args, **kwargs)
+(Worker_PCP1_TP2 pid=149502) ERROR 07-17 11:05:09 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP1_TP2 pid=149502) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
+(Worker_PCP1_TP2 pid=149502) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
+(Worker_PCP1_TP2 pid=149502) ERROR 07-17 11:05:09 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP1_TP2 pid=149502) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
+(Worker_PCP1_TP2 pid=149502) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
+(Worker_PCP1_TP2 pid=149502) ERROR 07-17 11:05:09 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP1_TP2 pid=149502) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+(Worker_PCP1_TP2 pid=149502) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     return func(*args, **kwargs)
+(Worker_PCP1_TP2 pid=149502) ERROR 07-17 11:05:09 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP1_TP2 pid=149502) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
+(Worker_PCP1_TP2 pid=149502) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
+(Worker_PCP1_TP2 pid=149502) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     ^^^^^^^^^
+(Worker_PCP1_TP2 pid=149502) ERROR 07-17 11:05:09 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
+(Worker_PCP1_TP2 pid=149502) ERROR 07-17 11:05:09 [multiproc_executor.py:962] 
+(Worker_PCP1_TP3 pid=149556) ERROR 07-17 11:05:09 [multiproc_executor.py:962] WorkerProc hit an exception.
+(Worker_PCP1_TP3 pid=149556) ERROR 07-17 11:05:09 [multiproc_executor.py:962] Traceback (most recent call last):
+(Worker_PCP1_TP3 pid=149556) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
+(Worker_PCP1_TP3 pid=149556) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     output = func(*args, **kwargs)
+(Worker_PCP1_TP3 pid=149556) ERROR 07-17 11:05:09 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP1_TP3 pid=149556) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
+(Worker_PCP1_TP3 pid=149556) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
+(Worker_PCP1_TP3 pid=149556) ERROR 07-17 11:05:09 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP1_TP3 pid=149556) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
+(Worker_PCP1_TP3 pid=149556) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
+(Worker_PCP1_TP3 pid=149556) ERROR 07-17 11:05:09 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP1_TP3 pid=149556) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+(Worker_PCP1_TP3 pid=149556) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     return func(*args, **kwargs)
+(Worker_PCP1_TP3 pid=149556) ERROR 07-17 11:05:09 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP1_TP3 pid=149556) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
+(Worker_PCP1_TP3 pid=149556) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
+(Worker_PCP1_TP3 pid=149556) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     ^^^^^^^^^
+(Worker_PCP1_TP3 pid=149556) ERROR 07-17 11:05:09 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
+(Worker_PCP1_TP3 pid=149556) ERROR 07-17 11:05:09 [multiproc_executor.py:962] Traceback (most recent call last):
+(Worker_PCP1_TP3 pid=149556) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
+(Worker_PCP1_TP3 pid=149556) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     output = func(*args, **kwargs)
+(Worker_PCP1_TP3 pid=149556) ERROR 07-17 11:05:09 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP1_TP3 pid=149556) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
+(Worker_PCP1_TP3 pid=149556) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
+(Worker_PCP1_TP3 pid=149556) ERROR 07-17 11:05:09 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP1_TP3 pid=149556) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
+(Worker_PCP1_TP3 pid=149556) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
+(Worker_PCP1_TP3 pid=149556) ERROR 07-17 11:05:09 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP1_TP3 pid=149556) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+(Worker_PCP1_TP3 pid=149556) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     return func(*args, **kwargs)
+(Worker_PCP1_TP3 pid=149556) ERROR 07-17 11:05:09 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP1_TP3 pid=149556) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
+(Worker_PCP1_TP3 pid=149556) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
+(Worker_PCP1_TP3 pid=149556) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     ^^^^^^^^^
+(Worker_PCP1_TP3 pid=149556) ERROR 07-17 11:05:09 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
+(Worker_PCP1_TP3 pid=149556) ERROR 07-17 11:05:09 [multiproc_executor.py:962] 
+(Worker_PCP3_TP0 pid=149827) ERROR 07-17 11:05:09 [multiproc_executor.py:962] WorkerProc hit an exception.
+(Worker_PCP3_TP0 pid=149827) ERROR 07-17 11:05:09 [multiproc_executor.py:962] Traceback (most recent call last):
+(Worker_PCP3_TP0 pid=149827) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
+(Worker_PCP3_TP0 pid=149827) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     output = func(*args, **kwargs)
+(Worker_PCP3_TP0 pid=149827) ERROR 07-17 11:05:09 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP3_TP0 pid=149827) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
+(Worker_PCP3_TP0 pid=149827) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
+(Worker_PCP3_TP0 pid=149827) ERROR 07-17 11:05:09 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP3_TP0 pid=149827) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
+(Worker_PCP3_TP0 pid=149827) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
+(Worker_PCP3_TP0 pid=149827) ERROR 07-17 11:05:09 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP3_TP0 pid=149827) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+(Worker_PCP3_TP0 pid=149827) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     return func(*args, **kwargs)
+(Worker_PCP3_TP0 pid=149827) ERROR 07-17 11:05:09 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP3_TP0 pid=149827) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
+(Worker_PCP3_TP0 pid=149827) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
+(Worker_PCP3_TP0 pid=149827) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     ^^^^^^^^^
+(Worker_PCP3_TP0 pid=149827) ERROR 07-17 11:05:09 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
+(Worker_PCP3_TP0 pid=149827) ERROR 07-17 11:05:09 [multiproc_executor.py:962] Traceback (most recent call last):
+(Worker_PCP3_TP0 pid=149827) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
+(Worker_PCP3_TP0 pid=149827) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     output = func(*args, **kwargs)
+(Worker_PCP3_TP0 pid=149827) ERROR 07-17 11:05:09 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP3_TP0 pid=149827) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
+(Worker_PCP3_TP0 pid=149827) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
+(Worker_PCP3_TP0 pid=149827) ERROR 07-17 11:05:09 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP3_TP0 pid=149827) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
+(Worker_PCP3_TP0 pid=149827) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
+(Worker_PCP3_TP0 pid=149827) ERROR 07-17 11:05:09 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP3_TP0 pid=149827) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+(Worker_PCP3_TP0 pid=149827) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     return func(*args, **kwargs)
+(Worker_PCP3_TP0 pid=149827) ERROR 07-17 11:05:09 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP3_TP0 pid=149827) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
+(Worker_PCP3_TP0 pid=149827) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
+(Worker_PCP3_TP0 pid=149827) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     ^^^^^^^^^
+(Worker_PCP3_TP0 pid=149827) ERROR 07-17 11:05:09 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
+(Worker_PCP3_TP0 pid=149827) ERROR 07-17 11:05:09 [multiproc_executor.py:962] 
+(Worker_PCP0_TP0 pid=149213) ERROR 07-17 11:05:09 [multiproc_executor.py:962] WorkerProc hit an exception.
+(Worker_PCP0_TP0 pid=149213) ERROR 07-17 11:05:09 [multiproc_executor.py:962] Traceback (most recent call last):
+(Worker_PCP0_TP0 pid=149213) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/executor/multiproc_executor.py", line 957, in worker_busy_loop
+(Worker_PCP0_TP0 pid=149213) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     output = func(*args, **kwargs)
+(Worker_PCP0_TP0 pid=149213) ERROR 07-17 11:05:09 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP0_TP0 pid=149213) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/v1/worker/worker_base.py", line 345, in execute_model
+(Worker_PCP0_TP0 pid=149213) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     return self.worker.execute_model(scheduler_output)
+(Worker_PCP0_TP0 pid=149213) ERROR 07-17 11:05:09 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP0_TP0 pid=149213) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/worker.py", line 639, in execute_model
+(Worker_PCP0_TP0 pid=149213) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     output = self.model_runner.execute_model(scheduler_output, intermediate_tensors)
+(Worker_PCP0_TP0 pid=149213) ERROR 07-17 11:05:09 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP0_TP0 pid=149213) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+(Worker_PCP0_TP0 pid=149213) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     return func(*args, **kwargs)
+(Worker_PCP0_TP0 pid=149213) ERROR 07-17 11:05:09 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP0_TP0 pid=149213) ERROR 07-17 11:05:09 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/worker/model_runner_v1.py", line 1906, in execute_model
+(Worker_PCP0_TP0 pid=149213) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     self.rank, scheduler_output.total_num_scheduled_tokens)
+(Worker_PCP0_TP0 pid=149213) ERROR 07-17 11:05:09 [multiproc_executor.py:962]     ^^^^^^^^^
+(Worker_PCP0_TP0 pid=149213) ERROR 07-17 11:05:09 [multiproc_executor.py:962] AttributeError: 'NPUModelRunner' object has no attribute 'rank'
