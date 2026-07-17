@@ -1,11 +1,91 @@
-# 1. 崩溃错误信息
-grep -iE "error|exception|traceback|OOM|killed|SIGKILL|abort" prefill_node.log | tail -30
-
-# 2. 崩溃前最后几条调度日志，看当时 running/waiting 状态
-grep "\[PCP-DEBUG\]" prefill_node.log | grep "schedule() start" | grep -v "waiting=0, max" | tail -20
-
-# 3. 实际调度了多少 tokens
-grep "Worker_PCP0_TP0.*execute_model START" prefill_node.log | grep -v "tokens=0"
-
-# 4. 日志最后几行，看最后发生了什么
-tail -50 prefill_node.log
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep -iE "error|exception|traceback|OOM|killed|SIGKILL|abort" prefill_node.log | tail -30
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]   File "<string>", line 4591, in kernel
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/npugraph_ex/_acl_concrete_graph/acl_graph.py", line 823, in __call__
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]     return self.fx_run_eagerly(*args, **kwargs)
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/npugraph_ex/_acl_concrete_graph/acl_graph.py", line 894, in fx_run_eagerly
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]     return self.fx_forward(*args, **kwargs)
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]   File "<string>", line 47, in forward
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py", line 819, in __call__
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]     return self._op(*args, **kwargs)
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/model_executor/layers/attention/kv_transfer_utils.py", line 54, in wrapper
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]     result = func(*args, **kwargs)
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/model_executor/layers/attention/attention.py", line 751, in unified_attention_with_output
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]     self.impl.forward(
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/attention/attention_v1.py", line 1339, in forward
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]     attn_output = self.forward_impl(query, key, value, kv_cache, attn_metadata, output_padded)
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/attention/context_parallel/attention_cp.py", line 1048, in forward_impl
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]     context_output, context_lse = self._update_global_context_output(global_context_output)
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/attention/context_parallel/attention_cp.py", line 950, in _update_global_context_output
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]     context_output, context_lse = _update_out_and_lse(attn_out_allgather, attn_lse_allgather)
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/attention/context_parallel/common_cp.py", line 195, in _update_out_and_lse
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]     out_final = torch.sum(torch.exp(lse_list - lse_final) * out_list, dim=0)
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962] torch.OutOfMemoryError: NPU out of memory. Tried to allocate 2.49 GiB (NPU 8; 61.27 GiB total capacity; 58.73 GiB already allocated; 58.73 GiB current active; 808.52 MiB free; 58.91 GiB reserved in total by PyTorch).If reserved memory is >> allocated memory try setting max_split_size_mb to avoid fragmentation.
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962] 
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "\[PCP-DEBUG\]" prefill_node.log | grep "schedule() start" | grep -v "waiting=0, max" | tail -20
+(EngineCore pid=183157) INFO 07-17 16:08:35 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=65536, running=0, waiting=1, max_num_running_reqs=10
+(EngineCore pid=183157) INFO 07-17 16:36:30 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=65536, running=0, waiting=1, max_num_running_reqs=10
+(EngineCore pid=183157) INFO 07-17 16:36:30 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=65536, running=1, waiting=2, max_num_running_reqs=10
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "Worker_PCP0_TP0.*execute_model START" prefill_node.log | grep -v "tokens=0"
+(Worker_PCP0_TP0 pid=183184) INFO 07-17 16:08:35 [model_runner_v1.py:1905] [PCP-WORKER] execute_model START pcp=0 tokens=60005
+(Worker_PCP0_TP0 pid=183184) INFO 07-17 16:36:30 [model_runner_v1.py:1905] [PCP-WORKER] execute_model START pcp=0 tokens=101
+(Worker_PCP0_TP0 pid=183184) INFO 07-17 16:36:31 [model_runner_v1.py:1905] [PCP-WORKER] execute_model START pcp=0 tokens=65536
+(Worker_PCP0_TP0 pid=183184) INFO 07-17 16:36:33 [model_runner_v1.py:1905] [PCP-WORKER] execute_model START pcp=0 tokens=54474
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# tail -50 prefill_node.log
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]   File "<string>", line 5, in execution_fn
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/compilation/piecewise_backend.py", line 380, in __call__
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]     return range_entry.runnable(*args)
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/compilation/compiler_interface.py", line 363, in compiled_fn
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]     result = _inner_fn(*args, **kwargs)
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/npugraph_ex/npu_fx_compiler.py", line 507, in __call__
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]     gm_result = self.run_kernel(*args, **kwargs)
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]   File "<string>", line 4591, in kernel
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/npugraph_ex/_acl_concrete_graph/acl_graph.py", line 823, in __call__
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]     return self.fx_run_eagerly(*args, **kwargs)
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/npugraph_ex/_acl_concrete_graph/acl_graph.py", line 894, in fx_run_eagerly
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]     return self.fx_forward(*args, **kwargs)
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]   File "<string>", line 47, in forward
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py", line 819, in __call__
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]     return self._op(*args, **kwargs)
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/model_executor/layers/attention/kv_transfer_utils.py", line 54, in wrapper
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]     result = func(*args, **kwargs)
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/model_executor/layers/attention/attention.py", line 751, in unified_attention_with_output
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]     self.impl.forward(
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/attention/attention_v1.py", line 1339, in forward
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]     attn_output = self.forward_impl(query, key, value, kv_cache, attn_metadata, output_padded)
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/attention/context_parallel/attention_cp.py", line 1048, in forward_impl
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]     context_output, context_lse = self._update_global_context_output(global_context_output)
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/attention/context_parallel/attention_cp.py", line 950, in _update_global_context_output
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]     context_output, context_lse = _update_out_and_lse(attn_out_allgather, attn_lse_allgather)
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/attention/context_parallel/common_cp.py", line 195, in _update_out_and_lse
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]     out_final = torch.sum(torch.exp(lse_list - lse_final) * out_list, dim=0)
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962]                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962] torch.OutOfMemoryError: NPU out of memory. Tried to allocate 2.49 GiB (NPU 8; 61.27 GiB total capacity; 58.73 GiB already allocated; 58.73 GiB current active; 808.52 MiB free; 58.91 GiB reserved in total by PyTorch).If reserved memory is >> allocated memory try setting max_split_size_mb to avoid fragmentation.
+(Worker_PCP2_TP0 pid=183583) ERROR 07-17 16:36:47 [multiproc_executor.py:962] 
+(Worker_PCP2_TP0 pid=183583) INFO 07-17 16:36:47 [model_runner_v1.py:1905] [PCP-WORKER] execute_model START pcp=2 tokens=0
+(Worker_PCP2_TP0 pid=183583) INFO 07-17 16:36:47 [model_runner_v1.py:1983] [PCP-WORKER] before _update_states pcp=2
+(Worker_PCP2_TP0 pid=183583) INFO 07-17 16:36:47 [model_runner_v1.py:1987] [PCP-WORKER] after _update_states pcp=2
+(Worker_PCP2_TP0 pid=183583) INFO 07-17 16:36:47 [multiproc_executor.py:872] WorkerProc shutting down.
+(APIServer pid=182807) sys:1: DeprecationWarning: builtin type swigvarlink has no __module__ attribute
+/usr/local/python3.12.13/lib/python3.12/multiprocessing/resource_tracker.py:279: UserWarning: resource_tracker: There appear to be 496 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+/usr/local/python3.12.13/lib/python3.12/multiprocessing/resource_tracker.py:279: UserWarning: resource_tracker: There appear to be 21 leaked shared_memory objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
