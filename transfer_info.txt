@@ -1,11 +1,30 @@
-# 1. 每轮调度了多少 tokens，看 chunked prefill 分了多少轮
-grep "Worker_PCP0_TP0.*execute_model START" prefill_node.log | grep -v "tokens=0"
-
-# 2. 调度器状态：running 和 waiting 数量变化
-grep "\[PCP-DEBUG\]" prefill_node.log | grep "schedule() start" | grep -v "running=0, waiting=0" | head -30
-
-# 3. 每轮 model_forward 耗时
-grep "Worker_PCP0_TP0.*_model_forward" prefill_node.log
-
-# 4. 总共多少条请求
-grep "\[PCP-DEBUG\]" prefill_node.log | grep "WAITING req=" | head -20
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "Worker_PCP0_TP0.*execute_model START" prefill_node.log | grep -v "tokens=0"
+(Worker_PCP0_TP0 pid=194157) INFO 07-17 16:59:15 [model_runner_v1.py:1905] [PCP-WORKER] execute_model START pcp=0 tokens=32768
+(Worker_PCP0_TP0 pid=194157) INFO 07-17 16:59:16 [model_runner_v1.py:1905] [PCP-WORKER] execute_model START pcp=0 tokens=32768
+(Worker_PCP0_TP0 pid=194157) INFO 07-17 16:59:55 [model_runner_v1.py:1905] [PCP-WORKER] execute_model START pcp=0 tokens=32768
+(Worker_PCP0_TP0 pid=194157) INFO 07-17 17:00:34 [model_runner_v1.py:1905] [PCP-WORKER] execute_model START pcp=0 tokens=32768
+(Worker_PCP0_TP0 pid=194157) INFO 07-17 17:01:09 [model_runner_v1.py:1905] [PCP-WORKER] execute_model START pcp=0 tokens=32768
+(Worker_PCP0_TP0 pid=194157) INFO 07-17 17:01:51 [model_runner_v1.py:1905] [PCP-WORKER] execute_model START pcp=0 tokens=16175
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "\[PCP-DEBUG\]" prefill_node.log | grep "schedule() start" | grep -v "running=0, waiting=0" | head -30
+(EngineCore pid=194129) INFO 07-17 16:59:15 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=32768, running=0, waiting=1, max_num_running_reqs=10
+(EngineCore pid=194129) INFO 07-17 16:59:15 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=32768, running=1, waiting=2, max_num_running_reqs=10
+(EngineCore pid=194129) INFO 07-17 16:59:19 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=32768, running=2, waiting=1, max_num_running_reqs=10
+(EngineCore pid=194129) INFO 07-17 16:59:57 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=32768, running=1, waiting=1, max_num_running_reqs=10
+(EngineCore pid=194129) INFO 07-17 17:00:36 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=32768, running=2, waiting=0, max_num_running_reqs=10
+(EngineCore pid=194129) INFO 07-17 17:01:16 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=32768, running=1, waiting=0, max_num_running_reqs=10
+(EngineCore pid=194129) INFO 07-17 17:01:54 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=32768, running=1, waiting=0, max_num_running_reqs=10
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "Worker_PCP0_TP0.*_model_forward" prefill_node.log
+(Worker_PCP0_TP0 pid=194157) INFO 07-17 16:59:15 [model_runner_v1.py:2252] [PCP-WORKER] before _model_forward pcp=0
+(Worker_PCP0_TP0 pid=194157) INFO 07-17 16:59:16 [model_runner_v1.py:2256] [PCP-WORKER] after _model_forward pcp=0
+(Worker_PCP0_TP0 pid=194157) INFO 07-17 16:59:19 [model_runner_v1.py:2252] [PCP-WORKER] before _model_forward pcp=0
+(Worker_PCP0_TP0 pid=194157) INFO 07-17 16:59:55 [model_runner_v1.py:2256] [PCP-WORKER] after _model_forward pcp=0
+(Worker_PCP0_TP0 pid=194157) INFO 07-17 16:59:57 [model_runner_v1.py:2252] [PCP-WORKER] before _model_forward pcp=0
+(Worker_PCP0_TP0 pid=194157) INFO 07-17 17:00:34 [model_runner_v1.py:2256] [PCP-WORKER] after _model_forward pcp=0
+(Worker_PCP0_TP0 pid=194157) INFO 07-17 17:00:36 [model_runner_v1.py:2252] [PCP-WORKER] before _model_forward pcp=0
+(Worker_PCP0_TP0 pid=194157) INFO 07-17 17:01:09 [model_runner_v1.py:2256] [PCP-WORKER] after _model_forward pcp=0
+(Worker_PCP0_TP0 pid=194157) INFO 07-17 17:01:16 [model_runner_v1.py:2252] [PCP-WORKER] before _model_forward pcp=0
+(Worker_PCP0_TP0 pid=194157) INFO 07-17 17:01:51 [model_runner_v1.py:2256] [PCP-WORKER] after _model_forward pcp=0
+(Worker_PCP0_TP0 pid=194157) INFO 07-17 17:01:54 [model_runner_v1.py:2252] [PCP-WORKER] before _model_forward pcp=0
+(Worker_PCP0_TP0 pid=194157) INFO 07-17 17:02:01 [model_runner_v1.py:2256] [PCP-WORKER] after _model_forward pcp=0
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "\[PCP-DEBUG\]" prefill_node.log | grep "WAITING req=" | head -20
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "\[PCP-DEBUG\]" prefill_node.log | grep "WAITING req=" | head -20
