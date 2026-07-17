@@ -1,41 +1,25 @@
-3 并发 60K 请求的完整时间线
-参数： budget=32768，3 个请求各 60,005 tokens，总需处理 180,015 tokens
+步骤 D — reshape + 合并（OOM 崩溃位置）
+attention_cp.py:943-950:
 
-逐轮调度还原
-第 1 轮 (16:59:15) — forward 1s
+x = global_context_output.view(self.pcp_size, S, self.dcp_size, H, D_plus_1)
+x = x.permute(0, 2, 1, 3, 4).contiguous()  # contiguous() = 新分配显存
+common_cp.py:195 — 崩溃点：
 
-调度器：running=0, waiting=1，只有请求 1
-请求 1 拿走 32768 tokens（第一个 chunk，无历史 KV）
-attention 计算量：32768 new × 32768 total = 小
-第 2 轮 (16:59:16) — forward 36s
+out_final = torch.sum(torch.exp(lse_list - lse_final) * out_list, dim=0)
+#                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 这里 = 2.49 GiB 临时 tensor
+exp() * out_list 产生一个和 out_list 同 shape 的临时 tensor：[pcp_size, batch_tokens, num_heads, head_dim]。当 batch_tokens 大时，这个临时 tensor 就是 2.49 GiB。
 
-调度器：running=1, waiting=2，请求 2、3 到达
-running 优先：请求 1 剩余 27237 tokens，全部拿走，budget 剩 5531
-waiting：请求 2 只拿到 5531 tokens
-请求 1 的 attention：27237 new × 60005 total KV → 全量 60K attention，巨大开销
-PCP allgather 合并 4 个 rank 的 60K attention 输出
-第 3 轮 (16:59:57) — forward 37s
 
-请求 1 已完成 prefill，进入 KV 传输
-调度器：running=1(请求 2), waiting=1(请求 3)
-请求 2 已有 5531 computed，拿 32768，budget 用完，请求 3 继续等
-请求 2 的 attention：32768 new × 38299 total KV
-第 4 轮 (17:00:36) — forward 33s
 
-请求 2 剩余 21706 tokens 拿走，budget 剩 11062
-请求 3 终于开始调度，拿到 11062 tokens
-请求 2 的 attention：21706 new × 60005 total KV → 又一次全量 60K attention
-第 5 轮 (17:01:16) — forward 35s
 
-请求 2 完成，只剩请求 3
-请求 3 已有 11062 computed，拿 32768
-attention：32768 new × 43830 total KV
-第 6 轮 (17:01:54) — forward 7s
-
-请求 3 剩余 16175 tokens 收尾
-attention：16175 new × 60005 total KV → tokens 少所以快
-三个请求各自的 TTFT
-请求	开始等待	prefill 完成	TTFT	原因
-请求 1	16:59:15	~16:59:55	~40s	2 轮完成，但第 2 轮 36s
-请求 2	16:59:15	~17:01:09	~114s	等 budget 5531→3 轮才做完
-请求 3	16:59:15	~17:02:01	~166s	等到第 4 轮才开始，再 3 轮完成
+已用显存 58.73 GiB 的组成：
+├── 模型权重                        ~15 GiB (W8A8 量化)
+├── KV Cache 池 (gpu_memory_util=0.80)  ~34 GiB
+│   ├── 请求 1 的 60K KV (delay_free)     占用中，等传输
+│   └── 请求 2 的 ~38K KV (正在 prefill)   占用中
+├── 中间 buffer (步骤 A-D)             ~8 GiB
+│   ├── _load_kv_for_chunk 临时 K,V
+│   ├── attention output
+│   ├── allgather ×4 放大
+│   └── _update_out_and_lse 临时 tensor  → 需要 2.49 GiB，只剩 808 MiB → OOM
+└── 其他 (activation, workspace)       ~1-2 GiB
