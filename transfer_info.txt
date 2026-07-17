@@ -1,59 +1,36 @@
-文件路径：vllm/v1/core/sched/scheduler.py
+# ========== 位置 1: 第 1900 行后（方法入口）==========
+def execute_model(self, scheduler_output, ...):
+    logger.info("[PCP-WORKER] execute_model START rank=%d, total_tokens=%d",
+                self.rank, scheduler_output.total_num_scheduled_tokens)
 
-位置 1：调度循环入口（第 348 行后）
-看初始 budget 是多少：
+# ========== 位置 2: 第 1981 行前（_update_states）==========
+    logger.info("[PCP-WORKER] before _update_states rank=%d", self.rank)
+    deferred_state_corrections_fn = self._update_states(scheduler_output)
+    logger.info("[PCP-WORKER] after _update_states rank=%d", self.rank)
 
-# 第 348 行后加
-token_budget = self.max_num_scheduled_tokens
-logger.info("[PCP-DEBUG] schedule() start: max_num_scheduled_tokens=%d, "
-            "running=%d, waiting=%d, max_num_running_reqs=%d",
-            self.max_num_scheduled_tokens, len(self.running),
-            len(self.waiting), self.max_num_running_reqs)
-位置 2：RUNNING 请求调度循环内（第 392 行后）
-看每个 running 请求消耗了多少 budget：
+# ========== 位置 3: 第 2028 行前（_prepare_inputs）==========
+    logger.info("[PCP-WORKER] before _prepare_inputs rank=%d", self.rank)
+    # ... _prepare_inputs(...)
+    logger.info("[PCP-WORKER] after _prepare_inputs rank=%d", self.rank)
 
-# 第 392 行 (num_new_tokens = min(num_new_tokens, token_budget)) 后加
-logger.info("[PCP-DEBUG] running req %s: num_new_tokens=%d, "
-            "num_computed=%d, num_tokens_with_spec=%d, token_budget=%d",
-            request.request_id[:8], num_new_tokens,
-            request.num_computed_tokens, request.num_tokens_with_spec,
-            token_budget)
-位置 3：KV block 分配失败（第 454 行）
-看是否因为 block 不够触发了 preempt：
+# ========== 位置 4: 第 2153 行前（_build_attention_metadata）==========
+    logger.info("[PCP-WORKER] before _build_attention_metadata rank=%d", self.rank)
+    # ... _build_attention_metadata(...)
+    logger.info("[PCP-WORKER] after _build_attention_metadata rank=%d", self.rank)
 
-# 第 454 行 "The request cannot be scheduled" 注释后加
-logger.warning("[PCP-DEBUG] KV block alloc FAILED for running req %s, "
-               "num_new_tokens=%d, will preempt",
-               request.request_id[:8], num_new_tokens)
-位置 4：RUNNING 请求调度完成后（第 498 行后）
-看 budget 消耗：
+# ========== 位置 5: 第 2244 行前（_model_forward，最关键）==========
+    logger.info("[PCP-WORKER] before _model_forward rank=%d", self.rank)
+    hidden_states = self._model_forward(...)
+    logger.info("[PCP-WORKER] after _model_forward rank=%d", self.rank)
 
-# 第 498 行 (token_budget -= num_new_tokens) 后加
-logger.info("[PCP-DEBUG] scheduled running req %s: tokens=%d, "
-            "remaining_budget=%d",
-            request.request_id[:8], num_new_tokens, token_budget)
-位置 5：WAITING 请求入口（第 548 行）
-看新请求是否能被调度：
+# ========== 位置 6: 第 2254 行前（get_restore_hidden_states）==========
+    if self.pcp_size > 1:
+        logger.info("[PCP-WORKER] before get_restore_hidden_states rank=%d", self.rank)
+        hidden_states = self.pcp_manager.get_restore_hidden_states(hidden_states)
+        logger.info("[PCP-WORKER] after get_restore_hidden_states rank=%d", self.rank)
 
-# 第 548 行 while 循环入口后加
-logger.info("[PCP-DEBUG] waiting scheduling: token_budget=%d, "
-            "running=%d/%d, waiting=%d",
-            token_budget, len(self.running),
-            self.max_num_running_reqs, len(self.waiting))
-位置 6：WAITING 请求 chunked prefill 截断（第 662-667 行）
-这是一个关键嫌疑点 —— 如果没开 enable_chunked_prefill，一个大 prefill 请求超过 budget 就直接 break：
-
-# 第 664 行 (num_new_tokens > token_budget) 后加
-if num_new_tokens > token_budget:
-    logger.warning("[PCP-DEBUG] WAITING req %s BLOCKED: "
-                   "num_new_tokens=%d > token_budget=%d, "
-                   "chunked_prefill=%s",
-                   request.request_id[:8], num_new_tokens,
-                   token_budget,
-                   self.scheduler_config.enable_chunked_prefill)
-位置 7：WAITING 请求 block 分配失败（第 733 行）
-# 第 733 行 (new_blocks is None) 后加
-if new_blocks is None:
-    logger.warning("[PCP-DEBUG] KV block alloc FAILED for waiting req %s, "
-                   "num_new_tokens=%d",
-                   request.request_id[:8], num_new_tokens)
+# ========== 位置 7: 第 2279 行前（compute_logits）==========
+    logger.info("[PCP-WORKER] before compute_logits rank=%d", self.rank)
+    sample_hidden_states = hidden_states[logits_indices]
+    logits = self.model.compute_logits(sample_hidden_states)
+    logger.info("[PCP-WORKER] after compute_logits rank=%d", self.rank)
