@@ -1,30 +1,41 @@
-[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "Worker_PCP0_TP0.*execute_model START" prefill_node.log | grep -v "tokens=0"
-(Worker_PCP0_TP0 pid=194157) INFO 07-17 16:59:15 [model_runner_v1.py:1905] [PCP-WORKER] execute_model START pcp=0 tokens=32768
-(Worker_PCP0_TP0 pid=194157) INFO 07-17 16:59:16 [model_runner_v1.py:1905] [PCP-WORKER] execute_model START pcp=0 tokens=32768
-(Worker_PCP0_TP0 pid=194157) INFO 07-17 16:59:55 [model_runner_v1.py:1905] [PCP-WORKER] execute_model START pcp=0 tokens=32768
-(Worker_PCP0_TP0 pid=194157) INFO 07-17 17:00:34 [model_runner_v1.py:1905] [PCP-WORKER] execute_model START pcp=0 tokens=32768
-(Worker_PCP0_TP0 pid=194157) INFO 07-17 17:01:09 [model_runner_v1.py:1905] [PCP-WORKER] execute_model START pcp=0 tokens=32768
-(Worker_PCP0_TP0 pid=194157) INFO 07-17 17:01:51 [model_runner_v1.py:1905] [PCP-WORKER] execute_model START pcp=0 tokens=16175
-[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "\[PCP-DEBUG\]" prefill_node.log | grep "schedule() start" | grep -v "running=0, waiting=0" | head -30
-(EngineCore pid=194129) INFO 07-17 16:59:15 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=32768, running=0, waiting=1, max_num_running_reqs=10
-(EngineCore pid=194129) INFO 07-17 16:59:15 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=32768, running=1, waiting=2, max_num_running_reqs=10
-(EngineCore pid=194129) INFO 07-17 16:59:19 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=32768, running=2, waiting=1, max_num_running_reqs=10
-(EngineCore pid=194129) INFO 07-17 16:59:57 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=32768, running=1, waiting=1, max_num_running_reqs=10
-(EngineCore pid=194129) INFO 07-17 17:00:36 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=32768, running=2, waiting=0, max_num_running_reqs=10
-(EngineCore pid=194129) INFO 07-17 17:01:16 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=32768, running=1, waiting=0, max_num_running_reqs=10
-(EngineCore pid=194129) INFO 07-17 17:01:54 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=32768, running=1, waiting=0, max_num_running_reqs=10
-[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "Worker_PCP0_TP0.*_model_forward" prefill_node.log
-(Worker_PCP0_TP0 pid=194157) INFO 07-17 16:59:15 [model_runner_v1.py:2252] [PCP-WORKER] before _model_forward pcp=0
-(Worker_PCP0_TP0 pid=194157) INFO 07-17 16:59:16 [model_runner_v1.py:2256] [PCP-WORKER] after _model_forward pcp=0
-(Worker_PCP0_TP0 pid=194157) INFO 07-17 16:59:19 [model_runner_v1.py:2252] [PCP-WORKER] before _model_forward pcp=0
-(Worker_PCP0_TP0 pid=194157) INFO 07-17 16:59:55 [model_runner_v1.py:2256] [PCP-WORKER] after _model_forward pcp=0
-(Worker_PCP0_TP0 pid=194157) INFO 07-17 16:59:57 [model_runner_v1.py:2252] [PCP-WORKER] before _model_forward pcp=0
-(Worker_PCP0_TP0 pid=194157) INFO 07-17 17:00:34 [model_runner_v1.py:2256] [PCP-WORKER] after _model_forward pcp=0
-(Worker_PCP0_TP0 pid=194157) INFO 07-17 17:00:36 [model_runner_v1.py:2252] [PCP-WORKER] before _model_forward pcp=0
-(Worker_PCP0_TP0 pid=194157) INFO 07-17 17:01:09 [model_runner_v1.py:2256] [PCP-WORKER] after _model_forward pcp=0
-(Worker_PCP0_TP0 pid=194157) INFO 07-17 17:01:16 [model_runner_v1.py:2252] [PCP-WORKER] before _model_forward pcp=0
-(Worker_PCP0_TP0 pid=194157) INFO 07-17 17:01:51 [model_runner_v1.py:2256] [PCP-WORKER] after _model_forward pcp=0
-(Worker_PCP0_TP0 pid=194157) INFO 07-17 17:01:54 [model_runner_v1.py:2252] [PCP-WORKER] before _model_forward pcp=0
-(Worker_PCP0_TP0 pid=194157) INFO 07-17 17:02:01 [model_runner_v1.py:2256] [PCP-WORKER] after _model_forward pcp=0
-[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "\[PCP-DEBUG\]" prefill_node.log | grep "WAITING req=" | head -20
-[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "\[PCP-DEBUG\]" prefill_node.log | grep "WAITING req=" | head -20
+3 并发 60K 请求的完整时间线
+参数： budget=32768，3 个请求各 60,005 tokens，总需处理 180,015 tokens
+
+逐轮调度还原
+第 1 轮 (16:59:15) — forward 1s
+
+调度器：running=0, waiting=1，只有请求 1
+请求 1 拿走 32768 tokens（第一个 chunk，无历史 KV）
+attention 计算量：32768 new × 32768 total = 小
+第 2 轮 (16:59:16) — forward 36s
+
+调度器：running=1, waiting=2，请求 2、3 到达
+running 优先：请求 1 剩余 27237 tokens，全部拿走，budget 剩 5531
+waiting：请求 2 只拿到 5531 tokens
+请求 1 的 attention：27237 new × 60005 total KV → 全量 60K attention，巨大开销
+PCP allgather 合并 4 个 rank 的 60K attention 输出
+第 3 轮 (16:59:57) — forward 37s
+
+请求 1 已完成 prefill，进入 KV 传输
+调度器：running=1(请求 2), waiting=1(请求 3)
+请求 2 已有 5531 computed，拿 32768，budget 用完，请求 3 继续等
+请求 2 的 attention：32768 new × 38299 total KV
+第 4 轮 (17:00:36) — forward 33s
+
+请求 2 剩余 21706 tokens 拿走，budget 剩 11062
+请求 3 终于开始调度，拿到 11062 tokens
+请求 2 的 attention：21706 new × 60005 total KV → 又一次全量 60K attention
+第 5 轮 (17:01:16) — forward 35s
+
+请求 2 完成，只剩请求 3
+请求 3 已有 11062 computed，拿 32768
+attention：32768 new × 43830 total KV
+第 6 轮 (17:01:54) — forward 7s
+
+请求 3 剩余 16175 tokens 收尾
+attention：16175 new × 60005 total KV → tokens 少所以快
+三个请求各自的 TTFT
+请求	开始等待	prefill 完成	TTFT	原因
+请求 1	16:59:15	~16:59:55	~40s	2 轮完成，但第 2 轮 36s
+请求 2	16:59:15	~17:01:09	~114s	等 budget 5531→3 轮才做完
+请求 3	16:59:15	~17:02:01	~166s	等到第 4 轮才开始，再 3 轮完成
