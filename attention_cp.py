@@ -854,7 +854,7 @@ class AscendAttentionCPImpl(AscendAttentionBackendImpl):
                 torch.tensor(valid_kv_lens, dtype=torch.int64), dim=0
             ).tolist()
             filt_q_cumsum = torch.cumsum(
-                torch.tensor(valid_q_lens, dtype=torch.int64), dim=0
+                torch.tensor(valid_q_lens, dtype=torch.int64, device=query.device), dim=0
             )
 
             print(f"[CTX-DEBUG] pcp={self.pcp_rank} FIX_PATH calling kernel: "
