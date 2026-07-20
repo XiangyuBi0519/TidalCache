@@ -9,3 +9,39 @@ grep "\[PCP-DEBUG\]" prefill_node.log | grep "schedule() start" | grep -v "runni
 
 # 4. worker 最后状态
 grep "Worker_PCP0_TP0.*\[PCP-WORKER\]" prefill_node.log | tail -5
+
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "\[CP-DEBUG\]" prefill_node.log | tail -5
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "\[CP-DEBUG\]" prefill_node.log | head -10
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep -iE "OutOfMemory|OOM|Error|TimeoutError|Killed" prefill_node.log | grep -v "GET\|POST\|INFO" | tail -20
+(Worker_PCP1_TP2 pid=746782) ERROR 07-20 11:16:43 [multiproc_executor.py:962]   File "<string>", line 47, in forward
+(Worker_PCP1_TP2 pid=746782) ERROR 07-20 11:16:43 [multiproc_executor.py:962]   File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_ops.py", line 819, in __call__
+(Worker_PCP1_TP2 pid=746782) ERROR 07-20 11:16:43 [multiproc_executor.py:962]     return self._op(*args, **kwargs)
+(Worker_PCP1_TP2 pid=746782) ERROR 07-20 11:16:43 [multiproc_executor.py:962]            ^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP1_TP2 pid=746782) ERROR 07-20 11:16:43 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/model_executor/layers/attention/kv_transfer_utils.py", line 54, in wrapper
+(Worker_PCP1_TP2 pid=746782) ERROR 07-20 11:16:43 [multiproc_executor.py:962]     result = func(*args, **kwargs)
+(Worker_PCP1_TP2 pid=746782) ERROR 07-20 11:16:43 [multiproc_executor.py:962]              ^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP1_TP2 pid=746782) ERROR 07-20 11:16:43 [multiproc_executor.py:962]   File "/vllm-workspace/vllm/vllm/model_executor/layers/attention/attention.py", line 751, in unified_attention_with_output
+(Worker_PCP1_TP2 pid=746782) ERROR 07-20 11:16:43 [multiproc_executor.py:962]     self.impl.forward(
+(Worker_PCP1_TP2 pid=746782) ERROR 07-20 11:16:43 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/attention/attention_v1.py", line 1339, in forward
+(Worker_PCP1_TP2 pid=746782) ERROR 07-20 11:16:43 [multiproc_executor.py:962]     attn_output = self.forward_impl(query, key, value, kv_cache, attn_metadata, output_padded)
+(Worker_PCP1_TP2 pid=746782) ERROR 07-20 11:16:43 [multiproc_executor.py:962]                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP1_TP2 pid=746782) ERROR 07-20 11:16:43 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/attention/context_parallel/attention_cp.py", line 1033, in forward_impl
+(Worker_PCP1_TP2 pid=746782) ERROR 07-20 11:16:43 [multiproc_executor.py:962]     context_output = self._compute_prefill_context(prefill_query_all, kv_cache, attn_metadata)
+(Worker_PCP1_TP2 pid=746782) ERROR 07-20 11:16:43 [multiproc_executor.py:962]                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Worker_PCP1_TP2 pid=746782) ERROR 07-20 11:16:43 [multiproc_executor.py:962]   File "/vllm-workspace/vllm-ascend/vllm_ascend/attention/context_parallel/attention_cp.py", line 760, in _compute_prefill_context
+(Worker_PCP1_TP2 pid=746782) ERROR 07-20 11:16:43 [multiproc_executor.py:962]     total_tok,
+(Worker_PCP1_TP2 pid=746782) ERROR 07-20 11:16:43 [multiproc_executor.py:962]     ^^^^^^^^^
+(Worker_PCP1_TP2 pid=746782) ERROR 07-20 11:16:43 [multiproc_executor.py:962] NameError: name 'total_tok' is not defined. Did you mean: 'total_toks'?
+(Worker_PCP1_TP2 pid=746782) ERROR 07-20 11:16:43 [multiproc_executor.py:962] 
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "\[PCP-DEBUG\]" prefill_node.log | grep "schedule() start" | grep -v "running=0, waiting=0" | tail -10
+(EngineCore pid=746465) INFO 07-20 11:16:20 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=65536, running=0, waiting=1, max_num_running_reqs=10
+(EngineCore pid=746465) INFO 07-20 11:16:20 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=65536, running=1, waiting=1, max_num_running_reqs=10
+(EngineCore pid=746465) INFO 07-20 11:16:28 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=65536, running=1, waiting=8, max_num_running_reqs=10
+(EngineCore pid=746465) INFO 07-20 11:16:35 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=65536, running=2, waiting=7, max_num_running_reqs=10
+(EngineCore pid=746465) INFO 07-20 11:16:43 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=65536, running=2, waiting=7, max_num_running_reqs=10
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "Worker_PCP0_TP0.*\[PCP-WORKER\]" prefill_node.log | tail -5
+(Worker_PCP0_TP0 pid=746493) INFO 07-20 11:16:43 [model_runner_v1.py:2027] [PCP-WORKER] before _prepare_inputs pcp=0
+(Worker_PCP0_TP0 pid=746493) INFO 07-20 11:16:43 [model_runner_v1.py:2037] [PCP-WORKER] after _prepare_inputs pcp=0
+(Worker_PCP0_TP0 pid=746493) INFO 07-20 11:16:43 [model_runner_v1.py:2159] [PCP-WORKER] before _build_attention_metadata pcp=0
+(Worker_PCP0_TP0 pid=746493) INFO 07-20 11:16:43 [model_runner_v1.py:2176] [PCP-WORKER] after _build_attention_metadata pcp=0
+(Worker_PCP0_TP0 pid=746493) INFO 07-20 11:16:43 [model_runner_v1.py:2252] [PCP-WORKER] before _model_forward pcp=0
