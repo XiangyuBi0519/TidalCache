@@ -1088,6 +1088,11 @@ class AscendAttentionCPImpl(AscendAttentionBackendImpl):
             # current_stream: -----                    -- context attn --                     -/
             # COMM_STREAM:         \-- all_gather Q --/                  \-- a2a ag output --/
 
+            # ---- HANG-DEBUG: only print on first layer to reduce noise ----
+            _hang_debug = has_chunked_context and getattr(self, '_layer_idx', 0) == 0
+            if _hang_debug:
+                print(f"[HANG-DEBUG] pcp={self.pcp_rank} ENTER chunked_context=True num_prefills={attn_metadata.num_prefills}", flush=True)
+
             # qkv init
             num_actual_tokens_pcp_padded = attn_metadata.num_actual_tokens_pcp_padded // self.pcp_size
             prefill_query = query[num_decode_tokens:num_actual_tokens_pcp_padded].contiguous()
@@ -1099,12 +1104,18 @@ class AscendAttentionCPImpl(AscendAttentionBackendImpl):
                 cp_chunkedprefill_comm_stream().wait_stream(torch.npu.current_stream())
                 with torch_npu.npu.stream(cp_chunkedprefill_comm_stream()):
                     prefill_query_all = self._prefill_query_all_gather(attn_metadata, prefill_query.clone())
+                if _hang_debug:
+                    print(f"[HANG-DEBUG] pcp={self.pcp_rank} P1_allgather_q_launched", flush=True)
 
             if self.pcp_size > 1:
                 # Scenario of Enabling PCP or PCP&DCP
                 # prepare qkv and compute the head part // overlap the communication of all gather q
                 data_head, data_tail = self._forward_prefill_cp_pre(prefill_query, key, value, attn_metadata)
+                if _hang_debug:
+                    print(f"[HANG-DEBUG] pcp={self.pcp_rank} P2_after_cp_pre", flush=True)
                 output_head, lse_head = self._forward_prefill_cp_attn(data_head, True, attn_metadata)
+                if _hang_debug:
+                    print(f"[HANG-DEBUG] pcp={self.pcp_rank} P3_after_head_attn", flush=True)
             else:
                 # Scenario of Enabling DCP Individually
                 attn_output_prefill, attn_lse_prefill = torch.ops.npu.npu_fused_infer_attention_score(
@@ -1126,8 +1137,12 @@ class AscendAttentionCPImpl(AscendAttentionBackendImpl):
 
             if has_chunked_context:
                 torch.npu.current_stream().wait_stream(cp_chunkedprefill_comm_stream())
+                if _hang_debug:
+                    print(f"[HANG-DEBUG] pcp={self.pcp_rank} P4_after_wait_allgather_q", flush=True)
                 # computation of context
                 context_output = self._compute_prefill_context(prefill_query_all, kv_cache, attn_metadata)
+                if _hang_debug:
+                    print(f"[HANG-DEBUG] pcp={self.pcp_rank} P5_after_context_attn", flush=True)
                 # Note(qcs): (output, lse) -> [Seq, Head_num, Head_dim+1] -> [Head_num, Head_dim+1, Seq]
                 local_context_output = torch.cat(context_output, dim=-1).permute([1, 2, 0]).contiguous()
 
@@ -1135,10 +1150,14 @@ class AscendAttentionCPImpl(AscendAttentionBackendImpl):
                 cp_chunkedprefill_comm_stream().wait_stream(torch.npu.current_stream())
                 with torch_npu.npu.stream(cp_chunkedprefill_comm_stream()):
                     global_context_output = self._gather_global_context_output(local_context_output)
+                if _hang_debug:
+                    print(f"[HANG-DEBUG] pcp={self.pcp_rank} P6_after_gather_output_launched", flush=True)
 
             if self.pcp_size > 1:
                 # compute the tail part and reorg output&lse // overlap the communication of output
                 output_tail, lse_tail = self._forward_prefill_cp_attn(data_tail, False, attn_metadata)
+                if _hang_debug:
+                    print(f"[HANG-DEBUG] pcp={self.pcp_rank} P7_after_tail_attn", flush=True)
 
                 attn_output_prefill, attn_lse_prefill = self._forward_prefill_cp_post(
                     [output_head, output_tail],
@@ -1149,11 +1168,15 @@ class AscendAttentionCPImpl(AscendAttentionBackendImpl):
             if has_chunked_context:
                 # update the output of current chunk with context part
                 torch.npu.current_stream().wait_stream(cp_chunkedprefill_comm_stream())
+                if _hang_debug:
+                    print(f"[HANG-DEBUG] pcp={self.pcp_rank} P8_after_wait_gather_output", flush=True)
                 global_context_output = global_context_output.permute([2, 0, 1]).contiguous()
                 context_output, context_lse = self._update_global_context_output(global_context_output)
                 self._update_chunk_attn_out_lse_with_current_attn_out_lse(
                     attn_output_prefill, attn_lse_prefill, context_output, context_lse, prefill_query, attn_metadata
                 )
+                if _hang_debug:
+                    print(f"[HANG-DEBUG] pcp={self.pcp_rank} P9_after_update_done", flush=True)
 
             if self.pcp_size > 1 and pcp_use_hybrid_attn:
                 # layer_idx != num_layers - 1
