@@ -1,3 +1,31 @@
-grep "HANG-DEBUG" prefill_node.log | tail -20
-
-grep "HANG-DEBUG" prefill_node.log | grep -oP 'P[0-9]_[a-z_]+' | sort -u
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "HANG-DEBUG" prefill_node.log | tail -20
+(Worker_PCP2_TP0 pid=841758) [HANG-DEBUG] pcp=2 P5_after_context_attn
+(Worker_PCP0_TP0 pid=841363) [HANG-DEBUG] pcp=0 P1_allgather_q_launched
+(Worker_PCP1_TP3 pid=841704) [HANG-DEBUG] pcp=1 P1_allgather_q_launched
+(Worker_PCP0_TP0 pid=841363) [HANG-DEBUG] pcp=0 P2_after_cp_pre
+(Worker_PCP1_TP3 pid=841704) [HANG-DEBUG] pcp=1 P2_after_cp_pre
+(Worker_PCP0_TP0 pid=841363) [HANG-DEBUG] pcp=0 P3_after_head_attn
+(Worker_PCP1_TP3 pid=841704) [HANG-DEBUG] pcp=1 P3_after_head_attn
+(Worker_PCP0_TP0 pid=841363) [HANG-DEBUG] pcp=0 P4_after_wait_allgather_q
+(Worker_PCP1_TP3 pid=841704) [HANG-DEBUG] pcp=1 P4_after_wait_allgather_q
+(Worker_PCP1_TP3 pid=841704) [HANG-DEBUG] pcp=1 P5_after_context_attn
+(Worker_PCP0_TP0 pid=841363) [HANG-DEBUG] pcp=0 P5_after_context_attn
+(Worker_PCP3_TP1 pid=842029) [HANG-DEBUG] pcp=3 P6_after_gather_output_launched
+(Worker_PCP2_TP2 pid=841866) [HANG-DEBUG] pcp=2 P6_after_gather_output_launched
+(Worker_PCP2_TP1 pid=841812) [HANG-DEBUG] pcp=2 P6_after_gather_output_launched
+(Worker_PCP3_TP1 pid=842029) [HANG-DEBUG] pcp=3 P7_after_tail_attn
+(Worker_PCP3_TP1 pid=842029) [HANG-DEBUG] pcp=3 P8_after_wait_gather_output
+(Worker_PCP2_TP2 pid=841866) [HANG-DEBUG] pcp=2 P7_after_tail_attn
+(Worker_PCP2_TP1 pid=841812) [HANG-DEBUG] pcp=2 P7_after_tail_attn
+(Worker_PCP2_TP2 pid=841866) [HANG-DEBUG] pcp=2 P8_after_wait_gather_output
+(Worker_PCP2_TP1 pid=841812) [HANG-DEBUG] pcp=2 P8_after_wait_gather_output
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "HANG-DEBUG" prefill_node.log | grep -oP 'P[0-9]_[a-z_]+' | sort -u
+P1_allgather_q_launched
+P2_after_cp_pre
+P3_after_head_attn
+P4_after_wait_allgather_q
+P5_after_context_attn
+P6_after_gather_output_launched
+P7_after_tail_attn
+P8_after_wait_gather_output
+P9_after_update_done
