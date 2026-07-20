@@ -1,43 +1,11 @@
-[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep -n "has_zero_kv\|BEGIN FIX\|BEGIN ORIGINAL" /vllm-workspace/vllm-ascend/vllm_ascend/attention/context_parallel/attention_cp.py
-757:        # ---- BEGIN ORIGINAL CODE (commented out): hangs when mixed new+running
-778:        # ---- BEGIN FIX: filter out requests with 0 KV before calling kernel ----
-785:        has_zero_kv = any(l == 0 for l in per_req_kv_lens)
-787:        if not has_zero_kv:
-[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# find /vllm-workspace -name "__pycache__" -path "*/attention/context_parallel/*" 2>/dev/null
-/vllm-workspace/vllm-ascend/vllm_ascend/attention/context_parallel/__pycache__
-[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# find /root -name "torch_compile_cache" -o -name ".cache/torch" -o -name "inductor_cache" 2>/dev/null
-/root/.cache/vllm/torch_compile_cache
-/root/.cache/vllm/torch_compile_cache/torch_aot_compile/17df65995f4064a243e5565886306bd39907d9a9679ba5e29db2800ec8d8023d/inductor_cache
-/root/.cache/vllm/torch_compile_cache/torch_aot_compile/2daa43eabb8c678521a72c1d6dc0c0eb6994d18aba9f8db405ab24430c03e5b2/inductor_cache
-/root/.cache/vllm/torch_compile_cache/torch_aot_compile/02d6f3411cb3ee47681638bdb5281b3e5d8128171cb1612438bc3a7cbc812c5e/inductor_cache
-/root/.cache/vllm/torch_compile_cache/torch_aot_compile/37e528cfdb6f03dbcd215dd9f829c4c6353f87759b1b4b45014f65361d06d4cb/inductor_cache
-/root/.cache/vllm/torch_compile_cache/torch_aot_compile/ce90e6b3f789d6ad91136e0126319605972e79b1941562adc141d993ea716269/inductor_cache
-/root/.cache/vllm/torch_compile_cache/torch_aot_compile/fa2578cbd76d6c7d33e03b8f7a14614e243ccf97d65407827f9d6771983c41c5/inductor_cache
-/root/.cache/vllm/torch_compile_cache/torch_aot_compile/61911a3eba6fbce376af0da8d167d565a5afcbb15391513e003ad032ef66a765/inductor_cache
-/root/.cache/vllm/torch_compile_cache/torch_aot_compile/65d3bc16ac8d05264079d9fb948427d49cc9c8f00872cb6d53ae2de628a2a517/inductor_cache
-/root/.cache/vllm/torch_compile_cache/torch_aot_compile/e1b0fe7dce38bdeba3c8875e6dad36a50b18c0485ce86f634e3de3da6fa05720/inductor_cache
-[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# ls -la /tmp/torchinductor_* 2>/dev/null
-total 140
-drwxr-xr-x 2 root root   4096 Jul  1 02:38 .
-drwxrwxrwt 1 root root 135168 Jul 20 14:24 ..
-[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep -E "before _model_forward|after _model_forward" prefill_node.log | tail -20
-(Worker_PCP2_TP3 pid=810143) INFO 07-20 14:32:41 [model_runner_v1.py:2256] [PCP-WORKER] after _model_forward pcp=2
-(Worker_PCP0_TP1 pid=809604) INFO 07-20 14:32:41 [model_runner_v1.py:2256] [PCP-WORKER] after _model_forward pcp=0
-(Worker_PCP3_TP0 pid=810198) INFO 07-20 14:32:41 [model_runner_v1.py:2256] [PCP-WORKER] after _model_forward pcp=3
-(Worker_PCP3_TP3 pid=810364) INFO 07-20 14:32:41 [model_runner_v1.py:2256] [PCP-WORKER] after _model_forward pcp=3
-(Worker_PCP3_TP3 pid=810364) INFO 07-20 14:32:41 [model_runner_v1.py:2252] [PCP-WORKER] before _model_forward pcp=3
-(Worker_PCP3_TP0 pid=810198) INFO 07-20 14:32:41 [model_runner_v1.py:2252] [PCP-WORKER] before _model_forward pcp=3
-(Worker_PCP3_TP2 pid=810309) INFO 07-20 14:32:41 [model_runner_v1.py:2252] [PCP-WORKER] before _model_forward pcp=3
-(Worker_PCP2_TP2 pid=810089) INFO 07-20 14:32:41 [model_runner_v1.py:2252] [PCP-WORKER] before _model_forward pcp=2
-(Worker_PCP2_TP0 pid=809981) INFO 07-20 14:32:41 [model_runner_v1.py:2252] [PCP-WORKER] before _model_forward pcp=2
-(Worker_PCP3_TP1 pid=810253) INFO 07-20 14:32:41 [model_runner_v1.py:2252] [PCP-WORKER] before _model_forward pcp=3
-(Worker_PCP2_TP3 pid=810143) INFO 07-20 14:32:41 [model_runner_v1.py:2252] [PCP-WORKER] before _model_forward pcp=2
-(Worker_PCP2_TP1 pid=810035) INFO 07-20 14:32:41 [model_runner_v1.py:2252] [PCP-WORKER] before _model_forward pcp=2
-(Worker_PCP1_TP3 pid=809927) INFO 07-20 14:32:41 [model_runner_v1.py:2252] [PCP-WORKER] before _model_forward pcp=1
-(Worker_PCP1_TP2 pid=809873) INFO 07-20 14:32:41 [model_runner_v1.py:2252] [PCP-WORKER] before _model_forward pcp=1
-(Worker_PCP0_TP1 pid=809604) INFO 07-20 14:32:41 [model_runner_v1.py:2252] [PCP-WORKER] before _model_forward pcp=0
-(Worker_PCP1_TP1 pid=809818) INFO 07-20 14:32:41 [model_runner_v1.py:2252] [PCP-WORKER] before _model_forward pcp=1
-(Worker_PCP1_TP0 pid=809764) INFO 07-20 14:32:41 [model_runner_v1.py:2252] [PCP-WORKER] before _model_forward pcp=1
-(Worker_PCP0_TP3 pid=809710) INFO 07-20 14:32:41 [model_runner_v1.py:2252] [PCP-WORKER] before _model_forward pcp=0
-(Worker_PCP0_TP2 pid=809656) INFO 07-20 14:32:41 [model_runner_v1.py:2252] [PCP-WORKER] before _model_forward pcp=0
-(Worker_PCP0_TP0 pid=809585) INFO 07-20 14:32:41 [model_runner_v1.py:2252] [PCP-WORKER] before _model_forward pcp=0
+# 清 Python 字节码缓存
+rm -rf /vllm-workspace/vllm-ascend/vllm_ascend/attention/context_parallel/__pycache__
+
+# 清 torch.compile 编译缓存（这个是关键）
+rm -rf /root/.cache/vllm/torch_compile_cache
+
+# 清 inductor 缓存
+rm -rf /tmp/torchinductor_*
+
+# 确认清干净了
+ls /root/.cache/vllm/torch_compile_cache 2>/dev/null && echo "还在" || echo "已清除"
