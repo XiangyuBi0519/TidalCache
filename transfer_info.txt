@@ -3,3 +3,68 @@ grep "HANG-DEBUG" prefill_node.log | tail -30
 grep "HANG-DEBUG" prefill_node.log | grep "P5" | tail -20
 
 grep "HANG-DEBUG" prefill_node.log | grep -oP 'P[0-9][a-c]?_[a-z_]+' | sort -u
+
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "HANG-DEBUG" prefill_node.log | tail -30
+(Worker_PCP1_TP2 pid=861771) [HANG-DEBUG] pcp=1 P7_after_tail_attn
+(Worker_PCP1_TP2 pid=861771) [HANG-DEBUG] pcp=1 P8_after_wait_gather_output
+(Worker_PCP3_TP2 pid=862206) [HANG-DEBUG] pcp=3 P6_after_gather_output_launched
+(Worker_PCP3_TP2 pid=862206) [HANG-DEBUG] pcp=3 P7_after_tail_attn
+(Worker_PCP3_TP2 pid=862206) [HANG-DEBUG] pcp=3 P8_after_wait_gather_output
+(Worker_PCP3_TP3 pid=862261) [HANG-DEBUG] pcp=3 P6_after_gather_output_launched
+(Worker_PCP3_TP3 pid=862261) [HANG-DEBUG] pcp=3 P7_after_tail_attn
+(Worker_PCP3_TP3 pid=862261) [HANG-DEBUG] pcp=3 P8_after_wait_gather_output
+(Worker_PCP3_TP0 pid=862096) [HANG-DEBUG] pcp=3 P6_after_gather_output_launched
+(Worker_PCP3_TP0 pid=862096) [HANG-DEBUG] pcp=3 P7_after_tail_attn
+(Worker_PCP3_TP0 pid=862096) [HANG-DEBUG] pcp=3 P8_after_wait_gather_output
+(Worker_PCP1_TP0 pid=861662) [HANG-DEBUG] pcp=1 P6_after_gather_output_launched
+(Worker_PCP1_TP0 pid=861662) [HANG-DEBUG] pcp=1 P7_after_tail_attn
+(Worker_PCP1_TP0 pid=861662) [HANG-DEBUG] pcp=1 P8_after_wait_gather_output
+(Worker_PCP0_TP3 pid=861608) [HANG-DEBUG] pcp=0 P6_after_gather_output_launched
+(Worker_PCP0_TP3 pid=861608) [HANG-DEBUG] pcp=0 P7_after_tail_attn
+(Worker_PCP0_TP3 pid=861608) [HANG-DEBUG] pcp=0 P8_after_wait_gather_output
+(Worker_PCP1_TP3 pid=861825) [HANG-DEBUG] pcp=1 P9_after_update_done
+(Worker_PCP1_TP3 pid=861825) [HANG-DEBUG] pcp=1 ENTER chunked_context=True num_prefills=2
+(Worker_PCP2_TP2 pid=861987) [HANG-DEBUG] pcp=2 P6_after_gather_output_launched
+(Worker_PCP2_TP2 pid=861987) [HANG-DEBUG] pcp=2 P7_after_tail_attn
+(Worker_PCP2_TP2 pid=861987) [HANG-DEBUG] pcp=2 P8_after_wait_gather_output
+(Worker_PCP1_TP3 pid=861825) [HANG-DEBUG] pcp=1 P1_allgather_q_launched
+(Worker_PCP1_TP3 pid=861825) [HANG-DEBUG] pcp=1 P2_after_cp_pre
+(Worker_PCP1_TP3 pid=861825) [HANG-DEBUG] pcp=1 P3_after_head_attn
+(Worker_PCP1_TP3 pid=861825) [HANG-DEBUG] pcp=1 P4_after_wait_allgather_q
+(Worker_PCP1_TP3 pid=861825) [HANG-DEBUG] pcp=1 P5a_context_attn_returned (async)
+(Worker_PCP2_TP0 pid=861879) [HANG-DEBUG] pcp=2 P6_after_gather_output_launched
+(Worker_PCP2_TP0 pid=861879) [HANG-DEBUG] pcp=2 P7_after_tail_attn
+(Worker_PCP2_TP0 pid=861879) [HANG-DEBUG] pcp=2 P8_after_wait_gather_output
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "HANG-DEBUG" prefill_node.log | grep "P5" | tail -20
+(Worker_PCP1_TP1 pid=861717) [HANG-DEBUG] pcp=1 P5c_after_cat_permute
+(Worker_PCP1_TP0 pid=861662) [HANG-DEBUG] pcp=1 P5c_after_cat_permute
+(Worker_PCP1_TP3 pid=861825) [HANG-DEBUG] pcp=1 P5c_after_cat_permute
+(Worker_PCP2_TP0 pid=861879) [HANG-DEBUG] pcp=2 P5b_npu_synchronized (kernel done)
+(Worker_PCP2_TP2 pid=861987) [HANG-DEBUG] pcp=2 P5b_npu_synchronized (kernel done)
+(Worker_PCP2_TP1 pid=861933) [HANG-DEBUG] pcp=2 P5b_npu_synchronized (kernel done)
+(Worker_PCP2_TP0 pid=861879) [HANG-DEBUG] pcp=2 P5c_after_cat_permute
+(Worker_PCP2_TP3 pid=862041) [HANG-DEBUG] pcp=2 P5b_npu_synchronized (kernel done)
+(Worker_PCP2_TP2 pid=861987) [HANG-DEBUG] pcp=2 P5c_after_cat_permute
+(Worker_PCP2_TP1 pid=861933) [HANG-DEBUG] pcp=2 P5c_after_cat_permute
+(Worker_PCP2_TP3 pid=862041) [HANG-DEBUG] pcp=2 P5c_after_cat_permute
+(Worker_PCP3_TP3 pid=862261) [HANG-DEBUG] pcp=3 P5b_npu_synchronized (kernel done)
+(Worker_PCP3_TP2 pid=862206) [HANG-DEBUG] pcp=3 P5b_npu_synchronized (kernel done)
+(Worker_PCP3_TP3 pid=862261) [HANG-DEBUG] pcp=3 P5c_after_cat_permute
+(Worker_PCP3_TP1 pid=862151) [HANG-DEBUG] pcp=3 P5b_npu_synchronized (kernel done)
+(Worker_PCP3_TP2 pid=862206) [HANG-DEBUG] pcp=3 P5c_after_cat_permute
+(Worker_PCP3_TP1 pid=862151) [HANG-DEBUG] pcp=3 P5c_after_cat_permute
+(Worker_PCP3_TP0 pid=862096) [HANG-DEBUG] pcp=3 P5b_npu_synchronized (kernel done)
+(Worker_PCP3_TP0 pid=862096) [HANG-DEBUG] pcp=3 P5c_after_cat_permute
+(Worker_PCP1_TP3 pid=861825) [HANG-DEBUG] pcp=1 P5a_context_attn_returned (async)
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "HANG-DEBUG" prefill_node.log | grep -oP 'P[0-9][a-c]?_[a-z_]+' | sort -u
+P1_allgather_q_launched
+P2_after_cp_pre
+P3_after_head_attn
+P4_after_wait_allgather_q
+P5a_context_attn_returned
+P5b_npu_synchronized
+P5c_after_cat_permute
+P6_after_gather_output_launched
+P7_after_tail_attn
+P8_after_wait_gather_output
+P9_after_update_done
