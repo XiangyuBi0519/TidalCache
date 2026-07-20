@@ -1125,7 +1125,9 @@ class AscendAttentionCPImpl(AscendAttentionBackendImpl):
                     print(f"[HANG-DEBUG] pcp={self.pcp_rank} P2_after_cp_pre", flush=True)
                 output_head, lse_head = self._forward_prefill_cp_attn(data_head, True, attn_metadata)
                 if _hang_debug:
-                    print(f"[HANG-DEBUG] pcp={self.pcp_rank} P3_after_head_attn", flush=True)
+                    print(f"[HANG-DEBUG] pcp={self.pcp_rank} P3a_head_attn_returned (async)", flush=True)
+                    torch.npu.synchronize()
+                    print(f"[HANG-DEBUG] pcp={self.pcp_rank} P3b_head_attn_npu_synced (kernel done)", flush=True)
             else:
                 # Scenario of Enabling DCP Individually
                 attn_output_prefill, attn_lse_prefill = torch.ops.npu.npu_fused_infer_attention_score(
