@@ -1,3 +1,36 @@
 grep "HANG-DEBUG" prefill_node.log | tail -20
 
 grep "HANG-DEBUG.*P5" prefill_node.log | tail -10
+
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "HANG-DEBUG" prefill_node.log | tail -20
+(Worker_PCP2_TP1 pid=892576) [HANG-DEBUG] pcp=2 P7_after_tail_attn
+(Worker_PCP2_TP1 pid=892576) [HANG-DEBUG] pcp=2 P8_after_wait_gather_output
+(Worker_PCP0_TP0 pid=892124) [HANG-DEBUG] pcp=0 P6_after_gather_output_launched
+(Worker_PCP0_TP0 pid=892124) [HANG-DEBUG] pcp=0 P7_after_tail_attn
+(Worker_PCP0_TP0 pid=892124) [HANG-DEBUG] pcp=0 P8_after_wait_gather_output
+(Worker_PCP2_TP2 pid=892630) [HANG-DEBUG] pcp=2 P6_after_gather_output_launched
+(Worker_PCP2_TP2 pid=892630) [HANG-DEBUG] pcp=2 P7_after_tail_attn
+(Worker_PCP2_TP2 pid=892630) [HANG-DEBUG] pcp=2 P8_after_wait_gather_output
+(Worker_PCP3_TP3 pid=892907) [HANG-DEBUG] pcp=3 P6_after_gather_output_launched
+(Worker_PCP3_TP3 pid=892907) [HANG-DEBUG] pcp=3 P7_after_tail_attn
+(Worker_PCP3_TP3 pid=892907) [HANG-DEBUG] pcp=3 P8_after_wait_gather_output
+(Worker_PCP0_TP2 pid=892195) [HANG-DEBUG] pcp=0 P9_after_update_done
+(Worker_PCP2_TP0 pid=892522) [HANG-DEBUG] pcp=2 P6_after_gather_output_launched
+(Worker_PCP0_TP2 pid=892195) [HANG-DEBUG] pcp=0 ENTER chunked_context=True num_prefills=2
+(Worker_PCP2_TP0 pid=892522) [HANG-DEBUG] pcp=2 P7_after_tail_attn
+(Worker_PCP2_TP0 pid=892522) [HANG-DEBUG] pcp=2 P8_after_wait_gather_output
+(Worker_PCP0_TP2 pid=892195) [HANG-DEBUG] pcp=0 P1_allgather_q_launched
+(Worker_PCP0_TP2 pid=892195) [HANG-DEBUG] pcp=0 P2_after_cp_pre
+(Worker_PCP0_TP2 pid=892195) [HANG-DEBUG] pcp=0 P3_after_head_attn
+(Worker_PCP0_TP2 pid=892195) [HANG-DEBUG] pcp=0 P4_after_wait_allgather_q
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "HANG-DEBUG.*P5" prefill_node.log | tail -10
+(Worker_PCP2_TP1 pid=892576) [HANG-DEBUG] pcp=2 P5c_after_cat_permute
+(Worker_PCP2_TP2 pid=892630) [HANG-DEBUG] pcp=2 P5c_after_cat_permute
+(Worker_PCP3_TP3 pid=892907) [HANG-DEBUG] pcp=3 P5b_npu_synchronized (kernel done)
+(Worker_PCP3_TP1 pid=892796) [HANG-DEBUG] pcp=3 P5b_npu_synchronized (kernel done)
+(Worker_PCP3_TP3 pid=892907) [HANG-DEBUG] pcp=3 P5c_after_cat_permute
+(Worker_PCP3_TP1 pid=892796) [HANG-DEBUG] pcp=3 P5c_after_cat_permute
+(Worker_PCP3_TP2 pid=892852) [HANG-DEBUG] pcp=3 P5b_npu_synchronized (kernel done)
+(Worker_PCP3_TP0 pid=892740) [HANG-DEBUG] pcp=3 P5b_npu_synchronized (kernel done)
+(Worker_PCP3_TP2 pid=892852) [HANG-DEBUG] pcp=3 P5c_after_cat_permute
+(Worker_PCP3_TP0 pid=892740) [HANG-DEBUG] pcp=3 P5c_after_cat_permute
