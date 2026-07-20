@@ -784,6 +784,11 @@ class AscendAttentionCPImpl(AscendAttentionBackendImpl):
         ]
         has_zero_kv = any(l == 0 for l in per_req_kv_lens)
 
+        print(f"[CTX-DEBUG] pcp={self.pcp_rank} total_toks={total_toks} "
+              f"per_req_kv={per_req_kv_lens} has_zero_kv={has_zero_kv} "
+              f"kv_cumsum={actual_kv_cumsum} q_cumsum={actual_q_cumsum.tolist() if hasattr(actual_q_cumsum, 'tolist') else actual_q_cumsum} "
+              f"query_shape={query.shape} key_shape={key.shape}", flush=True)
+
         if not has_zero_kv:
             prefix_chunk_output, prefix_chunk_lse = torch.ops.npu.npu_fused_infer_attention_score(
                 query,
@@ -851,6 +856,11 @@ class AscendAttentionCPImpl(AscendAttentionBackendImpl):
             filt_q_cumsum = torch.cumsum(
                 torch.tensor(valid_q_lens, dtype=torch.int64), dim=0
             )
+
+            print(f"[CTX-DEBUG] pcp={self.pcp_rank} FIX_PATH calling kernel: "
+                  f"cat_q={cat_q.shape} cat_k={cat_k.shape} "
+                  f"filt_kv_cumsum={filt_kv_cumsum} filt_q_cumsum={filt_q_cumsum.tolist()} "
+                  f"num_valid_reqs={len(valid_q_lens)}", flush=True)
 
             chunk_out, chunk_lse = torch.ops.npu.npu_fused_infer_attention_score(
                 cat_q,
