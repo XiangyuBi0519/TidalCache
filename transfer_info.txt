@@ -1,26 +1,6 @@
-(Worker_DP1_TP2_EP6 pid=529844) INFO 07-21 21:30:50 [mooncake_connector.py:825] KV cache transfer for request chatcmpl-39d3214a-cc19-44e7-afaa-7d592ec41dbc-9acab69f took 223.03 ms. local_ip 10.41.10.9 local_device_id 2 remote_session_id 10.41.10.161:15177
-(Worker_DP1_TP0_EP4 pid=529590) INFO 07-21 21:30:51 [mooncake_connector.py:825] KV cache transfer for request chatcmpl-39d3214a-cc19-44e7-afaa-7d592ec41dbc-9acab69f took 2653.59 ms. local_ip 10.41.10.9 local_device_id 0 remote_session_id 10.41.10.161:15393
-(Worker_DP1_TP0_EP4 pid=529590) INFO 07-21 21:30:51 [mooncake_connector.py:825] KV cache transfer for request chatcmpl-39d3214a-cc19-44e7-afaa-7d592ec41dbc-9acab69f took 205.17 ms. local_ip 10.41.10.9 local_device_id 0 remote_session_id 10.41.10.161:16722
-(APIServer pid=528048) INFO 07-21 21:31:01 [loggers.py:271] Engine 001: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 5.0 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%, External prefix cache hit rate: 100.0%
-(APIServer pid=528048) INFO 07-21 21:31:11 [loggers.py:271] Engine 001: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 0.0 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%, External prefix cache hit rate: 100.0%
-(Worker_DP0_TP2_EP2 pid=529830) ERROR 07-21 21:31:12 [mooncake_connector.py:816] Mooncake transfer failed for request. remote_request_id=chatcmpl-2e8b9139-7fda-43b3-a32d-6ac48a6c3e62-ad5079b3, ret=-1. 
-(Worker_DP0_TP2_EP2 pid=529830) ERROR 07-21 21:31:12 [mooncake_connector.py:611] Failed to transfer KV cache for request chatcmpl-2e8b9139-7fda-43b3-a32d-6ac48a6c3e62-ad5079b3: Mooncake transfer failed, ret: -1
-(Worker_DP0_TP2_EP2 pid=529830) ERROR 07-21 21:31:12 [mooncake_connector.py:611] Traceback (most recent call last):
-(Worker_DP0_TP2_EP2 pid=529830) ERROR 07-21 21:31:12 [mooncake_connector.py:611]   File "/vllm-workspace/vllm-ascend/vllm_ascend/distributed/kv_transfer/kv_p2p/mooncake_connector.py", line 606, in _handle_request
-(Worker_DP0_TP2_EP2 pid=529830) ERROR 07-21 21:31:12 [mooncake_connector.py:611]     self._transfer_kv_cache_all_groups(req_meta)
-(Worker_DP0_TP2_EP2 pid=529830) ERROR 07-21 21:31:12 [mooncake_connector.py:611]   File "/vllm-workspace/vllm-ascend/vllm_ascend/distributed/kv_transfer/kv_p2p/mooncake_connector.py", line 821, in _transfer_kv_cache_all_groups
-(Worker_DP0_TP2_EP2 pid=529830) ERROR 07-21 21:31:12 [mooncake_connector.py:611]     raise RuntimeError(f"Mooncake transfer failed, ret: {ret}")
-(Worker_DP0_TP2_EP2 pid=529830) ERROR 07-21 21:31:12 [mooncake_connector.py:611] RuntimeError: Mooncake transfer failed, ret: -1
-(Worker_DP0_TP2_EP2 pid=529830) WARNING 07-21 21:31:12 [mooncake_connector.py:602] Skipping KV cache transfer for request. remote_request_id=chatcmpl-2e8b9139-7fda-43b3-a32d-6ac48a6c3e62-ad5079b3. 
-(EngineCore_DP0 pid=529515) ERROR 07-21 21:31:12 [scheduler.py:2318] Failing 1 request(s) due to KV load failure (failure_policy=fail, 30053 tokens affected). Request IDs: {'chatcmpl-2e8b9139-7fda-43b3-a32d-6ac48a6c3e62-b110e907'}
-(Worker_DP0_TP1_EP1 pid=529667) ERROR 07-21 21:31:12 [mooncake_connector.py:816] Mooncake transfer failed for request. remote_request_id=chatcmpl-2e8b9139-7fda-43b3-a32d-6ac48a6c3e62-ad5079b3, ret=-1. 
-(Worker_DP0_TP1_EP1 pid=529667) ERROR 07-21 21:31:12 [mooncake_connector.py:611] Failed to transfer KV cache for request chatcmpl-2e8b9139-7fda-43b3-a32d-6ac48a6c3e62-ad5079b3: Mooncake transfer failed, ret: -1
-(Worker_DP0_TP1_EP1 pid=529667) ERROR 07-21 21:31:12 [mooncake_connector.py:611] Traceback (most recent call last):
-(Worker_DP0_TP1_EP1 pid=529667) ERROR 07-21 21:31:12 [mooncake_connector.py:611]   File "/vllm-workspace/vllm-ascend/vllm_ascend/distributed/kv_transfer/kv_p2p/mooncake_connector.py", line 606, in _handle_request
-(Worker_DP0_TP1_EP1 pid=529667) ERROR 07-21 21:31:12 [mooncake_connector.py:611]     self._transfer_kv_cache_all_groups(req_meta)
-(Worker_DP0_TP1_EP1 pid=529667) ERROR 07-21 21:31:12 [mooncake_connector.py:611]   File "/vllm-workspace/vllm-ascend/vllm_ascend/distributed/kv_transfer/kv_p2p/mooncake_connector.py", line 821, in _transfer_kv_cache_all_groups
-(Worker_DP0_TP1_EP1 pid=529667) ERROR 07-21 21:31:12 [mooncake_connector.py:611]     raise RuntimeError(f"Mooncake transfer failed, ret: {ret}")
-(Worker_DP0_TP1_EP1 pid=529667) ERROR 07-21 21:31:12 [mooncake_connector.py:611] RuntimeError: Mooncake transfer failed, ret: -1
-(Worker_DP0_TP1_EP1 pid=529667) WARNING 07-21 21:31:12 [mooncake_connector.py:602] Skipping KV cache transfer for request. remote_request_id=chatcmpl-2e8b9139-7fda-43b3-a32d-6ac48a6c3e62-ad5079b3. 
-E20260721 21:31:14.204667 557566 ascend_direct_transport.cpp:859] Transfer timeout to: 10.41.10.161:21452, you can increase the timeout duration to reduce the failure rate by configuring the ASCEND_TRANSFER_TIMEOUT environment variable.
-E20260721 21:31:14.254421 557613 ascend_direct_transport.cpp:859] Transfer timeout to: 10.41.10.161:21348, you can increase the timeout duration to reduce the failure rate by configuring the ASCEND_TRANSFER_TIMEOUT environment variable.
+grep -n "cp_chunkedprefill_comm_stream" /vllm-workspace/vllm-ascend/vllm_ascend/attention/context_parallel/attention_cp.py | head -10
+
+for w in PCP0_TP0 PCP1_TP0 PCP2_TP0 PCP3_TP0; do
+  echo -n "$w: "
+  grep "Worker_${w}" prefill_node_issue.log | grep -E "GATHER-DEBUG|QAG-DEBUG|HANG-DEBUG" | tail -3
+done
