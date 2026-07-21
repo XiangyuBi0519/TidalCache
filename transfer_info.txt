@@ -1,29 +1,404 @@
-echo "=== 事件计数 ==="
-grep -c "HANG-DEBUG.*ENTER" /root/pcp_debug_clean.log
-grep -c "HANG-DEBUG.*DONE" /root/pcp_debug_clean.log
-grep -c "QAG-DEBUG.*before" /root/pcp_debug_clean.log
-grep -c "QAG-DEBUG.*after" /root/pcp_debug_clean.log
-grep -c "GATHER-DEBUG.*before pcp_allgather" /root/pcp_debug_clean.log
-grep -c "GATHER-DEBUG.*after pcp_allgather" /root/pcp_debug_clean.log
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# echo "=== 事件计数 ==="
+grep -c "HANG-DEBUG.*ENTER" prefill_node_issue.log
+grep -c "HANG-DEBUG.*DONE" prefill_node_issue.log
+grep -c "QAG-DEBUG.*before" prefill_node_issue.log
+grep -c "QAG-DEBUG.*after" prefill_node_issue.log
+grep -c "GATHER-DEBUG.*before pcp_allgather" prefill_node_issue.log
+grep -c "GATHER-DEBUG.*after pcp_allgather" prefill_node_issue.log
 
 echo "=== 每个 worker 的 ENTER/DONE ==="
-grep "HANG-DEBUG.*ENTER" /root/pcp_debug_clean.log | sed 's/.*(\(Worker_[^ ]*\).*/\1/' | sort | uniq -c | sort -k2
-grep "HANG-DEBUG.*DONE" /root/pcp_debug_clean.log | sed 's/.*(\(Worker_[^ ]*\).*/\1/' | sort | uniq -c | sort -k2
+grep "HANG-DEBUG.*ENTER" prefill_node_issue.log | sed 's/.*(\(Worker_[^ ]*\).*/\1/' | sort | uniq -c | sort -k2
+grep "HANG-DEBUG.*DONE" prefill_node_issue.log | sed 's/.*(\(Worker_[^ ]*\).*/\1/' | sort | uniq -c | sort -k2
 
 echo "=== GATHER before/after per worker ==="
 for w in PCP0_TP0 PCP0_TP1 PCP0_TP2 PCP0_TP3 PCP1_TP0 PCP1_TP1 PCP1_TP2 PCP1_TP3 PCP2_TP0 PCP2_TP1 PCP2_TP2 PCP2_TP3 PCP3_TP0 PCP3_TP1 PCP3_TP2 PCP3_TP3; do
-  b=$(grep -c "Worker_${w}.*GATHER-DEBUG.*before pcp" /root/pcp_debug_clean.log)
-  a=$(grep -c "Worker_${w}.*GATHER-DEBUG.*after pcp" /root/pcp_debug_clean.log)
+  b=$(grep -c "Worker_${w}.*GATHER-DEBUG.*before pcp" prefill_node_issue.log)
+  a=$(grep -c "Worker_${w}.*GATHER-DEBUG.*after pcp" prefill_node_issue.log)
   echo "$w: before=$b after=$a diff=$((b-a))"
 done
 
 echo "=== QAG before/after per worker ==="
 for w in PCP0_TP0 PCP0_TP1 PCP0_TP2 PCP0_TP3 PCP1_TP0 PCP1_TP1 PCP1_TP2 PCP1_TP3 PCP2_TP0 PCP2_TP1 PCP2_TP2 PCP2_TP3 PCP3_TP0 PCP3_TP1 PCP3_TP2 PCP3_TP3; do
-  b=$(grep -c "Worker_${w}.*QAG-DEBUG.*before" /root/pcp_debug_clean.log)
-  a=$(grep -c "Worker_${w}.*QAG-DEBUG.*after" /root/pcp_debug_clean.log)
+  b=$(grep -c "Worker_${w}.*QAG-DEBUG.*before" prefill_node_issue.log)
+  a=$(grep -c "Worker_${w}.*QAG-DEBUG.*after" prefill_node_issue.log)
   echo "$w: before=$b after=$a diff=$((b-a))"
 done
 
 echo "=== 从第一个 DONE 开始的日志（第二轮 forward）==="
-first_done=$(grep -n "HANG-DEBUG.*DONE" /root/pcp_debug_clean.log | head -1 | cut -d: -f1)
-sed -n "${first_done},\$p" /root/pcp_debug_clean.log | grep -E "HANG-DEBUG|QAG-DEBUG|GATHER-DEBUG" | head -300
+first_done=$(grep -n "HANG-DEBUG.*DONE" prefill_node_issue.log | head -1 | cut -d: -f1)
+sed -n "${first_done},\$p" prefill_node_issue.log | grep -E "HANG-DEBUG|QAG-DEBUG|GATHER-DEBUG" | head -300
+=== 事件计数 ===
+1202
+1186
+1202
+1202
+1200
+1198
+=== 每个 worker 的 ENTER/DONE ===
+     75 Worker_PCP0_TP0
+     75 Worker_PCP0_TP1
+     75 Worker_PCP0_TP2
+     75 Worker_PCP0_TP3
+     76 Worker_PCP1_TP0
+     75 Worker_PCP1_TP1
+     75 Worker_PCP1_TP2
+     75 Worker_PCP1_TP3
+     75 Worker_PCP2_TP0
+     75 Worker_PCP2_TP1
+     75 Worker_PCP2_TP2
+     75 Worker_PCP2_TP3
+     76 Worker_PCP3_TP0
+     75 Worker_PCP3_TP1
+     75 Worker_PCP3_TP2
+     75 Worker_PCP3_TP3
+     74 Worker_PCP0_TP0
+     74 Worker_PCP0_TP1
+     74 Worker_PCP0_TP2
+     74 Worker_PCP0_TP3
+     75 Worker_PCP1_TP0
+     74 Worker_PCP1_TP1
+     74 Worker_PCP1_TP2
+     74 Worker_PCP1_TP3
+     74 Worker_PCP2_TP0
+     74 Worker_PCP2_TP1
+     74 Worker_PCP2_TP2
+     74 Worker_PCP2_TP3
+     75 Worker_PCP3_TP0
+     74 Worker_PCP3_TP1
+     74 Worker_PCP3_TP2
+     74 Worker_PCP3_TP3
+=== GATHER before/after per worker ===
+PCP0_TP0: before=75 after=75 diff=0
+PCP0_TP1: before=75 after=75 diff=0
+PCP0_TP2: before=75 after=75 diff=0
+PCP0_TP3: before=75 after=74 diff=1
+PCP1_TP0: before=75 after=75 diff=0
+PCP1_TP1: before=75 after=74 diff=1
+PCP1_TP2: before=75 after=75 diff=0
+PCP1_TP3: before=75 after=75 diff=0
+PCP2_TP0: before=75 after=75 diff=0
+PCP2_TP1: before=75 after=75 diff=0
+PCP2_TP2: before=75 after=75 diff=0
+PCP2_TP3: before=75 after=75 diff=0
+PCP3_TP0: before=75 after=75 diff=0
+PCP3_TP1: before=75 after=75 diff=0
+PCP3_TP2: before=75 after=75 diff=0
+PCP3_TP3: before=75 after=75 diff=0
+=== QAG before/after per worker ===
+PCP0_TP0: before=75 after=75 diff=0
+PCP0_TP1: before=75 after=75 diff=0
+PCP0_TP2: before=75 after=75 diff=0
+PCP0_TP3: before=75 after=75 diff=0
+PCP1_TP0: before=76 after=76 diff=0
+PCP1_TP1: before=75 after=75 diff=0
+PCP1_TP2: before=75 after=75 diff=0
+PCP1_TP3: before=75 after=75 diff=0
+PCP2_TP0: before=75 after=75 diff=0
+PCP2_TP1: before=75 after=75 diff=0
+PCP2_TP2: before=75 after=75 diff=0
+PCP2_TP3: before=75 after=75 diff=0
+PCP3_TP0: before=76 after=76 diff=0
+PCP3_TP1: before=75 after=75 diff=0
+PCP3_TP2: before=75 after=75 diff=0
+PCP3_TP3: before=75 after=75 diff=0
+=== 从第一个 DONE 开始的日志（第二轮 forward）===
+(Worker_PCP3_TP2 pid=1007719) [HANG-DEBUG] pcp=3 DONE
+(Worker_PCP3_TP2 pid=1007719) [HANG-DEBUG] pcp=3 ENTER num_prefills=2
+(Worker_PCP3_TP2 pid=1007719) [QAG-DEBUG] pcp=3 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP3_TP2 pid=1007719) [QAG-DEBUG] pcp=3 after q_allgather
+(Worker_PCP1_TP3 pid=1007337) [HANG-DEBUG] pcp=1 DONE
+(Worker_PCP1_TP3 pid=1007337) [HANG-DEBUG] pcp=1 ENTER num_prefills=2
+(Worker_PCP1_TP3 pid=1007337) [QAG-DEBUG] pcp=1 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP2_TP2 pid=1007499) [HANG-DEBUG] pcp=2 DONE
+(Worker_PCP2_TP2 pid=1007499) [HANG-DEBUG] pcp=2 ENTER num_prefills=2
+(Worker_PCP1_TP0 pid=1007175) [HANG-DEBUG] pcp=1 DONE
+(Worker_PCP1_TP3 pid=1007337) [QAG-DEBUG] pcp=1 after q_allgather
+(Worker_PCP2_TP2 pid=1007499) [QAG-DEBUG] pcp=2 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP1_TP0 pid=1007175) [HANG-DEBUG] pcp=1 ENTER num_prefills=2
+(Worker_PCP1_TP0 pid=1007175) [QAG-DEBUG] pcp=1 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP0_TP3 pid=1007120) [HANG-DEBUG] pcp=0 DONE
+(Worker_PCP0_TP3 pid=1007120) [HANG-DEBUG] pcp=0 ENTER num_prefills=2
+(Worker_PCP0_TP3 pid=1007120) [QAG-DEBUG] pcp=0 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP1_TP0 pid=1007175) [QAG-DEBUG] pcp=1 after q_allgather
+(Worker_PCP0_TP3 pid=1007120) [QAG-DEBUG] pcp=0 after q_allgather
+(Worker_PCP2_TP2 pid=1007499) [QAG-DEBUG] pcp=2 after q_allgather
+(Worker_PCP0_TP0 pid=1006994) [HANG-DEBUG] pcp=0 DONE
+(Worker_PCP0_TP0 pid=1006994) [HANG-DEBUG] pcp=0 ENTER num_prefills=2
+(Worker_PCP0_TP0 pid=1006994) [QAG-DEBUG] pcp=0 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP0_TP0 pid=1006994) [QAG-DEBUG] pcp=0 after q_allgather
+(Worker_PCP3_TP0 pid=1007609) [HANG-DEBUG] pcp=3 DONE
+(Worker_PCP3_TP0 pid=1007609) [HANG-DEBUG] pcp=3 ENTER num_prefills=2
+(Worker_PCP3_TP0 pid=1007609) [QAG-DEBUG] pcp=3 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP3_TP0 pid=1007609) [QAG-DEBUG] pcp=3 after q_allgather
+(Worker_PCP2_TP1 pid=1007445) [HANG-DEBUG] pcp=2 DONE
+(Worker_PCP2_TP3 pid=1007553) [HANG-DEBUG] pcp=2 DONE
+(Worker_PCP2_TP1 pid=1007445) [HANG-DEBUG] pcp=2 ENTER num_prefills=2
+(Worker_PCP2_TP1 pid=1007445) [QAG-DEBUG] pcp=2 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP2_TP3 pid=1007553) [HANG-DEBUG] pcp=2 ENTER num_prefills=2
+(Worker_PCP2_TP3 pid=1007553) [QAG-DEBUG] pcp=2 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP2_TP1 pid=1007445) [QAG-DEBUG] pcp=2 after q_allgather
+(Worker_PCP2_TP3 pid=1007553) [QAG-DEBUG] pcp=2 after q_allgather
+(Worker_PCP3_TP3 pid=1007774) [HANG-DEBUG] pcp=3 DONE
+(Worker_PCP3_TP3 pid=1007774) [HANG-DEBUG] pcp=3 ENTER num_prefills=2
+(Worker_PCP3_TP3 pid=1007774) [QAG-DEBUG] pcp=3 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP1_TP2 pid=1007283) [HANG-DEBUG] pcp=1 DONE
+(Worker_PCP3_TP3 pid=1007774) [QAG-DEBUG] pcp=3 after q_allgather
+(Worker_PCP1_TP2 pid=1007283) [HANG-DEBUG] pcp=1 ENTER num_prefills=2
+(Worker_PCP1_TP2 pid=1007283) [QAG-DEBUG] pcp=1 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP1_TP2 pid=1007283) [QAG-DEBUG] pcp=1 after q_allgather
+(Worker_PCP2_TP0 pid=1007391) [HANG-DEBUG] pcp=2 DONE
+(Worker_PCP2_TP0 pid=1007391) [HANG-DEBUG] pcp=2 ENTER num_prefills=2
+(Worker_PCP2_TP0 pid=1007391) [QAG-DEBUG] pcp=2 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP2_TP0 pid=1007391) [QAG-DEBUG] pcp=2 after q_allgather
+(Worker_PCP1_TP1 pid=1007229) [HANG-DEBUG] pcp=1 DONE
+(Worker_PCP1_TP1 pid=1007229) [HANG-DEBUG] pcp=1 ENTER num_prefills=2
+(Worker_PCP1_TP1 pid=1007229) [QAG-DEBUG] pcp=1 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP0_TP1 pid=1007013) [HANG-DEBUG] pcp=0 DONE
+(Worker_PCP1_TP1 pid=1007229) [QAG-DEBUG] pcp=1 after q_allgather
+(Worker_PCP0_TP1 pid=1007013) [HANG-DEBUG] pcp=0 ENTER num_prefills=2
+(Worker_PCP0_TP1 pid=1007013) [QAG-DEBUG] pcp=0 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP0_TP1 pid=1007013) [QAG-DEBUG] pcp=0 after q_allgather
+(Worker_PCP3_TP1 pid=1007664) [HANG-DEBUG] pcp=3 DONE
+(Worker_PCP3_TP1 pid=1007664) [HANG-DEBUG] pcp=3 ENTER num_prefills=2
+(Worker_PCP3_TP1 pid=1007664) [QAG-DEBUG] pcp=3 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP3_TP1 pid=1007664) [QAG-DEBUG] pcp=3 after q_allgather
+(Worker_PCP0_TP2 pid=1007065) [HANG-DEBUG] pcp=0 DONE
+(Worker_PCP0_TP2 pid=1007065) [HANG-DEBUG] pcp=0 ENTER num_prefills=2
+(Worker_PCP0_TP2 pid=1007065) [QAG-DEBUG] pcp=0 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP0_TP2 pid=1007065) [QAG-DEBUG] pcp=0 after q_allgather
+(Worker_PCP0_TP2 pid=1007065) [GATHER-DEBUG] pcp=0 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP0_TP1 pid=1007013) [GATHER-DEBUG] pcp=0 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP0_TP0 pid=1006994) [GATHER-DEBUG] pcp=0 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP0_TP3 pid=1007120) [GATHER-DEBUG] pcp=0 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP1_TP2 pid=1007283) [GATHER-DEBUG] pcp=1 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP1_TP0 pid=1007175) [GATHER-DEBUG] pcp=1 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP1_TP3 pid=1007337) [GATHER-DEBUG] pcp=1 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP1_TP1 pid=1007229) [GATHER-DEBUG] pcp=1 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP2_TP2 pid=1007499) [GATHER-DEBUG] pcp=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP2_TP3 pid=1007553) [GATHER-DEBUG] pcp=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP2_TP0 pid=1007391) [GATHER-DEBUG] pcp=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP2_TP1 pid=1007445) [GATHER-DEBUG] pcp=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP3_TP3 pid=1007774) [GATHER-DEBUG] pcp=3 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP3_TP2 pid=1007719) [GATHER-DEBUG] pcp=3 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP3_TP1 pid=1007664) [GATHER-DEBUG] pcp=3 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP3_TP0 pid=1007609) [GATHER-DEBUG] pcp=3 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP0_TP2 pid=1007065) [GATHER-DEBUG] pcp=0 after pcp_allgather
+(Worker_PCP3_TP2 pid=1007719) [GATHER-DEBUG] pcp=3 after pcp_allgather
+(Worker_PCP1_TP0 pid=1007175) [GATHER-DEBUG] pcp=1 after pcp_allgather
+(Worker_PCP3_TP3 pid=1007774) [GATHER-DEBUG] pcp=3 after pcp_allgather
+(Worker_PCP3_TP0 pid=1007609) [GATHER-DEBUG] pcp=3 after pcp_allgather
+(Worker_PCP0_TP2 pid=1007065) [HANG-DEBUG] pcp=0 DONE
+(Worker_PCP0_TP2 pid=1007065) [HANG-DEBUG] pcp=0 ENTER num_prefills=2
+(Worker_PCP0_TP2 pid=1007065) [QAG-DEBUG] pcp=0 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP0_TP2 pid=1007065) [QAG-DEBUG] pcp=0 after q_allgather
+(Worker_PCP3_TP1 pid=1007664) [GATHER-DEBUG] pcp=3 after pcp_allgather
+(Worker_PCP0_TP3 pid=1007120) [GATHER-DEBUG] pcp=0 after pcp_allgather
+(Worker_PCP0_TP0 pid=1006994) [GATHER-DEBUG] pcp=0 after pcp_allgather
+(Worker_PCP2_TP1 pid=1007445) [GATHER-DEBUG] pcp=2 after pcp_allgather
+(Worker_PCP1_TP1 pid=1007229) [GATHER-DEBUG] pcp=1 after pcp_allgather
+(Worker_PCP1_TP3 pid=1007337) [GATHER-DEBUG] pcp=1 after pcp_allgather
+(Worker_PCP3_TP2 pid=1007719) [HANG-DEBUG] pcp=3 DONE
+(Worker_PCP3_TP2 pid=1007719) [HANG-DEBUG] pcp=3 ENTER num_prefills=2
+(Worker_PCP3_TP2 pid=1007719) [QAG-DEBUG] pcp=3 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP3_TP2 pid=1007719) [QAG-DEBUG] pcp=3 after q_allgather
+(Worker_PCP2_TP2 pid=1007499) [GATHER-DEBUG] pcp=2 after pcp_allgather
+(Worker_PCP0_TP1 pid=1007013) [GATHER-DEBUG] pcp=0 after pcp_allgather
+(Worker_PCP2_TP0 pid=1007391) [GATHER-DEBUG] pcp=2 after pcp_allgather
+(Worker_PCP1_TP2 pid=1007283) [GATHER-DEBUG] pcp=1 after pcp_allgather
+(Worker_PCP3_TP3 pid=1007774) [HANG-DEBUG] pcp=3 DONE
+(Worker_PCP3_TP3 pid=1007774) [HANG-DEBUG] pcp=3 ENTER num_prefills=2
+(Worker_PCP3_TP3 pid=1007774) [QAG-DEBUG] pcp=3 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP2_TP3 pid=1007553) [GATHER-DEBUG] pcp=2 after pcp_allgather
+(Worker_PCP3_TP3 pid=1007774) [QAG-DEBUG] pcp=3 after q_allgather
+(Worker_PCP3_TP0 pid=1007609) [HANG-DEBUG] pcp=3 DONE
+(Worker_PCP3_TP0 pid=1007609) [HANG-DEBUG] pcp=3 ENTER num_prefills=2
+(Worker_PCP3_TP0 pid=1007609) [QAG-DEBUG] pcp=3 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP3_TP0 pid=1007609) [QAG-DEBUG] pcp=3 after q_allgather
+(Worker_PCP1_TP0 pid=1007175) [HANG-DEBUG] pcp=1 DONE
+(Worker_PCP1_TP0 pid=1007175) [HANG-DEBUG] pcp=1 ENTER num_prefills=2
+(Worker_PCP1_TP0 pid=1007175) [QAG-DEBUG] pcp=1 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP1_TP0 pid=1007175) [QAG-DEBUG] pcp=1 after q_allgather
+(Worker_PCP0_TP3 pid=1007120) [HANG-DEBUG] pcp=0 DONE
+(Worker_PCP0_TP3 pid=1007120) [HANG-DEBUG] pcp=0 ENTER num_prefills=2
+(Worker_PCP0_TP3 pid=1007120) [QAG-DEBUG] pcp=0 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP0_TP3 pid=1007120) [QAG-DEBUG] pcp=0 after q_allgather
+(Worker_PCP1_TP1 pid=1007229) [HANG-DEBUG] pcp=1 DONE
+(Worker_PCP1_TP1 pid=1007229) [HANG-DEBUG] pcp=1 ENTER num_prefills=2
+(Worker_PCP1_TP1 pid=1007229) [QAG-DEBUG] pcp=1 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP1_TP1 pid=1007229) [QAG-DEBUG] pcp=1 after q_allgather
+(Worker_PCP1_TP3 pid=1007337) [HANG-DEBUG] pcp=1 DONE
+(Worker_PCP1_TP3 pid=1007337) [HANG-DEBUG] pcp=1 ENTER num_prefills=2
+(Worker_PCP1_TP3 pid=1007337) [QAG-DEBUG] pcp=1 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP1_TP3 pid=1007337) [QAG-DEBUG] pcp=1 after q_allgather
+(Worker_PCP0_TP0 pid=1006994) [HANG-DEBUG] pcp=0 DONE
+(Worker_PCP0_TP0 pid=1006994) [HANG-DEBUG] pcp=0 ENTER num_prefills=2
+(Worker_PCP0_TP0 pid=1006994) [QAG-DEBUG] pcp=0 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP0_TP0 pid=1006994) [QAG-DEBUG] pcp=0 after q_allgather
+(Worker_PCP2_TP1 pid=1007445) [HANG-DEBUG] pcp=2 DONE
+(Worker_PCP2_TP1 pid=1007445) [HANG-DEBUG] pcp=2 ENTER num_prefills=2
+(Worker_PCP2_TP1 pid=1007445) [QAG-DEBUG] pcp=2 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP2_TP1 pid=1007445) [QAG-DEBUG] pcp=2 after q_allgather
+(Worker_PCP2_TP2 pid=1007499) [HANG-DEBUG] pcp=2 DONE
+(Worker_PCP2_TP2 pid=1007499) [HANG-DEBUG] pcp=2 ENTER num_prefills=2
+(Worker_PCP2_TP2 pid=1007499) [QAG-DEBUG] pcp=2 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP2_TP2 pid=1007499) [QAG-DEBUG] pcp=2 after q_allgather
+(Worker_PCP1_TP2 pid=1007283) [HANG-DEBUG] pcp=1 DONE
+(Worker_PCP1_TP2 pid=1007283) [HANG-DEBUG] pcp=1 ENTER num_prefills=2
+(Worker_PCP1_TP2 pid=1007283) [QAG-DEBUG] pcp=1 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP1_TP2 pid=1007283) [QAG-DEBUG] pcp=1 after q_allgather
+(Worker_PCP3_TP1 pid=1007664) [HANG-DEBUG] pcp=3 DONE
+(Worker_PCP3_TP1 pid=1007664) [HANG-DEBUG] pcp=3 ENTER num_prefills=2
+(Worker_PCP3_TP1 pid=1007664) [QAG-DEBUG] pcp=3 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP3_TP1 pid=1007664) [QAG-DEBUG] pcp=3 after q_allgather
+(Worker_PCP2_TP0 pid=1007391) [HANG-DEBUG] pcp=2 DONE
+(Worker_PCP2_TP0 pid=1007391) [HANG-DEBUG] pcp=2 ENTER num_prefills=2
+(Worker_PCP2_TP0 pid=1007391) [QAG-DEBUG] pcp=2 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP2_TP0 pid=1007391) [QAG-DEBUG] pcp=2 after q_allgather
+(Worker_PCP0_TP1 pid=1007013) [HANG-DEBUG] pcp=0 DONE
+(Worker_PCP0_TP1 pid=1007013) [HANG-DEBUG] pcp=0 ENTER num_prefills=2
+(Worker_PCP0_TP1 pid=1007013) [QAG-DEBUG] pcp=0 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP0_TP1 pid=1007013) [QAG-DEBUG] pcp=0 after q_allgather
+(Worker_PCP2_TP3 pid=1007553) [HANG-DEBUG] pcp=2 DONE
+(Worker_PCP2_TP3 pid=1007553) [HANG-DEBUG] pcp=2 ENTER num_prefills=2
+(Worker_PCP2_TP3 pid=1007553) [QAG-DEBUG] pcp=2 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP2_TP3 pid=1007553) [QAG-DEBUG] pcp=2 after q_allgather
+(Worker_PCP0_TP0 pid=1006994) [GATHER-DEBUG] pcp=0 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP0_TP1 pid=1007013) [GATHER-DEBUG] pcp=0 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP0_TP3 pid=1007120) [GATHER-DEBUG] pcp=0 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP0_TP2 pid=1007065) [GATHER-DEBUG] pcp=0 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP1_TP0 pid=1007175) [GATHER-DEBUG] pcp=1 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP1_TP1 pid=1007229) [GATHER-DEBUG] pcp=1 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP1_TP2 pid=1007283) [GATHER-DEBUG] pcp=1 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP1_TP3 pid=1007337) [GATHER-DEBUG] pcp=1 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP2_TP3 pid=1007553) [GATHER-DEBUG] pcp=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP2_TP2 pid=1007499) [GATHER-DEBUG] pcp=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP2_TP1 pid=1007445) [GATHER-DEBUG] pcp=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP2_TP0 pid=1007391) [GATHER-DEBUG] pcp=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP3_TP3 pid=1007774) [GATHER-DEBUG] pcp=3 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP3_TP1 pid=1007664) [GATHER-DEBUG] pcp=3 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP3_TP2 pid=1007719) [GATHER-DEBUG] pcp=3 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP3_TP0 pid=1007609) [GATHER-DEBUG] pcp=3 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP2_TP1 pid=1007445) [GATHER-DEBUG] pcp=2 after pcp_allgather
+(Worker_PCP3_TP1 pid=1007664) [GATHER-DEBUG] pcp=3 after pcp_allgather
+(Worker_PCP1_TP2 pid=1007283) [GATHER-DEBUG] pcp=1 after pcp_allgather
+(Worker_PCP0_TP0 pid=1006994) [GATHER-DEBUG] pcp=0 after pcp_allgather
+(Worker_PCP1_TP0 pid=1007175) [GATHER-DEBUG] pcp=1 after pcp_allgather
+(Worker_PCP1_TP3 pid=1007337) [GATHER-DEBUG] pcp=1 after pcp_allgather
+(Worker_PCP2_TP2 pid=1007499) [GATHER-DEBUG] pcp=2 after pcp_allgather
+(Worker_PCP3_TP0 pid=1007609) [GATHER-DEBUG] pcp=3 after pcp_allgather
+(Worker_PCP2_TP0 pid=1007391) [GATHER-DEBUG] pcp=2 after pcp_allgather
+(Worker_PCP3_TP2 pid=1007719) [GATHER-DEBUG] pcp=3 after pcp_allgather
+(Worker_PCP0_TP1 pid=1007013) [GATHER-DEBUG] pcp=0 after pcp_allgather
+(Worker_PCP2_TP3 pid=1007553) [GATHER-DEBUG] pcp=2 after pcp_allgather
+(Worker_PCP3_TP3 pid=1007774) [GATHER-DEBUG] pcp=3 after pcp_allgather
+(Worker_PCP0_TP2 pid=1007065) [GATHER-DEBUG] pcp=0 after pcp_allgather
+(Worker_PCP0_TP3 pid=1007120) [GATHER-DEBUG] pcp=0 after pcp_allgather
+(Worker_PCP3_TP1 pid=1007664) [HANG-DEBUG] pcp=3 DONE
+(Worker_PCP3_TP1 pid=1007664) [HANG-DEBUG] pcp=3 ENTER num_prefills=2
+(Worker_PCP3_TP1 pid=1007664) [QAG-DEBUG] pcp=3 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP1_TP1 pid=1007229) [GATHER-DEBUG] pcp=1 after pcp_allgather
+(Worker_PCP3_TP1 pid=1007664) [QAG-DEBUG] pcp=3 after q_allgather
+(Worker_PCP1_TP2 pid=1007283) [HANG-DEBUG] pcp=1 DONE
+(Worker_PCP1_TP2 pid=1007283) [HANG-DEBUG] pcp=1 ENTER num_prefills=2
+(Worker_PCP1_TP2 pid=1007283) [QAG-DEBUG] pcp=1 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP1_TP2 pid=1007283) [QAG-DEBUG] pcp=1 after q_allgather
+(Worker_PCP1_TP3 pid=1007337) [HANG-DEBUG] pcp=1 DONE
+(Worker_PCP1_TP3 pid=1007337) [HANG-DEBUG] pcp=1 ENTER num_prefills=2
+(Worker_PCP1_TP3 pid=1007337) [QAG-DEBUG] pcp=1 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP1_TP3 pid=1007337) [QAG-DEBUG] pcp=1 after q_allgather
+(Worker_PCP0_TP0 pid=1006994) [HANG-DEBUG] pcp=0 DONE
+(Worker_PCP0_TP0 pid=1006994) [HANG-DEBUG] pcp=0 ENTER num_prefills=2
+(Worker_PCP0_TP0 pid=1006994) [QAG-DEBUG] pcp=0 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP0_TP0 pid=1006994) [QAG-DEBUG] pcp=0 after q_allgather
+(Worker_PCP2_TP0 pid=1007391) [HANG-DEBUG] pcp=2 DONE
+(Worker_PCP2_TP0 pid=1007391) [HANG-DEBUG] pcp=2 ENTER num_prefills=2
+(Worker_PCP2_TP0 pid=1007391) [QAG-DEBUG] pcp=2 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP2_TP0 pid=1007391) [QAG-DEBUG] pcp=2 after q_allgather
+(Worker_PCP3_TP2 pid=1007719) [HANG-DEBUG] pcp=3 DONE
+(Worker_PCP3_TP2 pid=1007719) [HANG-DEBUG] pcp=3 ENTER num_prefills=2
+(Worker_PCP3_TP2 pid=1007719) [QAG-DEBUG] pcp=3 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP2_TP2 pid=1007499) [HANG-DEBUG] pcp=2 DONE
+(Worker_PCP2_TP2 pid=1007499) [HANG-DEBUG] pcp=2 ENTER num_prefills=2
+(Worker_PCP2_TP2 pid=1007499) [QAG-DEBUG] pcp=2 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP3_TP2 pid=1007719) [QAG-DEBUG] pcp=3 after q_allgather
+(Worker_PCP2_TP2 pid=1007499) [QAG-DEBUG] pcp=2 after q_allgather
+(Worker_PCP3_TP0 pid=1007609) [HANG-DEBUG] pcp=3 DONE
+(Worker_PCP3_TP0 pid=1007609) [HANG-DEBUG] pcp=3 ENTER num_prefills=2
+(Worker_PCP3_TP0 pid=1007609) [QAG-DEBUG] pcp=3 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP3_TP0 pid=1007609) [QAG-DEBUG] pcp=3 after q_allgather
+(Worker_PCP1_TP0 pid=1007175) [HANG-DEBUG] pcp=1 DONE
+(Worker_PCP1_TP0 pid=1007175) [HANG-DEBUG] pcp=1 ENTER num_prefills=2
+(Worker_PCP1_TP0 pid=1007175) [QAG-DEBUG] pcp=1 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP1_TP0 pid=1007175) [QAG-DEBUG] pcp=1 after q_allgather
+(Worker_PCP2_TP1 pid=1007445) [HANG-DEBUG] pcp=2 DONE
+(Worker_PCP2_TP1 pid=1007445) [HANG-DEBUG] pcp=2 ENTER num_prefills=2
+(Worker_PCP2_TP1 pid=1007445) [QAG-DEBUG] pcp=2 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP2_TP1 pid=1007445) [QAG-DEBUG] pcp=2 after q_allgather
+(Worker_PCP3_TP3 pid=1007774) [HANG-DEBUG] pcp=3 DONE
+(Worker_PCP3_TP3 pid=1007774) [HANG-DEBUG] pcp=3 ENTER num_prefills=2
+(Worker_PCP3_TP3 pid=1007774) [QAG-DEBUG] pcp=3 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP3_TP3 pid=1007774) [QAG-DEBUG] pcp=3 after q_allgather
+(Worker_PCP0_TP1 pid=1007013) [HANG-DEBUG] pcp=0 DONE
+(Worker_PCP0_TP1 pid=1007013) [HANG-DEBUG] pcp=0 ENTER num_prefills=2
+(Worker_PCP0_TP1 pid=1007013) [QAG-DEBUG] pcp=0 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP2_TP3 pid=1007553) [HANG-DEBUG] pcp=2 DONE
+(Worker_PCP2_TP3 pid=1007553) [HANG-DEBUG] pcp=2 ENTER num_prefills=2
+(Worker_PCP0_TP1 pid=1007013) [QAG-DEBUG] pcp=0 after q_allgather
+(Worker_PCP2_TP3 pid=1007553) [QAG-DEBUG] pcp=2 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP0_TP3 pid=1007120) [HANG-DEBUG] pcp=0 DONE
+(Worker_PCP2_TP3 pid=1007553) [QAG-DEBUG] pcp=2 after q_allgather
+(Worker_PCP0_TP3 pid=1007120) [HANG-DEBUG] pcp=0 ENTER num_prefills=2
+(Worker_PCP0_TP3 pid=1007120) [QAG-DEBUG] pcp=0 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP0_TP3 pid=1007120) [QAG-DEBUG] pcp=0 after q_allgather
+(Worker_PCP0_TP2 pid=1007065) [HANG-DEBUG] pcp=0 DONE
+(Worker_PCP0_TP2 pid=1007065) [HANG-DEBUG] pcp=0 ENTER num_prefills=2
+(Worker_PCP0_TP2 pid=1007065) [QAG-DEBUG] pcp=0 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP0_TP2 pid=1007065) [QAG-DEBUG] pcp=0 after q_allgather
+(Worker_PCP1_TP1 pid=1007229) [HANG-DEBUG] pcp=1 DONE
+(Worker_PCP1_TP1 pid=1007229) [HANG-DEBUG] pcp=1 ENTER num_prefills=2
+(Worker_PCP1_TP1 pid=1007229) [QAG-DEBUG] pcp=1 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP1_TP1 pid=1007229) [QAG-DEBUG] pcp=1 after q_allgather
+(Worker_PCP0_TP2 pid=1007065) [GATHER-DEBUG] pcp=0 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP0_TP3 pid=1007120) [GATHER-DEBUG] pcp=0 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP0_TP0 pid=1006994) [GATHER-DEBUG] pcp=0 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP0_TP1 pid=1007013) [GATHER-DEBUG] pcp=0 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP1_TP1 pid=1007229) [GATHER-DEBUG] pcp=1 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP1_TP0 pid=1007175) [GATHER-DEBUG] pcp=1 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP1_TP2 pid=1007283) [GATHER-DEBUG] pcp=1 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP1_TP3 pid=1007337) [GATHER-DEBUG] pcp=1 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP2_TP0 pid=1007391) [GATHER-DEBUG] pcp=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP2_TP2 pid=1007499) [GATHER-DEBUG] pcp=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP2_TP1 pid=1007445) [GATHER-DEBUG] pcp=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP2_TP3 pid=1007553) [GATHER-DEBUG] pcp=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP3_TP1 pid=1007664) [GATHER-DEBUG] pcp=3 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP3_TP0 pid=1007609) [GATHER-DEBUG] pcp=3 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP3_TP2 pid=1007719) [GATHER-DEBUG] pcp=3 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP3_TP3 pid=1007774) [GATHER-DEBUG] pcp=3 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP3_TP2 pid=1007719) [GATHER-DEBUG] pcp=3 after pcp_allgather
+(Worker_PCP1_TP3 pid=1007337) [GATHER-DEBUG] pcp=1 after pcp_allgather
+(Worker_PCP0_TP3 pid=1007120) [GATHER-DEBUG] pcp=0 after pcp_allgather
+(Worker_PCP1_TP0 pid=1007175) [GATHER-DEBUG] pcp=1 after pcp_allgather
+(Worker_PCP1_TP1 pid=1007229) [GATHER-DEBUG] pcp=1 after pcp_allgather
+(Worker_PCP0_TP2 pid=1007065) [GATHER-DEBUG] pcp=0 after pcp_allgather
+(Worker_PCP3_TP3 pid=1007774) [GATHER-DEBUG] pcp=3 after pcp_allgather
+(Worker_PCP3_TP0 pid=1007609) [GATHER-DEBUG] pcp=3 after pcp_allgather
+(Worker_PCP3_TP1 pid=1007664) [GATHER-DEBUG] pcp=3 after pcp_allgather
+(Worker_PCP2_TP1 pid=1007445) [GATHER-DEBUG] pcp=2 after pcp_allgather
+(Worker_PCP0_TP1 pid=1007013) [GATHER-DEBUG] pcp=0 after pcp_allgather
+(Worker_PCP1_TP0 pid=1007175) [HANG-DEBUG] pcp=1 DONE
+(Worker_PCP1_TP0 pid=1007175) [HANG-DEBUG] pcp=1 ENTER num_prefills=2
+(Worker_PCP1_TP0 pid=1007175) [QAG-DEBUG] pcp=1 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP1_TP0 pid=1007175) [QAG-DEBUG] pcp=1 after q_allgather
+(Worker_PCP0_TP3 pid=1007120) [HANG-DEBUG] pcp=0 DONE
+(Worker_PCP0_TP3 pid=1007120) [HANG-DEBUG] pcp=0 ENTER num_prefills=2
+(Worker_PCP0_TP3 pid=1007120) [QAG-DEBUG] pcp=0 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP0_TP3 pid=1007120) [QAG-DEBUG] pcp=0 after q_allgather
+(Worker_PCP3_TP2 pid=1007719) [HANG-DEBUG] pcp=3 DONE
+(Worker_PCP3_TP2 pid=1007719) [HANG-DEBUG] pcp=3 ENTER num_prefills=2
+(Worker_PCP3_TP2 pid=1007719) [QAG-DEBUG] pcp=3 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP3_TP2 pid=1007719) [QAG-DEBUG] pcp=3 after q_allgather
+(Worker_PCP2_TP3 pid=1007553) [GATHER-DEBUG] pcp=2 after pcp_allgather
+(Worker_PCP1_TP3 pid=1007337) [HANG-DEBUG] pcp=1 DONE
+(Worker_PCP1_TP3 pid=1007337) [HANG-DEBUG] pcp=1 ENTER num_prefills=2
+(Worker_PCP1_TP3 pid=1007337) [QAG-DEBUG] pcp=1 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP0_TP0 pid=1006994) [GATHER-DEBUG] pcp=0 after pcp_allgather
