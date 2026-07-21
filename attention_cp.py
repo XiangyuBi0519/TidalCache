@@ -1099,8 +1099,14 @@ class AscendAttentionCPImpl(AscendAttentionBackendImpl):
                     prefill_query_all = self._prefill_query_all_gather(attn_metadata, prefill_query.clone())
 
             if self.pcp_size > 1:
+                if _hang_debug:
+                    print(f"[STEP-DEBUG] pcp={self.pcp_rank} L={_lid} before cp_pre", flush=True)
                 data_head, data_tail = self._forward_prefill_cp_pre(prefill_query, key, value, attn_metadata)
+                if _hang_debug:
+                    print(f"[STEP-DEBUG] pcp={self.pcp_rank} L={_lid} before cp_attn_head", flush=True)
                 output_head, lse_head = self._forward_prefill_cp_attn(data_head, True, attn_metadata)
+                if _hang_debug:
+                    print(f"[STEP-DEBUG] pcp={self.pcp_rank} L={_lid} after cp_attn_head", flush=True)
             else:
                 # Scenario of Enabling DCP Individually
                 attn_output_prefill, attn_lse_prefill = torch.ops.npu.npu_fused_infer_attention_score(
@@ -1121,10 +1127,18 @@ class AscendAttentionCPImpl(AscendAttentionBackendImpl):
                 )
 
             if has_chunked_context:
+                if _hang_debug:
+                    print(f"[STEP-DEBUG] pcp={self.pcp_rank} L={_lid} before wait_qag", flush=True)
                 torch.npu.current_stream().wait_stream(cp_chunkedprefill_comm_stream())
+                if _hang_debug:
+                    print(f"[STEP-DEBUG] pcp={self.pcp_rank} L={_lid} before context_attn", flush=True)
                 context_output = self._compute_prefill_context(prefill_query_all, kv_cache, attn_metadata)
+                if _hang_debug:
+                    print(f"[STEP-DEBUG] pcp={self.pcp_rank} L={_lid} after context_attn", flush=True)
                 local_context_output = torch.cat(context_output, dim=-1).permute([1, 2, 0]).contiguous()
 
+                if _hang_debug:
+                    print(f"[STEP-DEBUG] pcp={self.pcp_rank} L={_lid} before gather", flush=True)
                 cp_chunkedprefill_comm_stream().wait_stream(torch.npu.current_stream())
                 with torch_npu.npu.stream(cp_chunkedprefill_comm_stream()):
                     global_context_output = self._gather_global_context_output(local_context_output)
