@@ -9,3 +9,52 @@ grep "PCP-WORKER.*before _model_forward\|PCP-WORKER.*after _model_forward" prefi
 
 # 4. 有没有报错
 grep -i "error\|timeout\|exception" prefill_node.log | grep -v "INFO" | tail -10
+
+
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "PCP-DEBUG.*num_scheduled\|PCP-DEBUG.*computed" prefill_node.log | tail -20
+(EngineCore pid=965757) INFO 07-21 14:38:36 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=65536, running=0, waiting=1, max_num_running_reqs=2
+(EngineCore pid=965757) INFO 07-21 14:38:36 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=65536, running=1, waiting=3, max_num_running_reqs=2
+(EngineCore pid=965757) INFO 07-21 14:38:44 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=65536, running=1, waiting=3, max_num_running_reqs=2
+(EngineCore pid=965757) INFO 07-21 14:38:51 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=65536, running=1, waiting=2, max_num_running_reqs=2
+(EngineCore pid=965757) INFO 07-21 14:38:59 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=65536, running=1, waiting=1, max_num_running_reqs=2
+(EngineCore pid=965757) INFO 07-21 14:39:06 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=65536, running=1, waiting=0, max_num_running_reqs=2
+(EngineCore pid=965757) INFO 07-21 14:39:13 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=65536, running=0, waiting=0, max_num_running_reqs=2
+(EngineCore pid=965757) INFO 07-21 14:39:13 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=65536, running=0, waiting=0, max_num_running_reqs=2
+(EngineCore pid=965757) INFO 07-21 14:39:13 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=65536, running=0, waiting=0, max_num_running_reqs=2
+(EngineCore pid=965757) INFO 07-21 14:39:13 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=65536, running=0, waiting=0, max_num_running_reqs=2
+(EngineCore pid=965757) INFO 07-21 14:39:13 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=65536, running=0, waiting=0, max_num_running_reqs=2
+(EngineCore pid=965757) INFO 07-21 14:39:14 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=65536, running=0, waiting=0, max_num_running_reqs=2
+(EngineCore pid=965757) INFO 07-21 14:39:14 [scheduler.py:349] [PCP-DEBUG] schedule() start: max_num_scheduled_tokens=65536, running=0, waiting=0, max_num_running_reqs=2
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "HANG-DEBUG.*ENTER" prefill_node.log | head -10
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "PCP-WORKER.*before _model_forward\|PCP-WORKER.*after _model_forward" prefill_node.log | tail -20
+(Worker_PCP0_TP1 pid=965803) INFO 07-21 14:39:06 [model_runner_v1.py:2252] [PCP-WORKER] before _model_forward pcp=0
+(Worker_PCP0_TP0 pid=965784) INFO 07-21 14:39:06 [model_runner_v1.py:2252] [PCP-WORKER] before _model_forward pcp=0
+(Worker_PCP0_TP2 pid=965855) INFO 07-21 14:39:06 [model_runner_v1.py:2252] [PCP-WORKER] before _model_forward pcp=0
+(Worker_PCP0_TP3 pid=965909) INFO 07-21 14:39:06 [model_runner_v1.py:2252] [PCP-WORKER] before _model_forward pcp=0
+(Worker_PCP0_TP0 pid=965784) INFO 07-21 14:39:08 [model_runner_v1.py:2256] [PCP-WORKER] after _model_forward pcp=0
+(Worker_PCP0_TP1 pid=965803) INFO 07-21 14:39:08 [model_runner_v1.py:2256] [PCP-WORKER] after _model_forward pcp=0
+(Worker_PCP0_TP2 pid=965855) INFO 07-21 14:39:08 [model_runner_v1.py:2256] [PCP-WORKER] after _model_forward pcp=0
+(Worker_PCP0_TP3 pid=965909) INFO 07-21 14:39:08 [model_runner_v1.py:2256] [PCP-WORKER] after _model_forward pcp=0
+(Worker_PCP2_TP2 pid=966288) INFO 07-21 14:39:08 [model_runner_v1.py:2256] [PCP-WORKER] after _model_forward pcp=2
+(Worker_PCP1_TP0 pid=965964) INFO 07-21 14:39:08 [model_runner_v1.py:2256] [PCP-WORKER] after _model_forward pcp=1
+(Worker_PCP3_TP2 pid=966507) INFO 07-21 14:39:08 [model_runner_v1.py:2256] [PCP-WORKER] after _model_forward pcp=3
+(Worker_PCP2_TP1 pid=966234) INFO 07-21 14:39:08 [model_runner_v1.py:2256] [PCP-WORKER] after _model_forward pcp=2
+(Worker_PCP3_TP0 pid=966397) INFO 07-21 14:39:08 [model_runner_v1.py:2256] [PCP-WORKER] after _model_forward pcp=3
+(Worker_PCP2_TP0 pid=966180) INFO 07-21 14:39:08 [model_runner_v1.py:2256] [PCP-WORKER] after _model_forward pcp=2
+(Worker_PCP3_TP3 pid=966562) INFO 07-21 14:39:08 [model_runner_v1.py:2256] [PCP-WORKER] after _model_forward pcp=3
+(Worker_PCP3_TP1 pid=966452) INFO 07-21 14:39:08 [model_runner_v1.py:2256] [PCP-WORKER] after _model_forward pcp=3
+(Worker_PCP1_TP3 pid=966126) INFO 07-21 14:39:08 [model_runner_v1.py:2256] [PCP-WORKER] after _model_forward pcp=1
+(Worker_PCP1_TP2 pid=966072) INFO 07-21 14:39:08 [model_runner_v1.py:2256] [PCP-WORKER] after _model_forward pcp=1
+(Worker_PCP2_TP3 pid=966342) INFO 07-21 14:39:08 [model_runner_v1.py:2256] [PCP-WORKER] after _model_forward pcp=2
+(Worker_PCP1_TP1 pid=966018) INFO 07-21 14:39:08 [model_runner_v1.py:2256] [PCP-WORKER] after _model_forward pcp=1
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep -i "error\|timeout\|exception" prefill_node.log | grep -v "INFO" | tail -10
+I20260721 14:35:21.653530 966072 ascend_direct_transport.cpp:136] Set transfer timeout to:33064
+I20260721 14:35:21.637558 965855 ascend_direct_transport.cpp:136] Set transfer timeout to:33064
+I20260721 14:35:21.637578 965964 ascend_direct_transport.cpp:136] Set transfer timeout to:33064
+I20260721 14:35:21.641088 966342 ascend_direct_transport.cpp:136] Set transfer timeout to:33064
+I20260721 14:35:21.641115 966562 ascend_direct_transport.cpp:136] Set transfer timeout to:33064
+I20260721 14:35:21.646623 966452 ascend_direct_transport.cpp:136] Set transfer timeout to:33064
+I20260721 14:35:21.646617 966018 ascend_direct_transport.cpp:136] Set transfer timeout to:33064
+I20260721 14:35:21.653566 966507 ascend_direct_transport.cpp:136] Set transfer timeout to:33064
+I20260721 14:35:21.659389 965784 ascend_direct_transport.cpp:136] Set transfer timeout to:33064
+I20260721 14:35:21.662726 966397 ascend_direct_transport.cpp:136] Set transfer timeout to:33064
