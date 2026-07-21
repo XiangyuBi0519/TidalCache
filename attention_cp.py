@@ -1075,7 +1075,7 @@ class AscendAttentionCPImpl(AscendAttentionBackendImpl):
             _lid = id(self) % 10000
             _hang_debug = has_chunked_context
             if _hang_debug:
-                print(f"[HANG-DEBUG] pcp={self.pcp_rank} L={_lid} ENTER num_prefills={attn_metadata.num_prefills}", flush=True)
+                print(f"[HANG-DEBUG] pcp={self.pcp_rank} L={_lid} ENTER num_prefills={attn_metadata.num_prefills} hybrid={pcp_use_hybrid_attn}", flush=True)
 
             num_actual_tokens_pcp_padded = attn_metadata.num_actual_tokens_pcp_padded // self.pcp_size
             prefill_query = query[num_decode_tokens:num_actual_tokens_pcp_padded].contiguous()
@@ -1083,10 +1083,6 @@ class AscendAttentionCPImpl(AscendAttentionBackendImpl):
             value = value[self.pcp_size * num_decode_tokens : attn_metadata.num_actual_tokens_pcp_padded].contiguous()
 
             if has_chunked_context:
-                torch.npu.synchronize()
-                dist.barrier(group=get_pcp_group().device_group)
-                if _hang_debug:
-                    print(f"[HANG-DEBUG] pcp={self.pcp_rank} L={_lid} BARRIER_PASSED", flush=True)
                 cp_chunkedprefill_comm_stream().wait_stream(torch.npu.current_stream())
                 with torch_npu.npu.stream(cp_chunkedprefill_comm_stream()):
                     prefill_query_all = self._prefill_query_all_gather(attn_metadata, prefill_query.clone())
@@ -1146,10 +1142,13 @@ class AscendAttentionCPImpl(AscendAttentionBackendImpl):
                     print(f"[HANG-DEBUG] pcp={self.pcp_rank} L={_lid} DONE", flush=True)
 
             if self.pcp_size > 1 and pcp_use_hybrid_attn:
-                # layer_idx != num_layers - 1
                 assert attn_metadata.prefill.pcp_metadata is not None
                 pcp_exit_fa_scatter_idx = attn_metadata.prefill.pcp_exit_fa_scatter_idx
+                if _hang_debug:
+                    print(f"[HYBRID-DEBUG] pcp={self.pcp_rank} L={_lid} before hybrid_allgather", flush=True)
                 attn_output_prefill = get_pcp_group().all_gather(attn_output_prefill.contiguous(), dim=0)
+                if _hang_debug:
+                    print(f"[HYBRID-DEBUG] pcp={self.pcp_rank} L={_lid} after hybrid_allgather", flush=True)
                 attn_output_prefill = torch.index_select(attn_output_prefill, 0, pcp_exit_fa_scatter_idx)
 
             output[num_decode_tokens : attn_output_prefill.shape[0] + num_decode_tokens] = attn_output_prefill
