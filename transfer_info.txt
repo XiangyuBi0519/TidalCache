@@ -1,43 +1,11 @@
-[root@hyperinstance-229r9-00001 proxy_PD]# python concurrent_test_60k.py 
-Loaded 200 requests from test.jsonl
-Concurrent requests: 5
-Total requests: 5
-==================================================
-[✓] Request #3 (jsonl[150]): 14.45s | Status: success | Tokens: 60005+50 | Q: 262656 chars
-[✓] Request #1 (jsonl[184]): 21.28s | Status: success | Tokens: 60005+50 | Q: 251707 chars
-[✓] Request #2 (jsonl[60]): 28.60s | Status: success | Tokens: 60005+50 | Q: 211659 chars
-[✓] Request #5 (jsonl[96]): 36.02s | Status: success | Tokens: 60005+50 | Q: 247500 chars
-[✓] Request #4 (jsonl[55]): 43.02s | Status: success | Tokens: 60005+50 | Q: 192241 chars
+# 1. 看 scheduler 调度了几个请求（有没有 mixed batch）
+grep "PCP-DEBUG.*num_scheduled\|PCP-DEBUG.*computed" prefill_node.log | tail -20
 
-==================================================
-SUMMARY
-==================================================
-Total requests: 5
-Successful: 5
-Failed: 0
-Overall time: 43.02s
+# 2. 看有没有 chunked context 触发（has_chunked_context=True 的 ENTER）
+grep "HANG-DEBUG.*ENTER" prefill_node.log | head -10
 
---- Latency Stats (successful requests) ---
-  Min: 14.45s
-  Max: 43.02s
-  Avg: 28.67s
-  P50: 28.60s
-  P90: 43.02s
-  P99: 43.02s
+# 3. 看 worker 有没有卡住
+grep "PCP-WORKER.*before _model_forward\|PCP-WORKER.*after _model_forward" prefill_node.log | tail -20
 
---- Throughput ---
-  Requests/sec: 0.12
-  Tokens/sec (output): 5.81
-  Tokens/sec (total): 6979.37
-
---- Token Stats ---
-  Avg prompt tokens: 60005
-  Avg completion tokens: 50
-  Avg total tokens: 60055
-
---- Content Length Stats ---
-  Avg question length: 233153 chars
-  Min question length: 192241 chars
-  Max question length: 262656 chars
-
-Detailed results saved to concurrent_test_results.json
+# 4. 有没有报错
+grep -i "error\|timeout\|exception" prefill_node.log | grep -v "INFO" | tail -10
