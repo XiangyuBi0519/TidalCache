@@ -9,3 +9,26 @@ for w in PCP0_TP0 PCP0_TP1 PCP0_TP2 PCP0_TP3 PCP1_TP0 PCP1_TP1 PCP1_TP2 PCP1_TP3
 done
 
 # 2. 对比同一 TP(PCP组) 内各 rank 的 seq 值是否一致
+
+
+
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# for w in PCP0_TP0 PCP0_TP1 PCP0_TP2 PCP0_TP3 PCP1_TP0 PCP1_TP1 PCP1_TP2 PCP1_TP3 PCP2_TP0 PCP2_TP1 PCP2_TP2 PCP2_TP3 PCP3_TP0 PCP3_TP1 PCP3_TP2 PCP3_TP3; do
+  echo -n "$w: "
+  grep "Worker_${w}" prefill_node_issue.log | grep -E "GATHER-DEBUG.*before" | tail -1
+done
+PCP0_TP0: (Worker_PCP0_TP0 pid=1059947) [GATHER-DEBUG] pcp=0 L=5856 seq=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
+PCP0_TP1: (Worker_PCP0_TP1 pid=1059967) [GATHER-DEBUG] pcp=0 L=9040 seq=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
+PCP0_TP2: (Worker_PCP0_TP2 pid=1060020) [GATHER-DEBUG] pcp=0 L=6432 seq=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
+PCP0_TP3: (Worker_PCP0_TP3 pid=1060074) [GATHER-DEBUG] pcp=0 L=3328 seq=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
+PCP1_TP0: (Worker_PCP1_TP0 pid=1060128) [GATHER-DEBUG] pcp=1 L=8720 seq=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
+PCP1_TP1: (Worker_PCP1_TP1 pid=1060182) [GATHER-DEBUG] pcp=1 L=6816 seq=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
+PCP1_TP2: (Worker_PCP1_TP2 pid=1060237) [GATHER-DEBUG] pcp=1 L=1456 seq=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
+PCP1_TP3: (Worker_PCP1_TP3 pid=1060291) [GATHER-DEBUG] pcp=1 L=4144 seq=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
+PCP2_TP0: (Worker_PCP2_TP0 pid=1060345) [GATHER-DEBUG] pcp=2 L=1552 seq=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
+PCP2_TP1: (Worker_PCP2_TP1 pid=1060400) [GATHER-DEBUG] pcp=2 L=8384 seq=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
+PCP2_TP2: (Worker_PCP2_TP2 pid=1060454) [GATHER-DEBUG] pcp=2 L=8112 seq=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
+PCP2_TP3: (Worker_PCP2_TP3 pid=1060509) [GATHER-DEBUG] pcp=2 L=9968 seq=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
+PCP3_TP0: (Worker_PCP3_TP0 pid=1060564) [GATHER-DEBUG] pcp=3 L=1776 seq=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
+PCP3_TP1: (Worker_PCP3_TP1 pid=1060619) [GATHER-DEBUG] pcp=3 L=6448 seq=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
+PCP3_TP2: (Worker_PCP3_TP2 pid=1060674) [GATHER-DEBUG] pcp=3 L=2432 seq=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
+PCP3_TP3: (Worker_PCP3_TP3 pid=1060730) [GATHER-DEBUG] pcp=3 L=4224 seq=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
