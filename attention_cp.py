@@ -313,8 +313,8 @@ class AscendAttentionCPImpl(AscendAttentionBackendImpl):
         self.dcp_group = get_dcp_group().device_group if self.dcp_size > 1 else None
 
         self._pcp_ag_seq = 0
-        if not hasattr(AscendAttentionCPBackend, '_global_pcp_seq'):
-            AscendAttentionCPBackend._global_pcp_seq = 0
+        if not hasattr(AscendAttentionCPImpl, '_global_pcp_seq'):
+            AscendAttentionCPImpl._global_pcp_seq = 0
 
     @staticmethod
     def update_graph_params(
@@ -722,8 +722,8 @@ class AscendAttentionCPImpl(AscendAttentionBackendImpl):
     def _prefill_query_all_gather(self, attn_metadata, prefill_query):
         _lid = id(self) % 10000
         if self.pcp_size > 1:
-            AscendAttentionCPBackend._global_pcp_seq += 1
-            _gseq = AscendAttentionCPBackend._global_pcp_seq
+            AscendAttentionCPImpl._global_pcp_seq += 1
+            _gseq = AscendAttentionCPImpl._global_pcp_seq
             print(f"[QAG-DEBUG] pcp={self.pcp_rank} L={_lid} g={_gseq} before q_allgather", flush=True)
             prefill_query = get_pcp_group().all_gather(prefill_query, 0)
             print(f"[QAG-DEBUG] pcp={self.pcp_rank} L={_lid} g={_gseq} after q_allgather", flush=True)
@@ -1020,8 +1020,8 @@ class AscendAttentionCPImpl(AscendAttentionBackendImpl):
             dcp_context_attn_output = local_context_attn_output
 
         if self.pcp_size > 1:
-            AscendAttentionCPBackend._global_pcp_seq += 1
-            _gseq = AscendAttentionCPBackend._global_pcp_seq
+            AscendAttentionCPImpl._global_pcp_seq += 1
+            _gseq = AscendAttentionCPImpl._global_pcp_seq
             print(f"[GATHER-DEBUG] pcp={self.pcp_rank} L={_lid} g={_gseq} before pcp_allgather shape={dcp_context_attn_output.shape}", flush=True)
             global_context_attn_output = get_pcp_group().all_gather(dcp_context_attn_output, dim=-1)
             print(f"[GATHER-DEBUG] pcp={self.pcp_rank} L={_lid} g={_gseq} after pcp_allgather", flush=True)
