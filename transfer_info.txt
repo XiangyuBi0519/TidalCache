@@ -1,36 +1,95 @@
-grep "HANG-DEBUG" prefill_node.log | tail -20
+[root@hyperinstance-229r9-00001 proxy_PD]# python concurrent_test_60k.py 
+Loaded 200 requests from test.jsonl
+Concurrent requests: 3
+Total requests: 3
+==================================================
+[✓] Request #2 (jsonl[102]): 12.76s | Status: success | Tokens: 60005+50 | Q: 259383 chars
+[✓] Request #1 (jsonl[12]): 20.72s | Status: success | Tokens: 60005+50 | Q: 232735 chars
+[✓] Request #3 (jsonl[170]): 65.48s | Status: success | Tokens: 60005+50 | Q: 275561 chars
 
-grep "HANG-DEBUG.*P5" prefill_node.log | tail -10
+==================================================
+SUMMARY
+==================================================
+Total requests: 3
+Successful: 3
+Failed: 0
+Overall time: 65.48s
 
-[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "HANG-DEBUG" prefill_node.log | tail -20
-(Worker_PCP2_TP1 pid=892576) [HANG-DEBUG] pcp=2 P7_after_tail_attn
-(Worker_PCP2_TP1 pid=892576) [HANG-DEBUG] pcp=2 P8_after_wait_gather_output
-(Worker_PCP0_TP0 pid=892124) [HANG-DEBUG] pcp=0 P6_after_gather_output_launched
-(Worker_PCP0_TP0 pid=892124) [HANG-DEBUG] pcp=0 P7_after_tail_attn
-(Worker_PCP0_TP0 pid=892124) [HANG-DEBUG] pcp=0 P8_after_wait_gather_output
-(Worker_PCP2_TP2 pid=892630) [HANG-DEBUG] pcp=2 P6_after_gather_output_launched
-(Worker_PCP2_TP2 pid=892630) [HANG-DEBUG] pcp=2 P7_after_tail_attn
-(Worker_PCP2_TP2 pid=892630) [HANG-DEBUG] pcp=2 P8_after_wait_gather_output
-(Worker_PCP3_TP3 pid=892907) [HANG-DEBUG] pcp=3 P6_after_gather_output_launched
-(Worker_PCP3_TP3 pid=892907) [HANG-DEBUG] pcp=3 P7_after_tail_attn
-(Worker_PCP3_TP3 pid=892907) [HANG-DEBUG] pcp=3 P8_after_wait_gather_output
-(Worker_PCP0_TP2 pid=892195) [HANG-DEBUG] pcp=0 P9_after_update_done
-(Worker_PCP2_TP0 pid=892522) [HANG-DEBUG] pcp=2 P6_after_gather_output_launched
-(Worker_PCP0_TP2 pid=892195) [HANG-DEBUG] pcp=0 ENTER chunked_context=True num_prefills=2
-(Worker_PCP2_TP0 pid=892522) [HANG-DEBUG] pcp=2 P7_after_tail_attn
-(Worker_PCP2_TP0 pid=892522) [HANG-DEBUG] pcp=2 P8_after_wait_gather_output
-(Worker_PCP0_TP2 pid=892195) [HANG-DEBUG] pcp=0 P1_allgather_q_launched
-(Worker_PCP0_TP2 pid=892195) [HANG-DEBUG] pcp=0 P2_after_cp_pre
-(Worker_PCP0_TP2 pid=892195) [HANG-DEBUG] pcp=0 P3_after_head_attn
-(Worker_PCP0_TP2 pid=892195) [HANG-DEBUG] pcp=0 P4_after_wait_allgather_q
-[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "HANG-DEBUG.*P5" prefill_node.log | tail -10
-(Worker_PCP2_TP1 pid=892576) [HANG-DEBUG] pcp=2 P5c_after_cat_permute
-(Worker_PCP2_TP2 pid=892630) [HANG-DEBUG] pcp=2 P5c_after_cat_permute
-(Worker_PCP3_TP3 pid=892907) [HANG-DEBUG] pcp=3 P5b_npu_synchronized (kernel done)
-(Worker_PCP3_TP1 pid=892796) [HANG-DEBUG] pcp=3 P5b_npu_synchronized (kernel done)
-(Worker_PCP3_TP3 pid=892907) [HANG-DEBUG] pcp=3 P5c_after_cat_permute
-(Worker_PCP3_TP1 pid=892796) [HANG-DEBUG] pcp=3 P5c_after_cat_permute
-(Worker_PCP3_TP2 pid=892852) [HANG-DEBUG] pcp=3 P5b_npu_synchronized (kernel done)
-(Worker_PCP3_TP0 pid=892740) [HANG-DEBUG] pcp=3 P5b_npu_synchronized (kernel done)
-(Worker_PCP3_TP2 pid=892852) [HANG-DEBUG] pcp=3 P5c_after_cat_permute
-(Worker_PCP3_TP0 pid=892740) [HANG-DEBUG] pcp=3 P5c_after_cat_permute
+--- Latency Stats (successful requests) ---
+  Min: 12.76s
+  Max: 65.48s
+  Avg: 32.99s
+  P50: 20.72s
+  P90: 65.48s
+  P99: 65.48s
+
+--- Throughput ---
+  Requests/sec: 0.05
+  Tokens/sec (output): 2.29
+  Tokens/sec (total): 2751.28
+
+--- Token Stats ---
+  Avg prompt tokens: 60005
+  Avg completion tokens: 50
+  Avg total tokens: 60055
+
+--- Content Length Stats ---
+  Avg question length: 255893 chars
+  Min question length: 232735 chars
+  Max question length: 275561 chars
+
+
+
+
+
+
+
+[root@hyperinstance-229r9-00001 proxy_PD]# python concurrent_test_60k.py 
+Loaded 200 requests from test.jsonl
+Concurrent requests: 5
+Total requests: 5
+==================================================
+[✓] Request #1 (jsonl[162]): 13.00s | Status: success | Tokens: 60005+50 | Q: 236915 chars
+[✓] Request #4 (jsonl[197]): 21.10s | Status: success | Tokens: 60005+50 | Q: 223750 chars
+[✗] Request #2 (jsonl[73]): 308.25s | Status: failed | Tokens: 0+0 | Q: 231622 chars
+    Error: Internal Server Error
+[✗] Request #3 (jsonl[114]): 308.26s | Status: failed | Tokens: 0+0 | Q: 264611 chars
+    Error: Internal Server Error
+[✗] Request #5 (jsonl[131]): 308.27s | Status: failed | Tokens: 0+0 | Q: 267097 chars
+    Error: Internal Server Error
+
+==================================================
+SUMMARY
+==================================================
+Total requests: 5
+Successful: 2
+Failed: 3
+Overall time: 308.27s
+
+--- Latency Stats (successful requests) ---
+  Min: 13.00s
+  Max: 21.10s
+  Avg: 17.05s
+  P50: 21.10s
+  P90: 21.10s
+  P99: 21.10s
+
+--- Throughput ---
+  Requests/sec: 0.02
+  Tokens/sec (output): 0.32
+  Tokens/sec (total): 389.62
+
+--- Token Stats ---
+  Avg prompt tokens: 60005
+  Avg completion tokens: 50
+  Avg total tokens: 60055
+
+--- Content Length Stats ---
+  Avg question length: 230332 chars
+  Min question length: 223750 chars
+  Max question length: 236915 chars
+
+--- Failed Requests ---
+  Request #2 (jsonl[73]): failed | Internal Server Error
+  Request #3 (jsonl[114]): failed | Internal Server Error
+  Request #5 (jsonl[131]): failed | Internal Server Error
