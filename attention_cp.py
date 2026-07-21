@@ -922,9 +922,12 @@ class AscendAttentionCPImpl(AscendAttentionBackendImpl):
                     if not attn_metadata.prefill.pcp_metadata.pcp_use_hybrid_attn:
                         kv = torch.cat([key, value], dim=-1)
                         num_actual_tokens_pcp_padded = attn_metadata.num_actual_tokens_pcp_padded // self.pcp_size
-                        all_kv = get_pcp_group().all_gather(kv[:num_actual_tokens_pcp_padded].contiguous(), dim=0)
-                        pcp_allgather_restore_idx = attn_metadata.prefill.pcp_metadata.pcp_allgather_restore_idx
-                        all_kv = torch.index_select(all_kv, 0, pcp_allgather_restore_idx)
+                        cp_chunkedprefill_comm_stream().wait_stream(torch.npu.current_stream())
+                        with torch_npu.npu.stream(cp_chunkedprefill_comm_stream()):
+                            all_kv = get_pcp_group().all_gather(kv[:num_actual_tokens_pcp_padded].contiguous(), dim=0)
+                            pcp_allgather_restore_idx = attn_metadata.prefill.pcp_metadata.pcp_allgather_restore_idx
+                            all_kv = torch.index_select(all_kv, 0, pcp_allgather_restore_idx)
+                        torch.npu.current_stream().wait_stream(cp_chunkedprefill_comm_stream())
                         key, value = all_kv.split([self.head_size, self.head_size], dim=-1)
                     else:
                         query, key, value = self._gather_and_restore_pcp_qkv(query, key, value, attn_metadata)
