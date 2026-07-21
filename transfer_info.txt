@@ -1,82 +1,29 @@
-[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep -E "GATHER-DEBUG|QAG-DEBUG" prefill_node.log | tail -30
-(Worker_PCP2_TP1 pid=996942) [GATHER-DEBUG] pcp=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
-(Worker_PCP2_TP2 pid=996996) [GATHER-DEBUG] pcp=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
-(Worker_PCP3_TP3 pid=997272) [GATHER-DEBUG] pcp=3 before pcp_allgather shape=torch.Size([24, 129, 65544])
-(Worker_PCP3_TP2 pid=997216) [GATHER-DEBUG] pcp=3 before pcp_allgather shape=torch.Size([24, 129, 65544])
-(Worker_PCP3_TP0 pid=997105) [GATHER-DEBUG] pcp=3 before pcp_allgather shape=torch.Size([24, 129, 65544])
-(Worker_PCP3_TP1 pid=997160) [GATHER-DEBUG] pcp=3 before pcp_allgather shape=torch.Size([24, 129, 65544])
-(Worker_PCP0_TP0 pid=996492) [GATHER-DEBUG] pcp=0 after pcp_allgather
-(Worker_PCP3_TP2 pid=997216) [GATHER-DEBUG] pcp=3 after pcp_allgather
-(Worker_PCP0_TP3 pid=996618) [GATHER-DEBUG] pcp=0 after pcp_allgather
-(Worker_PCP3_TP3 pid=997272) [GATHER-DEBUG] pcp=3 after pcp_allgather
-(Worker_PCP3_TP0 pid=997105) [GATHER-DEBUG] pcp=3 after pcp_allgather
-(Worker_PCP1_TP1 pid=996726) [GATHER-DEBUG] pcp=1 after pcp_allgather
-(Worker_PCP0_TP2 pid=996563) [GATHER-DEBUG] pcp=0 after pcp_allgather
-(Worker_PCP1_TP0 pid=996672) [GATHER-DEBUG] pcp=1 after pcp_allgather
-(Worker_PCP2_TP2 pid=996996) [GATHER-DEBUG] pcp=2 after pcp_allgather
-(Worker_PCP0_TP0 pid=996492) [QAG-DEBUG] pcp=0 before q_allgather shape=torch.Size([16386, 24, 128])
-(Worker_PCP0_TP0 pid=996492) [QAG-DEBUG] pcp=0 after q_allgather
-(Worker_PCP3_TP2 pid=997216) [QAG-DEBUG] pcp=3 before q_allgather shape=torch.Size([16386, 24, 128])
-(Worker_PCP3_TP2 pid=997216) [QAG-DEBUG] pcp=3 after q_allgather
-(Worker_PCP2_TP1 pid=996942) [GATHER-DEBUG] pcp=2 after pcp_allgather
-(Worker_PCP2_TP3 pid=997050) [GATHER-DEBUG] pcp=2 after pcp_allgather
-(Worker_PCP2_TP0 pid=996888) [GATHER-DEBUG] pcp=2 after pcp_allgather
-(Worker_PCP1_TP2 pid=996780) [GATHER-DEBUG] pcp=1 after pcp_allgather
-(Worker_PCP3_TP0 pid=997105) [QAG-DEBUG] pcp=3 before q_allgather shape=torch.Size([16386, 24, 128])
-(Worker_PCP0_TP3 pid=996618) [QAG-DEBUG] pcp=0 before q_allgather shape=torch.Size([16386, 24, 128])
-(Worker_PCP3_TP3 pid=997272) [QAG-DEBUG] pcp=3 before q_allgather shape=torch.Size([16386, 24, 128])
-(Worker_PCP3_TP0 pid=997105) [QAG-DEBUG] pcp=3 after q_allgather
-(Worker_PCP0_TP3 pid=996618) [QAG-DEBUG] pcp=0 after q_allgather
-(Worker_PCP3_TP3 pid=997272) [QAG-DEBUG] pcp=3 after q_allgather
-(Worker_PCP0_TP1 pid=996511) [GATHER-DEBUG] pcp=0 after pcp_allgather
-[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep -E "HANG-DEBUG|GATHER-DEBUG|QAG-DEBUG" prefill_node.log | tail -50
-(Worker_PCP0_TP2 pid=996563) [GATHER-DEBUG] pcp=0 before pcp_allgather shape=torch.Size([24, 129, 65544])
-(Worker_PCP0_TP0 pid=996492) [GATHER-DEBUG] pcp=0 before pcp_allgather shape=torch.Size([24, 129, 65544])
-(Worker_PCP0_TP1 pid=996511) [GATHER-DEBUG] pcp=0 before pcp_allgather shape=torch.Size([24, 129, 65544])
-(Worker_PCP0_TP3 pid=996618) [GATHER-DEBUG] pcp=0 before pcp_allgather shape=torch.Size([24, 129, 65544])
-(Worker_PCP1_TP2 pid=996780) [GATHER-DEBUG] pcp=1 before pcp_allgather shape=torch.Size([24, 129, 65544])
-(Worker_PCP1_TP3 pid=996834) [GATHER-DEBUG] pcp=1 before pcp_allgather shape=torch.Size([24, 129, 65544])
-(Worker_PCP1_TP1 pid=996726) [GATHER-DEBUG] pcp=1 before pcp_allgather shape=torch.Size([24, 129, 65544])
-(Worker_PCP1_TP0 pid=996672) [GATHER-DEBUG] pcp=1 before pcp_allgather shape=torch.Size([24, 129, 65544])
-(Worker_PCP2_TP3 pid=997050) [GATHER-DEBUG] pcp=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
-(Worker_PCP2_TP0 pid=996888) [GATHER-DEBUG] pcp=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
-(Worker_PCP2_TP1 pid=996942) [GATHER-DEBUG] pcp=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
-(Worker_PCP2_TP2 pid=996996) [GATHER-DEBUG] pcp=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
-(Worker_PCP3_TP3 pid=997272) [GATHER-DEBUG] pcp=3 before pcp_allgather shape=torch.Size([24, 129, 65544])
-(Worker_PCP3_TP2 pid=997216) [GATHER-DEBUG] pcp=3 before pcp_allgather shape=torch.Size([24, 129, 65544])
-(Worker_PCP3_TP0 pid=997105) [GATHER-DEBUG] pcp=3 before pcp_allgather shape=torch.Size([24, 129, 65544])
-(Worker_PCP3_TP1 pid=997160) [GATHER-DEBUG] pcp=3 before pcp_allgather shape=torch.Size([24, 129, 65544])
-(Worker_PCP0_TP0 pid=996492) [GATHER-DEBUG] pcp=0 after pcp_allgather
-(Worker_PCP3_TP2 pid=997216) [GATHER-DEBUG] pcp=3 after pcp_allgather
-(Worker_PCP0_TP3 pid=996618) [GATHER-DEBUG] pcp=0 after pcp_allgather
-(Worker_PCP3_TP3 pid=997272) [GATHER-DEBUG] pcp=3 after pcp_allgather
-(Worker_PCP3_TP0 pid=997105) [GATHER-DEBUG] pcp=3 after pcp_allgather
-(Worker_PCP1_TP1 pid=996726) [GATHER-DEBUG] pcp=1 after pcp_allgather
-(Worker_PCP0_TP2 pid=996563) [GATHER-DEBUG] pcp=0 after pcp_allgather
-(Worker_PCP1_TP0 pid=996672) [GATHER-DEBUG] pcp=1 after pcp_allgather
-(Worker_PCP2_TP2 pid=996996) [GATHER-DEBUG] pcp=2 after pcp_allgather
-(Worker_PCP0_TP0 pid=996492) [HANG-DEBUG] pcp=0 DONE
-(Worker_PCP0_TP0 pid=996492) [HANG-DEBUG] pcp=0 ENTER num_prefills=2
-(Worker_PCP0_TP0 pid=996492) [QAG-DEBUG] pcp=0 before q_allgather shape=torch.Size([16386, 24, 128])
-(Worker_PCP0_TP0 pid=996492) [QAG-DEBUG] pcp=0 after q_allgather
-(Worker_PCP3_TP2 pid=997216) [HANG-DEBUG] pcp=3 DONE
-(Worker_PCP3_TP2 pid=997216) [HANG-DEBUG] pcp=3 ENTER num_prefills=2
-(Worker_PCP3_TP2 pid=997216) [QAG-DEBUG] pcp=3 before q_allgather shape=torch.Size([16386, 24, 128])
-(Worker_PCP3_TP2 pid=997216) [QAG-DEBUG] pcp=3 after q_allgather
-(Worker_PCP2_TP1 pid=996942) [GATHER-DEBUG] pcp=2 after pcp_allgather
-(Worker_PCP2_TP3 pid=997050) [GATHER-DEBUG] pcp=2 after pcp_allgather
-(Worker_PCP2_TP0 pid=996888) [GATHER-DEBUG] pcp=2 after pcp_allgather
-(Worker_PCP3_TP0 pid=997105) [HANG-DEBUG] pcp=3 DONE
-(Worker_PCP1_TP2 pid=996780) [GATHER-DEBUG] pcp=1 after pcp_allgather
-(Worker_PCP3_TP0 pid=997105) [HANG-DEBUG] pcp=3 ENTER num_prefills=2
-(Worker_PCP3_TP3 pid=997272) [HANG-DEBUG] pcp=3 DONE
-(Worker_PCP3_TP0 pid=997105) [QAG-DEBUG] pcp=3 before q_allgather shape=torch.Size([16386, 24, 128])
-(Worker_PCP0_TP3 pid=996618) [HANG-DEBUG] pcp=0 DONE
-(Worker_PCP0_TP3 pid=996618) [HANG-DEBUG] pcp=0 ENTER num_prefills=2
-(Worker_PCP3_TP3 pid=997272) [HANG-DEBUG] pcp=3 ENTER num_prefills=2
-(Worker_PCP0_TP3 pid=996618) [QAG-DEBUG] pcp=0 before q_allgather shape=torch.Size([16386, 24, 128])
-(Worker_PCP3_TP3 pid=997272) [QAG-DEBUG] pcp=3 before q_allgather shape=torch.Size([16386, 24, 128])
-(Worker_PCP3_TP0 pid=997105) [QAG-DEBUG] pcp=3 after q_allgather
-(Worker_PCP0_TP3 pid=996618) [QAG-DEBUG] pcp=0 after q_allgather
-(Worker_PCP3_TP3 pid=997272) [QAG-DEBUG] pcp=3 after q_allgather
-(Worker_PCP0_TP1 pid=996511) [GATHER-DEBUG] pcp=0 after pcp_allgather
+echo "=== 事件计数 ==="
+grep -c "HANG-DEBUG.*ENTER" /root/pcp_debug_clean.log
+grep -c "HANG-DEBUG.*DONE" /root/pcp_debug_clean.log
+grep -c "QAG-DEBUG.*before" /root/pcp_debug_clean.log
+grep -c "QAG-DEBUG.*after" /root/pcp_debug_clean.log
+grep -c "GATHER-DEBUG.*before pcp_allgather" /root/pcp_debug_clean.log
+grep -c "GATHER-DEBUG.*after pcp_allgather" /root/pcp_debug_clean.log
+
+echo "=== 每个 worker 的 ENTER/DONE ==="
+grep "HANG-DEBUG.*ENTER" /root/pcp_debug_clean.log | sed 's/.*(\(Worker_[^ ]*\).*/\1/' | sort | uniq -c | sort -k2
+grep "HANG-DEBUG.*DONE" /root/pcp_debug_clean.log | sed 's/.*(\(Worker_[^ ]*\).*/\1/' | sort | uniq -c | sort -k2
+
+echo "=== GATHER before/after per worker ==="
+for w in PCP0_TP0 PCP0_TP1 PCP0_TP2 PCP0_TP3 PCP1_TP0 PCP1_TP1 PCP1_TP2 PCP1_TP3 PCP2_TP0 PCP2_TP1 PCP2_TP2 PCP2_TP3 PCP3_TP0 PCP3_TP1 PCP3_TP2 PCP3_TP3; do
+  b=$(grep -c "Worker_${w}.*GATHER-DEBUG.*before pcp" /root/pcp_debug_clean.log)
+  a=$(grep -c "Worker_${w}.*GATHER-DEBUG.*after pcp" /root/pcp_debug_clean.log)
+  echo "$w: before=$b after=$a diff=$((b-a))"
+done
+
+echo "=== QAG before/after per worker ==="
+for w in PCP0_TP0 PCP0_TP1 PCP0_TP2 PCP0_TP3 PCP1_TP0 PCP1_TP1 PCP1_TP2 PCP1_TP3 PCP2_TP0 PCP2_TP1 PCP2_TP2 PCP2_TP3 PCP3_TP0 PCP3_TP1 PCP3_TP2 PCP3_TP3; do
+  b=$(grep -c "Worker_${w}.*QAG-DEBUG.*before" /root/pcp_debug_clean.log)
+  a=$(grep -c "Worker_${w}.*QAG-DEBUG.*after" /root/pcp_debug_clean.log)
+  echo "$w: before=$b after=$a diff=$((b-a))"
+done
+
+echo "=== 从第一个 DONE 开始的日志（第二轮 forward）==="
+first_done=$(grep -n "HANG-DEBUG.*DONE" /root/pcp_debug_clean.log | head -1 | cut -d: -f1)
+sed -n "${first_done},\$p" /root/pcp_debug_clean.log | grep -E "HANG-DEBUG|QAG-DEBUG|GATHER-DEBUG" | head -300
