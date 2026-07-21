@@ -1,75 +1,16 @@
-[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep -c "BARRIER_PASSED" prefill_node_issue.log
-1168
-[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep -c "HANG-DEBUG.*ENTER" prefill_node_issue.log
-1182
-[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep -E "HANG-DEBUG|QAG-DEBUG|GATHER-DEBUG" prefill_node_issue.log | tail -50
-(Worker_PCP1_TP0 pid=1039062) [HANG-DEBUG] pcp=1 L=3856 WAIT_STREAM
-(Worker_PCP1_TP0 pid=1039062) [HANG-DEBUG] pcp=1 L=3856 WAIT_DONE
-(Worker_PCP1_TP3 pid=1039224) [GATHER-DEBUG] pcp=1 L=688 after pcp_allgather
-(Worker_PCP1_TP3 pid=1039224) [HANG-DEBUG] pcp=1 L=688 WAIT_STREAM
-(Worker_PCP1_TP3 pid=1039224) [HANG-DEBUG] pcp=1 L=688 WAIT_DONE
-(Worker_PCP1_TP2 pid=1039170) [GATHER-DEBUG] pcp=1 L=80 after pcp_allgather
-(Worker_PCP1_TP2 pid=1039170) [HANG-DEBUG] pcp=1 L=80 WAIT_STREAM
-(Worker_PCP2_TP0 pid=1039278) [GATHER-DEBUG] pcp=2 L=8160 after pcp_allgather
-(Worker_PCP1_TP2 pid=1039170) [HANG-DEBUG] pcp=1 L=80 WAIT_DONE
-(Worker_PCP2_TP0 pid=1039278) [HANG-DEBUG] pcp=2 L=8160 WAIT_STREAM
-(Worker_PCP2_TP0 pid=1039278) [HANG-DEBUG] pcp=2 L=8160 WAIT_DONE
-(Worker_PCP2_TP3 pid=1039442) [GATHER-DEBUG] pcp=2 L=8368 after pcp_allgather
-(Worker_PCP2_TP3 pid=1039442) [HANG-DEBUG] pcp=2 L=8368 WAIT_STREAM
-(Worker_PCP2_TP3 pid=1039442) [HANG-DEBUG] pcp=2 L=8368 WAIT_DONE
-(Worker_PCP3_TP1 pid=1039552) [GATHER-DEBUG] pcp=3 L=9568 after pcp_allgather
-(Worker_PCP3_TP1 pid=1039552) [HANG-DEBUG] pcp=3 L=9568 WAIT_STREAM
-(Worker_PCP3_TP1 pid=1039552) [HANG-DEBUG] pcp=3 L=9568 WAIT_DONE
-(Worker_PCP0_TP1 pid=1038902) [GATHER-DEBUG] pcp=0 L=8400 after pcp_allgather
-(Worker_PCP0_TP1 pid=1038902) [HANG-DEBUG] pcp=0 L=8400 WAIT_STREAM
-(Worker_PCP0_TP1 pid=1038902) [HANG-DEBUG] pcp=0 L=8400 WAIT_DONE
-(Worker_PCP2_TP1 pid=1039333) [HANG-DEBUG] pcp=2 L=5360 DONE
-(Worker_PCP2_TP1 pid=1039333) [HANG-DEBUG] pcp=2 L=4896 ENTER num_prefills=2
-(Worker_PCP1_TP3 pid=1039224) [HANG-DEBUG] pcp=1 L=688 DONE
-(Worker_PCP1_TP3 pid=1039224) [HANG-DEBUG] pcp=1 L=3760 ENTER num_prefills=2
-(Worker_PCP2_TP0 pid=1039278) [HANG-DEBUG] pcp=2 L=8160 DONE
-(Worker_PCP2_TP0 pid=1039278) [HANG-DEBUG] pcp=2 L=864 ENTER num_prefills=2
-(Worker_PCP3_TP3 pid=1039662) [GATHER-DEBUG] pcp=3 L=3520 after pcp_allgather
-(Worker_PCP3_TP3 pid=1039662) [HANG-DEBUG] pcp=3 L=3520 WAIT_STREAM
-(Worker_PCP3_TP3 pid=1039662) [HANG-DEBUG] pcp=3 L=3520 WAIT_DONE
-(Worker_PCP3_TP2 pid=1039607) [HANG-DEBUG] pcp=3 L=6320 DONE
-(Worker_PCP3_TP2 pid=1039607) [HANG-DEBUG] pcp=3 L=8096 ENTER num_prefills=2
-(Worker_PCP2_TP3 pid=1039442) [HANG-DEBUG] pcp=2 L=8368 DONE
-(Worker_PCP2_TP3 pid=1039442) [HANG-DEBUG] pcp=2 L=4800 ENTER num_prefills=2
-(Worker_PCP1_TP1 pid=1039116) [GATHER-DEBUG] pcp=1 L=8896 after pcp_allgather
-(Worker_PCP1_TP1 pid=1039116) [HANG-DEBUG] pcp=1 L=8896 WAIT_STREAM
-(Worker_PCP1_TP1 pid=1039116) [HANG-DEBUG] pcp=1 L=8896 WAIT_DONE
-(Worker_PCP0_TP2 pid=1038954) [HANG-DEBUG] pcp=0 L=1968 DONE
-(Worker_PCP0_TP2 pid=1038954) [HANG-DEBUG] pcp=0 L=3792 ENTER num_prefills=2
-(Worker_PCP0_TP3 pid=1039008) [HANG-DEBUG] pcp=0 L=6144 DONE
-(Worker_PCP0_TP3 pid=1039008) [HANG-DEBUG] pcp=0 L=5552 ENTER num_prefills=2
-(Worker_PCP3_TP1 pid=1039552) [HANG-DEBUG] pcp=3 L=9568 DONE
-(Worker_PCP3_TP1 pid=1039552) [HANG-DEBUG] pcp=3 L=8352 ENTER num_prefills=2
-(Worker_PCP3_TP0 pid=1039497) [HANG-DEBUG] pcp=3 L=7792 DONE
-(Worker_PCP3_TP0 pid=1039497) [HANG-DEBUG] pcp=3 L=5936 ENTER num_prefills=2
-(Worker_PCP1_TP0 pid=1039062) [HANG-DEBUG] pcp=1 L=3856 DONE
-(Worker_PCP1_TP0 pid=1039062) [HANG-DEBUG] pcp=1 L=9792 ENTER num_prefills=2
-(Worker_PCP1_TP1 pid=1039116) [HANG-DEBUG] pcp=1 L=8896 DONE
-(Worker_PCP1_TP1 pid=1039116) [HANG-DEBUG] pcp=1 L=3040 ENTER num_prefills=2
-(Worker_PCP1_TP2 pid=1039170) [HANG-DEBUG] pcp=1 L=80 DONE
-(Worker_PCP1_TP2 pid=1039170) [HANG-DEBUG] pcp=1 L=3792 ENTER num_prefills=2
-[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# for w in PCP0_TP0 PCP0_TP1 PCP0_TP2 PCP0_TP3 PCP1_TP0 PCP1_TP1 PCP1_TP2 PCP1_TP3 PCP2_TP0 PCP2_TP1 PCP2_TP2 PCP2_TP3 PCP3_TP0 PCP3_TP1 PCP3_TP2 PCP3_TP3; do
+find /vllm-workspace/vllm-ascend -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null
+cp attention_cp.py /vllm-workspace/vllm-ascend/vllm_ascend/attention/context_parallel/attention_cp.py
+
+# hang 后：
+# 1. hybrid allgather 是否存在
+grep -c "HYBRID-DEBUG.*before" prefill_node_issue.log
+grep -c "HYBRID-DEBUG.*after" prefill_node_issue.log
+
+# 2. 最后状态
+for w in PCP0_TP0 PCP0_TP1 PCP0_TP2 PCP0_TP3 PCP1_TP0 PCP1_TP1 PCP1_TP2 PCP1_TP3 PCP2_TP0 PCP2_TP1 PCP2_TP2 PCP2_TP3 PCP3_TP0 PCP3_TP1 PCP3_TP2 PCP3_TP3; do
   echo -n "$w: "
-  grep "Worker_${w}" prefill_node_issue.log | grep -E "HANG-DEBUG|QAG-DEBUG|GATHER-DEBUG" | tail -1
+  grep "Worker_${w}" prefill_node_issue.log | grep -E "HANG-DEBUG|QAG-DEBUG|GATHER-DEBUG|HYBRID-DEBUG" | tail -1
 done
-PCP0_TP0: (Worker_PCP0_TP0 pid=1038882) [HANG-DEBUG] pcp=0 L=7200 ENTER num_prefills=2
-PCP0_TP1: (Worker_PCP0_TP1 pid=1038902) [HANG-DEBUG] pcp=0 L=8400 WAIT_DONE
-PCP0_TP2: (Worker_PCP0_TP2 pid=1038954) [HANG-DEBUG] pcp=0 L=3792 ENTER num_prefills=2
-PCP0_TP3: (Worker_PCP0_TP3 pid=1039008) [HANG-DEBUG] pcp=0 L=5552 ENTER num_prefills=2
-PCP1_TP0: (Worker_PCP1_TP0 pid=1039062) [HANG-DEBUG] pcp=1 L=9792 ENTER num_prefills=2
-PCP1_TP1: (Worker_PCP1_TP1 pid=1039116) [HANG-DEBUG] pcp=1 L=3040 ENTER num_prefills=2
-PCP1_TP2: (Worker_PCP1_TP2 pid=1039170) [HANG-DEBUG] pcp=1 L=3792 ENTER num_prefills=2
-PCP1_TP3: (Worker_PCP1_TP3 pid=1039224) [HANG-DEBUG] pcp=1 L=3760 ENTER num_prefills=2
-PCP2_TP0: (Worker_PCP2_TP0 pid=1039278) [HANG-DEBUG] pcp=2 L=864 ENTER num_prefills=2
-PCP2_TP1: (Worker_PCP2_TP1 pid=1039333) [HANG-DEBUG] pcp=2 L=4896 ENTER num_prefills=2
-PCP2_TP2: (Worker_PCP2_TP2 pid=1039387) [HANG-DEBUG] pcp=2 L=6128 ENTER num_prefills=2
-PCP2_TP3: (Worker_PCP2_TP3 pid=1039442) [HANG-DEBUG] pcp=2 L=4800 ENTER num_prefills=2
-PCP3_TP0: (Worker_PCP3_TP0 pid=1039497) [HANG-DEBUG] pcp=3 L=5936 ENTER num_prefills=2
-PCP3_TP1: (Worker_PCP3_TP1 pid=1039552) [HANG-DEBUG] pcp=3 L=8352 ENTER num_prefills=2
-PCP3_TP2: (Worker_PCP3_TP2 pid=1039607) [HANG-DEBUG] pcp=3 L=8096 ENTER num_prefills=2
-PCP3_TP3: (Worker_PCP3_TP3 pid=1039662) [HANG-DEBUG] pcp=3 L=3520 WAIT_DONE
+
+# 3. tail 看完整时间线
+grep -E "HANG-DEBUG|QAG-DEBUG|GATHER-DEBUG|HYBRID-DEBUG" prefill_node_issue.log | tail -80
