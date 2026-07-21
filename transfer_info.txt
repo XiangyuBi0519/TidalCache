@@ -1,6 +1,27 @@
-grep -n "cp_chunkedprefill_comm_stream" /vllm-workspace/vllm-ascend/vllm_ascend/attention/context_parallel/attention_cp.py | head -10
-
-for w in PCP0_TP0 PCP1_TP0 PCP2_TP0 PCP3_TP0; do
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep -n "cp_chunkedprefill_comm_stream" /vllm-workspace/vllm-ascend/vllm_ascend/attention/context_parallel/attention_cp.py | head -10
+62:from vllm_ascend.utils import cp_chunkedprefill_comm_stream, weak_ref_tensors
+925:                        cp_chunkedprefill_comm_stream().wait_stream(torch.npu.current_stream())
+926:                        with torch_npu.npu.stream(cp_chunkedprefill_comm_stream()):
+930:                        torch.npu.current_stream().wait_stream(cp_chunkedprefill_comm_stream())
+1097:                cp_chunkedprefill_comm_stream().wait_stream(torch.npu.current_stream())
+1098:                with torch_npu.npu.stream(cp_chunkedprefill_comm_stream()):
+1124:                torch.npu.current_stream().wait_stream(cp_chunkedprefill_comm_stream())
+1128:                cp_chunkedprefill_comm_stream().wait_stream(torch.npu.current_stream())
+1129:                with torch_npu.npu.stream(cp_chunkedprefill_comm_stream()):
+1144:                torch.npu.current_stream().wait_stream(cp_chunkedprefill_comm_stream())
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# for w in PCP0_TP0 PCP1_TP0 PCP2_TP0 PCP3_TP0; do
   echo -n "$w: "
   grep "Worker_${w}" prefill_node_issue.log | grep -E "GATHER-DEBUG|QAG-DEBUG|HANG-DEBUG" | tail -3
 done
+PCP0_TP0: (Worker_PCP0_TP0 pid=1084719) [HANG-DEBUG] pcp=0 L=4672 ENTER num_prefills=2 hybrid=False
+(Worker_PCP0_TP0 pid=1084719) [QAG-DEBUG] pcp=0 L=4672 g=141 before q_allgather
+(Worker_PCP0_TP0 pid=1084719) [QAG-DEBUG] pcp=0 L=4672 g=141 after q_allgather
+PCP1_TP0: (Worker_PCP1_TP0 pid=1084900) [HANG-DEBUG] pcp=1 L=6384 ENTER num_prefills=2 hybrid=False
+(Worker_PCP1_TP0 pid=1084900) [QAG-DEBUG] pcp=1 L=6384 g=141 before q_allgather
+(Worker_PCP1_TP0 pid=1084900) [QAG-DEBUG] pcp=1 L=6384 g=141 after q_allgather
+PCP2_TP0: (Worker_PCP2_TP0 pid=1085117) [HANG-DEBUG] pcp=2 L=4640 ENTER num_prefills=2 hybrid=False
+(Worker_PCP2_TP0 pid=1085117) [QAG-DEBUG] pcp=2 L=4640 g=141 before q_allgather
+(Worker_PCP2_TP0 pid=1085117) [QAG-DEBUG] pcp=2 L=4640 g=141 after q_allgather
+PCP3_TP0: (Worker_PCP3_TP0 pid=1085334) [HANG-DEBUG] pcp=3 L=576 ENTER num_prefills=2 hybrid=False
+(Worker_PCP3_TP0 pid=1085334) [QAG-DEBUG] pcp=3 L=576 g=141 before q_allgather
+(Worker_PCP3_TP0 pid=1085334) [QAG-DEBUG] pcp=3 L=576 g=141 after q_allgather
