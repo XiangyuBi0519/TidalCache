@@ -716,13 +716,11 @@ class AscendAttentionCPImpl(AscendAttentionBackendImpl):
         current_attn_output_prefill[filtered_indices, :, :] = attn_output_filtered.to(current_attn_output_prefill.dtype)
 
     def _prefill_query_all_gather(self, attn_metadata, prefill_query):
-        _dbg = getattr(self, '_layer_idx', 0) == 0
+        _lid = id(self) % 10000
         if self.pcp_size > 1:
-            if _dbg:
-                print(f"[QAG-DEBUG] pcp={self.pcp_rank} before q_allgather shape={prefill_query.shape}", flush=True)
+            print(f"[QAG-DEBUG] pcp={self.pcp_rank} L={_lid} before q_allgather shape={prefill_query.shape}", flush=True)
             prefill_query = get_pcp_group().all_gather(prefill_query, 0)
-            if _dbg:
-                print(f"[QAG-DEBUG] pcp={self.pcp_rank} after q_allgather", flush=True)
+            print(f"[QAG-DEBUG] pcp={self.pcp_rank} L={_lid} after q_allgather", flush=True)
             prefill_query = torch.index_select(
                 prefill_query, 0, attn_metadata.prefill.chunked_context.cp_kv_recover_idx_for_chunk
             )
@@ -1006,24 +1004,19 @@ class AscendAttentionCPImpl(AscendAttentionBackendImpl):
         )
 
     def _gather_global_context_output(self, local_context_attn_output):
-        _dbg = getattr(self, '_layer_idx', 0) == 0
+        _lid = id(self) % 10000
         if self.dcp_size > 1:
-            if _dbg:
-                print(f"[GATHER-DEBUG] pcp={self.pcp_rank} before all_to_all_single", flush=True)
+            print(f"[GATHER-DEBUG] pcp={self.pcp_rank} L={_lid} before all_to_all_single", flush=True)
             dcp_context_attn_output = torch.empty_like(local_context_attn_output)
             dist.all_to_all_single(dcp_context_attn_output, local_context_attn_output, group=self.dcp_group)
-            if _dbg:
-                print(f"[GATHER-DEBUG] pcp={self.pcp_rank} after all_to_all_single", flush=True)
+            print(f"[GATHER-DEBUG] pcp={self.pcp_rank} L={_lid} after all_to_all_single", flush=True)
         else:
             dcp_context_attn_output = local_context_attn_output
 
         if self.pcp_size > 1:
-            if _dbg:
-                print(f"[GATHER-DEBUG] pcp={self.pcp_rank} before pcp_allgather shape={dcp_context_attn_output.shape}", flush=True)
-            # AllGather out&lse within CP group
+            print(f"[GATHER-DEBUG] pcp={self.pcp_rank} L={_lid} before pcp_allgather shape={dcp_context_attn_output.shape}", flush=True)
             global_context_attn_output = get_pcp_group().all_gather(dcp_context_attn_output, dim=-1)
-            if _dbg:
-                print(f"[GATHER-DEBUG] pcp={self.pcp_rank} after pcp_allgather", flush=True)
+            print(f"[GATHER-DEBUG] pcp={self.pcp_rank} L={_lid} after pcp_allgather", flush=True)
         else:
             global_context_attn_output = dcp_context_attn_output
 
@@ -1079,9 +1072,10 @@ class AscendAttentionCPImpl(AscendAttentionBackendImpl):
             # current_stream: -----                    -- context attn --                     -/
             # COMM_STREAM:         \-- all_gather Q --/                  \-- a2a ag output --/
 
-            _hang_debug = has_chunked_context and getattr(self, '_layer_idx', 0) == 0
+            _lid = id(self) % 10000
+            _hang_debug = has_chunked_context
             if _hang_debug:
-                print(f"[HANG-DEBUG] pcp={self.pcp_rank} ENTER num_prefills={attn_metadata.num_prefills}", flush=True)
+                print(f"[HANG-DEBUG] pcp={self.pcp_rank} L={_lid} ENTER num_prefills={attn_metadata.num_prefills}", flush=True)
 
             num_actual_tokens_pcp_padded = attn_metadata.num_actual_tokens_pcp_padded // self.pcp_size
             prefill_query = query[num_decode_tokens:num_actual_tokens_pcp_padded].contiguous()
@@ -1134,14 +1128,18 @@ class AscendAttentionCPImpl(AscendAttentionBackendImpl):
                 )
 
             if has_chunked_context:
+                if _hang_debug:
+                    print(f"[HANG-DEBUG] pcp={self.pcp_rank} L={_lid} WAIT_STREAM", flush=True)
                 torch.npu.current_stream().wait_stream(cp_chunkedprefill_comm_stream())
+                if _hang_debug:
+                    print(f"[HANG-DEBUG] pcp={self.pcp_rank} L={_lid} WAIT_DONE", flush=True)
                 global_context_output = global_context_output.permute([2, 0, 1]).contiguous()
                 context_output, context_lse = self._update_global_context_output(global_context_output)
                 self._update_chunk_attn_out_lse_with_current_attn_out_lse(
                     attn_output_prefill, attn_lse_prefill, context_output, context_lse, prefill_query, attn_metadata
                 )
                 if _hang_debug:
-                    print(f"[HANG-DEBUG] pcp={self.pcp_rank} DONE", flush=True)
+                    print(f"[HANG-DEBUG] pcp={self.pcp_rank} L={_lid} DONE", flush=True)
 
             if self.pcp_size > 1 and pcp_use_hybrid_attn:
                 # layer_idx != num_layers - 1
