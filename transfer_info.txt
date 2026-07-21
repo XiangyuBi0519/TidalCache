@@ -1,36 +1,4 @@
-(Worker_PCP0_TP0 pid=1070478) ERROR 07-21 20:40:46 [multiproc_executor.py:870]   File "/vllm-workspace/vllm/vllm/model_executor/model_loader/utils.py", line 61, in initialize_model
-(Worker_PCP0_TP0 pid=1070478) ERROR 07-21 20:40:46 [multiproc_executor.py:870]     model = model_class(vllm_config=vllm_config, prefix=prefix)
-(Worker_PCP0_TP0 pid=1070478) ERROR 07-21 20:40:46 [multiproc_executor.py:870]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP0 pid=1070478) ERROR 07-21 20:40:46 [multiproc_executor.py:870]   File "/vllm-workspace/vllm/vllm/model_executor/models/glm4_moe.py", line 642, in __init__
-(Worker_PCP0_TP0 pid=1070478) ERROR 07-21 20:40:46 [multiproc_executor.py:870]     self.model = Glm4MoeModel(
-(Worker_PCP0_TP0 pid=1070478) ERROR 07-21 20:40:46 [multiproc_executor.py:870]                  ^^^^^^^^^^^^^
-(Worker_PCP0_TP0 pid=1070478) ERROR 07-21 20:40:46 [multiproc_executor.py:870]   File "/vllm-workspace/vllm/vllm/compilation/decorators.py", line 383, in __init__
-(Worker_PCP0_TP0 pid=1070478) ERROR 07-21 20:40:46 [multiproc_executor.py:870]     old_init(self, *args, **kwargs)
-(Worker_PCP0_TP0 pid=1070478) ERROR 07-21 20:40:46 [multiproc_executor.py:870]   File "/vllm-workspace/vllm/vllm/model_executor/models/glm4_moe.py", line 417, in __init__
-(Worker_PCP0_TP0 pid=1070478) ERROR 07-21 20:40:46 [multiproc_executor.py:870]     self.start_layer, self.end_layer, self.layers = make_layers(
-(Worker_PCP0_TP0 pid=1070478) ERROR 07-21 20:40:46 [multiproc_executor.py:870]                                                     ^^^^^^^^^^^^
-(Worker_PCP0_TP0 pid=1070478) ERROR 07-21 20:40:46 [multiproc_executor.py:870]   File "/vllm-workspace/vllm/vllm/model_executor/models/utils.py", line 643, in make_layers
-(Worker_PCP0_TP0 pid=1070478) ERROR 07-21 20:40:46 [multiproc_executor.py:870]     + get_offloader().wrap_modules(
-(Worker_PCP0_TP0 pid=1070478) ERROR 07-21 20:40:46 [multiproc_executor.py:870]       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP0 pid=1070478) ERROR 07-21 20:40:46 [multiproc_executor.py:870]   File "/vllm-workspace/vllm/vllm/model_executor/offloader/base.py", line 104, in wrap_modules
-(Worker_PCP0_TP0 pid=1070478) ERROR 07-21 20:40:46 [multiproc_executor.py:870]     return list(modules_generator)
-(Worker_PCP0_TP0 pid=1070478) ERROR 07-21 20:40:46 [multiproc_executor.py:870]            ^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP0 pid=1070478) ERROR 07-21 20:40:46 [multiproc_executor.py:870]   File "/vllm-workspace/vllm/vllm/model_executor/models/utils.py", line 644, in <genexpr>
-(Worker_PCP0_TP0 pid=1070478) ERROR 07-21 20:40:46 [multiproc_executor.py:870]     layer_fn(prefix=f"{prefix}.{idx}") for idx in range(start_layer, end_layer)
-(Worker_PCP0_TP0 pid=1070478) ERROR 07-21 20:40:46 [multiproc_executor.py:870]     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP0 pid=1070478) ERROR 07-21 20:40:46 [multiproc_executor.py:870]   File "/vllm-workspace/vllm/vllm/model_executor/models/glm4_moe.py", line 419, in <lambda>
-(Worker_PCP0_TP0 pid=1070478) ERROR 07-21 20:40:46 [multiproc_executor.py:870]     lambda prefix: Glm4MoeDecoderLayer(
-(Worker_PCP0_TP0 pid=1070478) ERROR 07-21 20:40:46 [multiproc_executor.py:870]                    ^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP0 pid=1070478) ERROR 07-21 20:40:46 [multiproc_executor.py:870]   File "/vllm-workspace/vllm/vllm/model_executor/models/glm4_moe.py", line 333, in __init__
-(Worker_PCP0_TP0 pid=1070478) ERROR 07-21 20:40:46 [multiproc_executor.py:870]     self.self_attn = Glm4MoeAttention(
-(Worker_PCP0_TP0 pid=1070478) ERROR 07-21 20:40:46 [multiproc_executor.py:870]                      ^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP0 pid=1070478) ERROR 07-21 20:40:46 [multiproc_executor.py:870]   File "/vllm-workspace/vllm/vllm/model_executor/models/glm4_moe.py", line 281, in __init__
-(Worker_PCP0_TP0 pid=1070478) ERROR 07-21 20:40:46 [multiproc_executor.py:870]     self.attn = Attention(
-(Worker_PCP0_TP0 pid=1070478) ERROR 07-21 20:40:46 [multiproc_executor.py:870]                 ^^^^^^^^^^
-(Worker_PCP0_TP0 pid=1070478) ERROR 07-21 20:40:46 [multiproc_executor.py:870]   File "/vllm-workspace/vllm/vllm/model_executor/layers/attention/attention.py", line 373, in __init__
-(Worker_PCP0_TP0 pid=1070478) ERROR 07-21 20:40:46 [multiproc_executor.py:870]     self.impl = impl_cls(  # type: ignore[assignment]  # impl_cls always returns an AttentionImpl subclass
-(Worker_PCP0_TP0 pid=1070478) ERROR 07-21 20:40:46 [multiproc_executor.py:870]                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP0 pid=1070478) ERROR 07-21 20:40:46 [multiproc_executor.py:870]   File "/vllm-workspace/vllm-ascend/vllm_ascend/attention/context_parallel/attention_cp.py", line 316, in __init__
-(Worker_PCP0_TP0 pid=1070478) ERROR 07-21 20:40:46 [multiproc_executor.py:870]     if not hasattr(AscendAttentionCPBackend, '_global_pcp_seq'):
-(Worker_PCP0_TP0 pid=1070478) ERROR 07-21 20:40:46 [multiproc_executor.py:870]                    ^^^^^^^^^^^^^^^^^^^^^^^^
-(Worker_PCP0_TP0 pid=1070478) ERROR 07-21 20:40:46 [multiproc_executor.py:870] NameError: name 'AscendAttentionCPBackend' is not defined. Did you mean: 'AscendAttentionBackendImpl'?
+for w in PCP0_TP0 PCP0_TP1 PCP0_TP2 PCP0_TP3 PCP1_TP0 PCP1_TP1 PCP1_TP2 PCP1_TP3 PCP2_TP0 PCP2_TP1 PCP2_TP2 PCP2_TP3 PCP3_TP0 PCP3_TP1 PCP3_TP2 PCP3_TP3; do
+  echo -n "$w: "
+  grep "Worker_${w}" prefill_node_issue.log | grep -E "GATHER-DEBUG.*before" | tail -1
+done
