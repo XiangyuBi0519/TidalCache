@@ -1125,9 +1125,7 @@ class AscendAttentionCPImpl(AscendAttentionBackendImpl):
                     print(f"[HANG-DEBUG] pcp={self.pcp_rank} P2_after_cp_pre", flush=True)
                 output_head, lse_head = self._forward_prefill_cp_attn(data_head, True, attn_metadata)
                 if _hang_debug:
-                    print(f"[HANG-DEBUG] pcp={self.pcp_rank} P3a_head_attn_returned (async)", flush=True)
-                    torch.npu.synchronize()
-                    print(f"[HANG-DEBUG] pcp={self.pcp_rank} P3b_head_attn_npu_synced (kernel done)", flush=True)
+                    print(f"[HANG-DEBUG] pcp={self.pcp_rank} P3_head_attn_returned", flush=True)
             else:
                 # Scenario of Enabling DCP Individually
                 attn_output_prefill, attn_lse_prefill = torch.ops.npu.npu_fused_infer_attention_score(
@@ -1154,13 +1152,11 @@ class AscendAttentionCPImpl(AscendAttentionBackendImpl):
                 # computation of context
                 context_output = self._compute_prefill_context(prefill_query_all, kv_cache, attn_metadata)
                 if _hang_debug:
-                    print(f"[HANG-DEBUG] pcp={self.pcp_rank} P5a_context_attn_returned (async)", flush=True)
-                    torch.npu.synchronize()
-                    print(f"[HANG-DEBUG] pcp={self.pcp_rank} P5b_npu_synchronized (kernel done)", flush=True)
+                    print(f"[HANG-DEBUG] pcp={self.pcp_rank} P5_context_attn_returned", flush=True)
                 # Note(qcs): (output, lse) -> [Seq, Head_num, Head_dim+1] -> [Head_num, Head_dim+1, Seq]
                 local_context_output = torch.cat(context_output, dim=-1).permute([1, 2, 0]).contiguous()
                 if _hang_debug:
-                    print(f"[HANG-DEBUG] pcp={self.pcp_rank} P5c_after_cat_permute", flush=True)
+                    print(f"[HANG-DEBUG] pcp={self.pcp_rank} P5c_cat_permute_done", flush=True)
 
                 # all2all and all_gather output&lse // overlap the computation inner current chunk
                 cp_chunkedprefill_comm_stream().wait_stream(torch.npu.current_stream())
