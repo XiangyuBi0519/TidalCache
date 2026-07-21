@@ -1,14 +1,82 @@
-echo "=== max-num-seqs=N 结果 ==="
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "PCP-DEBUG.*schedule.*start" prefill_node.log | awk -F'running=' '{print $2}' | awk -F',' '{print $1}' | sort | uniq -c | sort -rn
+      3 0
+      2 2
+      2 1
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep -c "HANG-DEBUG.*ENTER" prefill_node.log
+1088
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# echo "before count:"; grep -c "before _model_forward" prefill_node.log
+before count:
+80
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# echo "after count:"; grep -c "after _model_forward" prefill_node.log
+after count:
+64
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep -c "ERROR.*multiproc_executor\|TimeoutError\|Internal Server Error" prefill_node.log
+17
 
-# 1. scheduler 有没有 running>=2 的情况（mixed batch 前提）
-grep "PCP-DEBUG.*schedule.*start" prefill_node.log | awk -F'running=' '{print $2}' | awk -F',' '{print $1}' | sort | uniq -c | sort -rn
 
-# 2. 有没有触发 chunked context
-grep -c "HANG-DEBUG.*ENTER" prefill_node.log
+[root@hyperinstance-229r9-00001 proxy_PD]# python concurrent_test_60k.py 
+Loaded 200 requests from test.jsonl
+Concurrent requests: 6
+Total requests: 6
+Stream mode: True
+============================================================
+[✓] Req#1 (jsonl[13]): Total=15.109s | TTFT=10.682s | TBT=4.427s | Tokens:0+0 | Q:245169ch
+[✓] Req#4 (jsonl[144]): Total=23.382s | TTFT=18.848s | TBT=4.534s | Tokens:0+0 | Q:279555ch
+[✗] Req#3 (jsonl[89]): Total=309.139s | TTFT=309.139s | TBT=0.000s | Tokens:0+0 | Q:241250ch
+[✗] Req#5 (jsonl[141]): Total=309.139s | TTFT=309.139s | TBT=0.000s | Tokens:0+0 | Q:249475ch
+[✗] Req#2 (jsonl[34]): Total=309.141s | TTFT=309.141s | TBT=0.000s | Tokens:0+0 | Q:231000ch
+    Error: Internal Server Error
+    Error: Internal Server Error
+    Error: Internal Server Error
+[✗] Req#6 (jsonl[13]): Total=309.165s | TTFT=309.165s | TBT=0.000s | Tokens:0+0 | Q:245169ch
+    Error: Internal Server Error
 
-# 3. 有没有 hang（before 没有对应 after）
-echo "before count:"; grep -c "before _model_forward" prefill_node.log
-echo "after count:"; grep -c "after _model_forward" prefill_node.log
+============================================================
+SUMMARY
+============================================================
+Total requests: 6
+Successful: 2
+Failed: 4
+Overall time: 309.17s
 
-# 4. 有没有报错
-grep -c "ERROR.*multiproc_executor\|TimeoutError\|Internal Server Error" prefill_node.log
+--- Total Latency (success) ---
+  Min: 15.109s
+  Max: 23.382s
+  Avg: 19.245s
+  P50: 23.382s
+  P90: 23.382s
+  P99: 23.382s
+
+--- TTFT (Time To First Token) ---
+  Min: 10.682s
+  Max: 18.848s
+  Avg: 14.765s
+  P50: 18.848s
+  P90: 18.848s
+  P99: 18.848s
+
+--- TBT (Time Between Tokens = Total - TTFT) ---
+  Min: 4.427s
+  Max: 4.534s
+  Avg: 4.480s
+  P50: 4.534s
+  P90: 4.534s
+
+--- Throughput ---
+  Requests/sec: 0.02
+  Tokens/sec (output): 0.00
+  Tokens/sec (total): 0.00
+
+--- Token Stats ---
+  Avg prompt tokens: 0
+  Avg completion tokens: 0
+
+--- Content Length ---
+  Avg question: 262362 chars
+  Min/Max question: 245169/279555 chars
+
+--- Failed Requests ---
+  Req#3 (jsonl[89]): failed | Internal Server Error
+  Req#5 (jsonl[141]): failed | Internal Server Error
+  Req#2 (jsonl[34]): failed | Internal Server Error
+  Req#6 (jsonl[13]): failed | Internal Server Error
