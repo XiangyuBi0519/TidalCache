@@ -1083,6 +1083,10 @@ class AscendAttentionCPImpl(AscendAttentionBackendImpl):
             value = value[self.pcp_size * num_decode_tokens : attn_metadata.num_actual_tokens_pcp_padded].contiguous()
 
             if has_chunked_context:
+                torch.npu.synchronize()
+                dist.barrier(group=get_pcp_group().device_group)
+                if _hang_debug:
+                    print(f"[HANG-DEBUG] pcp={self.pcp_rank} L={_lid} BARRIER_PASSED", flush=True)
                 cp_chunkedprefill_comm_stream().wait_stream(torch.npu.current_stream())
                 with torch_npu.npu.stream(cp_chunkedprefill_comm_stream()):
                     prefill_query_all = self._prefill_query_all_gather(attn_metadata, prefill_query.clone())
