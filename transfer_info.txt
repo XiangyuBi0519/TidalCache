@@ -1,67 +1,82 @@
-(Worker_PCP2_TP3 pid=977018) [CTX-DEBUG] pcp=2 total_toks=1408 per_req_kv=[1408, 0] has_zero_kv=True kv_cumsum=[1408, 1408] q_cumsum=[54480, 65544] query_shape=torch.Size([65544, 24, 128]) key_shape=torch.Size([1408, 2, 128])
-(Worker_PCP1_TP2 pid=976747) [HANG-DEBUG] pcp=1 P4_after_wait_allgather_q
-(Worker_PCP1_TP2 pid=976747) [CTX-DEBUG] pcp=1 total_toks=1408 per_req_kv=[1408, 0] has_zero_kv=True kv_cumsum=[1408, 1408] q_cumsum=[54480, 65544] query_shape=torch.Size([65544, 24, 128]) key_shape=torch.Size([1408, 2, 128])
-(Worker_PCP3_TP0 pid=977074) [HANG-DEBUG] pcp=3 P9_after_update_done
-(Worker_PCP3_TP0 pid=977074) [HANG-DEBUG] pcp=3 ENTER chunked_context=True num_prefills=2
-(Worker_PCP3_TP0 pid=977074) [HANG-DEBUG] pcp=3 P1_allgather_q_launched
-(Worker_PCP3_TP0 pid=977074) [HANG-DEBUG] pcp=3 P2_after_cp_pre
-(Worker_PCP3_TP0 pid=977074) [HANG-DEBUG] pcp=3 P3_head_attn_returned
-(Worker_PCP3_TP0 pid=977074) [HANG-DEBUG] pcp=3 P4_after_wait_allgather_q
-(Worker_PCP3_TP0 pid=977074) [CTX-DEBUG] pcp=3 total_toks=1307 per_req_kv=[1307, 0] has_zero_kv=True kv_cumsum=[1307, 1307] q_cumsum=[54480, 65544] query_shape=torch.Size([65544, 24, 128]) key_shape=torch.Size([1307, 2, 128])
-(Worker_PCP2_TP0 pid=976856) [HANG-DEBUG] pcp=2 P9_after_update_done
-(Worker_PCP2_TP0 pid=976856) [HANG-DEBUG] pcp=2 ENTER chunked_context=True num_prefills=2
-(Worker_PCP2_TP0 pid=976856) [HANG-DEBUG] pcp=2 P1_allgather_q_launched
-(Worker_PCP2_TP0 pid=976856) [HANG-DEBUG] pcp=2 P2_after_cp_pre
-(Worker_PCP2_TP0 pid=976856) [HANG-DEBUG] pcp=2 P3_head_attn_returned
-(Worker_PCP2_TP0 pid=976856) [HANG-DEBUG] pcp=2 P4_after_wait_allgather_q
-(Worker_PCP2_TP0 pid=976856) [CTX-DEBUG] pcp=2 total_toks=1408 per_req_kv=[1408, 0] has_zero_kv=True kv_cumsum=[1408, 1408] q_cumsum=[54480, 65544] query_shape=torch.Size([65544, 24, 128]) key_shape=torch.Size([1408, 2, 128])
-(Worker_PCP1_TP1 pid=976693) [HANG-DEBUG] pcp=1 P9_after_update_done
-(Worker_PCP1_TP1 pid=976693) [HANG-DEBUG] pcp=1 ENTER chunked_context=True num_prefills=2
-(Worker_PCP1_TP1 pid=976693) [HANG-DEBUG] pcp=1 P1_allgather_q_launched
-(Worker_PCP1_TP1 pid=976693) [HANG-DEBUG] pcp=1 P2_after_cp_pre
-(Worker_PCP1_TP1 pid=976693) [HANG-DEBUG] pcp=1 P3_head_attn_returned
-(Worker_PCP1_TP1 pid=976693) [HANG-DEBUG] pcp=1 P4_after_wait_allgather_q
-(Worker_PCP1_TP1 pid=976693) [CTX-DEBUG] pcp=1 total_toks=1408 per_req_kv=[1408, 0] has_zero_kv=True kv_cumsum=[1408, 1408] q_cumsum=[54480, 65544] query_shape=torch.Size([65544, 24, 128]) key_shape=torch.Size([1408, 2, 128])
-(Worker_PCP0_TP2 pid=976529) [HANG-DEBUG] pcp=0 P9_after_update_done
-(Worker_PCP0_TP2 pid=976529) [HANG-DEBUG] pcp=0 ENTER chunked_context=True num_prefills=2
-(Worker_PCP0_TP2 pid=976529) [HANG-DEBUG] pcp=0 P1_allgather_q_launched
-(Worker_PCP0_TP2 pid=976529) [HANG-DEBUG] pcp=0 P2_after_cp_pre
-(Worker_PCP0_TP2 pid=976529) [HANG-DEBUG] pcp=0 P3_head_attn_returned
-(Worker_PCP0_TP2 pid=976529) [HANG-DEBUG] pcp=0 P4_after_wait_allgather_q
-(Worker_PCP0_TP2 pid=976529) [CTX-DEBUG] pcp=0 total_toks=1408 per_req_kv=[1408, 0] has_zero_kv=True kv_cumsum=[1408, 1408] q_cumsum=[54480, 65544] query_shape=torch.Size([65544, 24, 128]) key_shape=torch.Size([1408, 2, 128])
-(Worker_PCP3_TP3 pid=977240) [HANG-DEBUG] pcp=3 P9_after_update_done
-(Worker_PCP3_TP3 pid=977240) [HANG-DEBUG] pcp=3 ENTER chunked_context=True num_prefills=2
-(Worker_PCP3_TP3 pid=977240) [HANG-DEBUG] pcp=3 P1_allgather_q_launched
-(Worker_PCP3_TP3 pid=977240) [HANG-DEBUG] pcp=3 P2_after_cp_pre
-(Worker_PCP3_TP3 pid=977240) [HANG-DEBUG] pcp=3 P3_head_attn_returned
-(Worker_PCP3_TP3 pid=977240) [HANG-DEBUG] pcp=3 P4_after_wait_allgather_q
-(Worker_PCP3_TP3 pid=977240) [CTX-DEBUG] pcp=3 total_toks=1307 per_req_kv=[1307, 0] has_zero_kv=True kv_cumsum=[1307, 1307] q_cumsum=[54480, 65544] query_shape=torch.Size([65544, 24, 128]) key_shape=torch.Size([1307, 2, 128])
-(Worker_PCP0_TP2 pid=976529) [CTX-DEBUG] pcp=0 FIX_PATH calling kernel: cat_q=torch.Size([54480, 24, 128]) cat_k=torch.Size([1408, 2, 128]) filt_kv_cumsum=[1408] filt_q_cumsum=[54480] num_valid_reqs=1
-(Worker_PCP0_TP1 pid=976477) [CTX-DEBUG] pcp=0 FIX_PATH calling kernel: cat_q=torch.Size([54480, 24, 128]) cat_k=torch.Size([1408, 2, 128]) filt_kv_cumsum=[1408] filt_q_cumsum=[54480] num_valid_reqs=1
-(Worker_PCP0_TP3 pid=976584) [CTX-DEBUG] pcp=0 FIX_PATH calling kernel: cat_q=torch.Size([54480, 24, 128]) cat_k=torch.Size([1408, 2, 128]) filt_kv_cumsum=[1408] filt_q_cumsum=[54480] num_valid_reqs=1
-(Worker_PCP0_TP0 pid=976458) [CTX-DEBUG] pcp=0 FIX_PATH calling kernel: cat_q=torch.Size([54480, 24, 128]) cat_k=torch.Size([1408, 2, 128]) filt_kv_cumsum=[1408] filt_q_cumsum=[54480] num_valid_reqs=1
-(Worker_PCP0_TP2 pid=976529) [HANG-DEBUG] pcp=0 P5_context_attn_returned
-(Worker_PCP0_TP3 pid=976584) [HANG-DEBUG] pcp=0 P5_context_attn_returned
-(Worker_PCP0_TP1 pid=976477) [HANG-DEBUG] pcp=0 P5_context_attn_returned
-(Worker_PCP1_TP1 pid=976693) [CTX-DEBUG] pcp=1 FIX_PATH calling kernel: cat_q=torch.Size([54480, 24, 128]) cat_k=torch.Size([1408, 2, 128]) filt_kv_cumsum=[1408] filt_q_cumsum=[54480] num_valid_reqs=1
-(Worker_PCP1_TP3 pid=976801) [CTX-DEBUG] pcp=1 FIX_PATH calling kernel: cat_q=torch.Size([54480, 24, 128]) cat_k=torch.Size([1408, 2, 128]) filt_kv_cumsum=[1408] filt_q_cumsum=[54480] num_valid_reqs=1
-(Worker_PCP1_TP2 pid=976747) [CTX-DEBUG] pcp=1 FIX_PATH calling kernel: cat_q=torch.Size([54480, 24, 128]) cat_k=torch.Size([1408, 2, 128]) filt_kv_cumsum=[1408] filt_q_cumsum=[54480] num_valid_reqs=1
-(Worker_PCP1_TP0 pid=976639) [CTX-DEBUG] pcp=1 FIX_PATH calling kernel: cat_q=torch.Size([54480, 24, 128]) cat_k=torch.Size([1408, 2, 128]) filt_kv_cumsum=[1408] filt_q_cumsum=[54480] num_valid_reqs=1
-(Worker_PCP2_TP2 pid=976964) [CTX-DEBUG] pcp=2 FIX_PATH calling kernel: cat_q=torch.Size([54480, 24, 128]) cat_k=torch.Size([1408, 2, 128]) filt_kv_cumsum=[1408] filt_q_cumsum=[54480] num_valid_reqs=1
-(Worker_PCP0_TP0 pid=976458) [HANG-DEBUG] pcp=0 P5_context_attn_returned
-(Worker_PCP2_TP0 pid=976856) [CTX-DEBUG] pcp=2 FIX_PATH calling kernel: cat_q=torch.Size([54480, 24, 128]) cat_k=torch.Size([1408, 2, 128]) filt_kv_cumsum=[1408] filt_q_cumsum=[54480] num_valid_reqs=1
-(Worker_PCP2_TP3 pid=977018) [CTX-DEBUG] pcp=2 FIX_PATH calling kernel: cat_q=torch.Size([54480, 24, 128]) cat_k=torch.Size([1408, 2, 128]) filt_kv_cumsum=[1408] filt_q_cumsum=[54480] num_valid_reqs=1
-(Worker_PCP2_TP1 pid=976910) [CTX-DEBUG] pcp=2 FIX_PATH calling kernel: cat_q=torch.Size([54480, 24, 128]) cat_k=torch.Size([1408, 2, 128]) filt_kv_cumsum=[1408] filt_q_cumsum=[54480] num_valid_reqs=1
-(Worker_PCP0_TP2 pid=976529) [HANG-DEBUG] pcp=0 P5c_cat_permute_done
-(Worker_PCP3_TP1 pid=977129) [CTX-DEBUG] pcp=3 FIX_PATH calling kernel: cat_q=torch.Size([54480, 24, 128]) cat_k=torch.Size([1307, 2, 128]) filt_kv_cumsum=[1307] filt_q_cumsum=[54480] num_valid_reqs=1
-(Worker_PCP3_TP0 pid=977074) [CTX-DEBUG] pcp=3 FIX_PATH calling kernel: cat_q=torch.Size([54480, 24, 128]) cat_k=torch.Size([1307, 2, 128]) filt_kv_cumsum=[1307] filt_q_cumsum=[54480] num_valid_reqs=1
-(Worker_PCP3_TP2 pid=977185) [CTX-DEBUG] pcp=3 FIX_PATH calling kernel: cat_q=torch.Size([54480, 24, 128]) cat_k=torch.Size([1307, 2, 128]) filt_kv_cumsum=[1307] filt_q_cumsum=[54480] num_valid_reqs=1
-(Worker_PCP3_TP3 pid=977240) [CTX-DEBUG] pcp=3 FIX_PATH calling kernel: cat_q=torch.Size([54480, 24, 128]) cat_k=torch.Size([1307, 2, 128]) filt_kv_cumsum=[1307] filt_q_cumsum=[54480] num_valid_reqs=1
-(Worker_PCP0_TP3 pid=976584) [HANG-DEBUG] pcp=0 P5c_cat_permute_done
-(Worker_PCP0_TP1 pid=976477) [HANG-DEBUG] pcp=0 P5c_cat_permute_done
-(Worker_PCP1_TP1 pid=976693) [HANG-DEBUG] pcp=1 P5_context_attn_returned
-(Worker_PCP1_TP3 pid=976801) [HANG-DEBUG] pcp=1 P5_context_attn_returned
-(Worker_PCP1_TP2 pid=976747) [HANG-DEBUG] pcp=1 P5_context_attn_returned
-(Worker_PCP1_TP0 pid=976639) [HANG-DEBUG] pcp=1 P5_context_attn_returned
-(Worker_PCP2_TP2 pid=976964) [HANG-DEBUG] pcp=2 P5_context_attn_returned
-(Worker_PCP0_TP0 pid=976458) [HANG-DEBUG] pcp=0 P5c_cat_permute_done
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep -E "GATHER-DEBUG|QAG-DEBUG" prefill_node.log | tail -30
+(Worker_PCP2_TP1 pid=996942) [GATHER-DEBUG] pcp=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP2_TP2 pid=996996) [GATHER-DEBUG] pcp=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP3_TP3 pid=997272) [GATHER-DEBUG] pcp=3 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP3_TP2 pid=997216) [GATHER-DEBUG] pcp=3 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP3_TP0 pid=997105) [GATHER-DEBUG] pcp=3 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP3_TP1 pid=997160) [GATHER-DEBUG] pcp=3 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP0_TP0 pid=996492) [GATHER-DEBUG] pcp=0 after pcp_allgather
+(Worker_PCP3_TP2 pid=997216) [GATHER-DEBUG] pcp=3 after pcp_allgather
+(Worker_PCP0_TP3 pid=996618) [GATHER-DEBUG] pcp=0 after pcp_allgather
+(Worker_PCP3_TP3 pid=997272) [GATHER-DEBUG] pcp=3 after pcp_allgather
+(Worker_PCP3_TP0 pid=997105) [GATHER-DEBUG] pcp=3 after pcp_allgather
+(Worker_PCP1_TP1 pid=996726) [GATHER-DEBUG] pcp=1 after pcp_allgather
+(Worker_PCP0_TP2 pid=996563) [GATHER-DEBUG] pcp=0 after pcp_allgather
+(Worker_PCP1_TP0 pid=996672) [GATHER-DEBUG] pcp=1 after pcp_allgather
+(Worker_PCP2_TP2 pid=996996) [GATHER-DEBUG] pcp=2 after pcp_allgather
+(Worker_PCP0_TP0 pid=996492) [QAG-DEBUG] pcp=0 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP0_TP0 pid=996492) [QAG-DEBUG] pcp=0 after q_allgather
+(Worker_PCP3_TP2 pid=997216) [QAG-DEBUG] pcp=3 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP3_TP2 pid=997216) [QAG-DEBUG] pcp=3 after q_allgather
+(Worker_PCP2_TP1 pid=996942) [GATHER-DEBUG] pcp=2 after pcp_allgather
+(Worker_PCP2_TP3 pid=997050) [GATHER-DEBUG] pcp=2 after pcp_allgather
+(Worker_PCP2_TP0 pid=996888) [GATHER-DEBUG] pcp=2 after pcp_allgather
+(Worker_PCP1_TP2 pid=996780) [GATHER-DEBUG] pcp=1 after pcp_allgather
+(Worker_PCP3_TP0 pid=997105) [QAG-DEBUG] pcp=3 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP0_TP3 pid=996618) [QAG-DEBUG] pcp=0 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP3_TP3 pid=997272) [QAG-DEBUG] pcp=3 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP3_TP0 pid=997105) [QAG-DEBUG] pcp=3 after q_allgather
+(Worker_PCP0_TP3 pid=996618) [QAG-DEBUG] pcp=0 after q_allgather
+(Worker_PCP3_TP3 pid=997272) [QAG-DEBUG] pcp=3 after q_allgather
+(Worker_PCP0_TP1 pid=996511) [GATHER-DEBUG] pcp=0 after pcp_allgather
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep -E "HANG-DEBUG|GATHER-DEBUG|QAG-DEBUG" prefill_node.log | tail -50
+(Worker_PCP0_TP2 pid=996563) [GATHER-DEBUG] pcp=0 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP0_TP0 pid=996492) [GATHER-DEBUG] pcp=0 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP0_TP1 pid=996511) [GATHER-DEBUG] pcp=0 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP0_TP3 pid=996618) [GATHER-DEBUG] pcp=0 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP1_TP2 pid=996780) [GATHER-DEBUG] pcp=1 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP1_TP3 pid=996834) [GATHER-DEBUG] pcp=1 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP1_TP1 pid=996726) [GATHER-DEBUG] pcp=1 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP1_TP0 pid=996672) [GATHER-DEBUG] pcp=1 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP2_TP3 pid=997050) [GATHER-DEBUG] pcp=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP2_TP0 pid=996888) [GATHER-DEBUG] pcp=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP2_TP1 pid=996942) [GATHER-DEBUG] pcp=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP2_TP2 pid=996996) [GATHER-DEBUG] pcp=2 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP3_TP3 pid=997272) [GATHER-DEBUG] pcp=3 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP3_TP2 pid=997216) [GATHER-DEBUG] pcp=3 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP3_TP0 pid=997105) [GATHER-DEBUG] pcp=3 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP3_TP1 pid=997160) [GATHER-DEBUG] pcp=3 before pcp_allgather shape=torch.Size([24, 129, 65544])
+(Worker_PCP0_TP0 pid=996492) [GATHER-DEBUG] pcp=0 after pcp_allgather
+(Worker_PCP3_TP2 pid=997216) [GATHER-DEBUG] pcp=3 after pcp_allgather
+(Worker_PCP0_TP3 pid=996618) [GATHER-DEBUG] pcp=0 after pcp_allgather
+(Worker_PCP3_TP3 pid=997272) [GATHER-DEBUG] pcp=3 after pcp_allgather
+(Worker_PCP3_TP0 pid=997105) [GATHER-DEBUG] pcp=3 after pcp_allgather
+(Worker_PCP1_TP1 pid=996726) [GATHER-DEBUG] pcp=1 after pcp_allgather
+(Worker_PCP0_TP2 pid=996563) [GATHER-DEBUG] pcp=0 after pcp_allgather
+(Worker_PCP1_TP0 pid=996672) [GATHER-DEBUG] pcp=1 after pcp_allgather
+(Worker_PCP2_TP2 pid=996996) [GATHER-DEBUG] pcp=2 after pcp_allgather
+(Worker_PCP0_TP0 pid=996492) [HANG-DEBUG] pcp=0 DONE
+(Worker_PCP0_TP0 pid=996492) [HANG-DEBUG] pcp=0 ENTER num_prefills=2
+(Worker_PCP0_TP0 pid=996492) [QAG-DEBUG] pcp=0 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP0_TP0 pid=996492) [QAG-DEBUG] pcp=0 after q_allgather
+(Worker_PCP3_TP2 pid=997216) [HANG-DEBUG] pcp=3 DONE
+(Worker_PCP3_TP2 pid=997216) [HANG-DEBUG] pcp=3 ENTER num_prefills=2
+(Worker_PCP3_TP2 pid=997216) [QAG-DEBUG] pcp=3 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP3_TP2 pid=997216) [QAG-DEBUG] pcp=3 after q_allgather
+(Worker_PCP2_TP1 pid=996942) [GATHER-DEBUG] pcp=2 after pcp_allgather
+(Worker_PCP2_TP3 pid=997050) [GATHER-DEBUG] pcp=2 after pcp_allgather
+(Worker_PCP2_TP0 pid=996888) [GATHER-DEBUG] pcp=2 after pcp_allgather
+(Worker_PCP3_TP0 pid=997105) [HANG-DEBUG] pcp=3 DONE
+(Worker_PCP1_TP2 pid=996780) [GATHER-DEBUG] pcp=1 after pcp_allgather
+(Worker_PCP3_TP0 pid=997105) [HANG-DEBUG] pcp=3 ENTER num_prefills=2
+(Worker_PCP3_TP3 pid=997272) [HANG-DEBUG] pcp=3 DONE
+(Worker_PCP3_TP0 pid=997105) [QAG-DEBUG] pcp=3 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP0_TP3 pid=996618) [HANG-DEBUG] pcp=0 DONE
+(Worker_PCP0_TP3 pid=996618) [HANG-DEBUG] pcp=0 ENTER num_prefills=2
+(Worker_PCP3_TP3 pid=997272) [HANG-DEBUG] pcp=3 ENTER num_prefills=2
+(Worker_PCP0_TP3 pid=996618) [QAG-DEBUG] pcp=0 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP3_TP3 pid=997272) [QAG-DEBUG] pcp=3 before q_allgather shape=torch.Size([16386, 24, 128])
+(Worker_PCP3_TP0 pid=997105) [QAG-DEBUG] pcp=3 after q_allgather
+(Worker_PCP0_TP3 pid=996618) [QAG-DEBUG] pcp=0 after q_allgather
+(Worker_PCP3_TP3 pid=997272) [QAG-DEBUG] pcp=3 after q_allgather
+(Worker_PCP0_TP1 pid=996511) [GATHER-DEBUG] pcp=0 after pcp_allgather
