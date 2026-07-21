@@ -1,83 +1,34 @@
 [root@hyperinstance-229r9-00001 proxy_PD]# python concurrent_test_60k.py 
 Loaded 200 requests from test.jsonl
-Concurrent requests: 3
-Total requests: 3
-==================================================
-[✓] Request #2 (jsonl[102]): 12.76s | Status: success | Tokens: 60005+50 | Q: 259383 chars
-[✓] Request #1 (jsonl[12]): 20.72s | Status: success | Tokens: 60005+50 | Q: 232735 chars
-[✓] Request #3 (jsonl[170]): 65.48s | Status: success | Tokens: 60005+50 | Q: 275561 chars
-
-==================================================
-SUMMARY
-==================================================
-Total requests: 3
-Successful: 3
-Failed: 0
-Overall time: 65.48s
-
---- Latency Stats (successful requests) ---
-  Min: 12.76s
-  Max: 65.48s
-  Avg: 32.99s
-  P50: 20.72s
-  P90: 65.48s
-  P99: 65.48s
-
---- Throughput ---
-  Requests/sec: 0.05
-  Tokens/sec (output): 2.29
-  Tokens/sec (total): 2751.28
-
---- Token Stats ---
-  Avg prompt tokens: 60005
-  Avg completion tokens: 50
-  Avg total tokens: 60055
-
---- Content Length Stats ---
-  Avg question length: 255893 chars
-  Min question length: 232735 chars
-  Max question length: 275561 chars
-
-
-
-
-
-
-
-[root@hyperinstance-229r9-00001 proxy_PD]# python concurrent_test_60k.py 
-Loaded 200 requests from test.jsonl
 Concurrent requests: 5
 Total requests: 5
 ==================================================
-[✓] Request #1 (jsonl[162]): 13.00s | Status: success | Tokens: 60005+50 | Q: 236915 chars
-[✓] Request #4 (jsonl[197]): 21.10s | Status: success | Tokens: 60005+50 | Q: 223750 chars
-[✗] Request #2 (jsonl[73]): 308.25s | Status: failed | Tokens: 0+0 | Q: 231622 chars
-    Error: Internal Server Error
-[✗] Request #3 (jsonl[114]): 308.26s | Status: failed | Tokens: 0+0 | Q: 264611 chars
-    Error: Internal Server Error
-[✗] Request #5 (jsonl[131]): 308.27s | Status: failed | Tokens: 0+0 | Q: 267097 chars
-    Error: Internal Server Error
+[✓] Request #3 (jsonl[150]): 14.45s | Status: success | Tokens: 60005+50 | Q: 262656 chars
+[✓] Request #1 (jsonl[184]): 21.28s | Status: success | Tokens: 60005+50 | Q: 251707 chars
+[✓] Request #2 (jsonl[60]): 28.60s | Status: success | Tokens: 60005+50 | Q: 211659 chars
+[✓] Request #5 (jsonl[96]): 36.02s | Status: success | Tokens: 60005+50 | Q: 247500 chars
+[✓] Request #4 (jsonl[55]): 43.02s | Status: success | Tokens: 60005+50 | Q: 192241 chars
 
 ==================================================
 SUMMARY
 ==================================================
 Total requests: 5
-Successful: 2
-Failed: 3
-Overall time: 308.27s
+Successful: 5
+Failed: 0
+Overall time: 43.02s
 
 --- Latency Stats (successful requests) ---
-  Min: 13.00s
-  Max: 21.10s
-  Avg: 17.05s
-  P50: 21.10s
-  P90: 21.10s
-  P99: 21.10s
+  Min: 14.45s
+  Max: 43.02s
+  Avg: 28.67s
+  P50: 28.60s
+  P90: 43.02s
+  P99: 43.02s
 
 --- Throughput ---
-  Requests/sec: 0.02
-  Tokens/sec (output): 0.32
-  Tokens/sec (total): 389.62
+  Requests/sec: 0.12
+  Tokens/sec (output): 5.81
+  Tokens/sec (total): 6979.37
 
 --- Token Stats ---
   Avg prompt tokens: 60005
@@ -85,11 +36,8 @@ Overall time: 308.27s
   Avg total tokens: 60055
 
 --- Content Length Stats ---
-  Avg question length: 230332 chars
-  Min question length: 223750 chars
-  Max question length: 236915 chars
+  Avg question length: 233153 chars
+  Min question length: 192241 chars
+  Max question length: 262656 chars
 
---- Failed Requests ---
-  Request #2 (jsonl[73]): failed | Internal Server Error
-  Request #3 (jsonl[114]): failed | Internal Server Error
-  Request #5 (jsonl[131]): failed | Internal Server Error
+Detailed results saved to concurrent_test_results.json
