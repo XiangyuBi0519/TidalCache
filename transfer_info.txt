@@ -1,27 +1,304 @@
-# 整体概览
-grep "\[PD-DBG\]" prefill_node.log | head -100
-
-# 请求生命周期
-grep "\[PD-DBG\]\[L2\]" prefill_node.log
-
-# KV 传输链路
-grep "\[PD-DBG\]\[L3\]" prefill_node.log
-
-# 关键问题排查：
-# 1. max_tokens 是多少？
-grep "NEW req -> running" prefill_node.log
-
-# 2. 请求有没有 STOPPED？
-grep "check_stop STOPPED" prefill_node.log
-
-# 3. blocks 有没有被 delay？
-grep "DELAY blocks\|SKIP transfer" prefill_node.log
-
-# 4. D 节点有没有发完成信号？
-grep "DONE_RECVING_MSG" prefill_node.log
-
-# 5. blocks 有没有被释放？
-grep "finished_sending\|FORCE FREED" prefill_node.log
-
-# 6. running 队列变化
-grep "schedule summary" prefill_node.log
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "\[PD-DBG\]" prefill_node.log | head -100
+(EngineCore pid=76650) [PD-DBG][L2] New req -> running: req_id=chatcmpl-906eb8e, max_tokens=1, prompt_tokens=60005, running=1, waiting=0
+(EngineCore pid=76650) [PD-DBG][L2] schedule summary: running=1, waiting=0, finished=0
+(EngineCore pid=76650) [PD-DBG][L2] New req -> running: req_id=chatcmpl-fb78c98, max_tokens=1, prompt_tokens=60005, running=2, waiting=1
+(EngineCore pid=76650) [PD-DBG][L2] New req -> running: req_id=chatcmpl-e09ce2f, max_tokens=1, prompt_tokens=60005, running=3, waiting=0
+(EngineCore pid=76650) [PD-DBG][L2] schedule summary: running=3, waiting=0, finished=0
+(Worker_PCP3_TP0 pid=77290) 2026-07-24 11:13:43,588 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=3
+(Worker_PCP3_TP0 pid=77290) 2026-07-24 11:13:43,588 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP3_TP3 pid=77455) 2026-07-24 11:13:43,589 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=3
+(Worker_PCP3_TP2 pid=77400) 2026-07-24 11:13:43,589 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=3
+(Worker_PCP3_TP3 pid=77455) 2026-07-24 11:13:43,593 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP0_TP3 pid=76803) 2026-07-24 11:13:43,595 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=0
+(Worker_PCP3_TP2 pid=77400) 2026-07-24 11:13:43,596 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP1_TP3 pid=77019) 2026-07-24 11:13:43,598 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=1
+(Worker_PCP1_TP2 pid=76965) 2026-07-24 11:13:43,598 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=1
+(Worker_PCP3_TP1 pid=77345) 2026-07-24 11:13:43,599 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=3
+(Worker_PCP1_TP1 pid=76911) 2026-07-24 11:13:43,599 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=1
+(Worker_PCP0_TP3 pid=76803) 2026-07-24 11:13:43,600 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP0_TP2 pid=76748) 2026-07-24 11:13:43,600 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=0
+(Worker_PCP2_TP3 pid=77236) 2026-07-24 11:13:43,600 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=2
+(Worker_PCP2_TP2 pid=77182) 2026-07-24 11:13:43,600 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=2
+(Worker_PCP1_TP0 pid=76857) 2026-07-24 11:13:43,601 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=1
+(Worker_PCP2_TP0 pid=77074) 2026-07-24 11:13:43,601 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=2
+(Worker_PCP0_TP1 pid=76696) 2026-07-24 11:13:43,601 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=0
+(Worker_PCP0_TP0 pid=76677) 2026-07-24 11:13:43,601 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=0
+(Worker_PCP2_TP1 pid=77128) 2026-07-24 11:13:43,602 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=2
+(Worker_PCP1_TP3 pid=77019) 2026-07-24 11:13:43,604 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP1_TP2 pid=76965) 2026-07-24 11:13:43,604 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP3_TP1 pid=77345) 2026-07-24 11:13:43,608 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP1_TP1 pid=76911) 2026-07-24 11:13:43,614 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP0_TP0 pid=76677) 2026-07-24 11:13:43,641 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP0_TP2 pid=76748) 2026-07-24 11:13:43,619 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP2_TP1 pid=77128) 2026-07-24 11:13:43,641 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP2_TP3 pid=77236) 2026-07-24 11:13:43,622 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP2_TP2 pid=77182) 2026-07-24 11:13:43,627 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP1_TP0 pid=76857) 2026-07-24 11:13:43,630 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP2_TP0 pid=77074) 2026-07-24 11:13:43,634 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP0_TP1 pid=76696) 2026-07-24 11:13:43,638 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(EngineCore pid=76650) [PD-DBG][L2] check_stop STOPPED: req_id=chatcmpl-906eb8e, status=FINISHED_LENGTH_CAPPED, output_tokens=1, max_tokens=1
+(EngineCore pid=76650) [PD-DBG][L2] _free_request: req_id=chatcmpl-906eb8e, status=FINISHED_LENGTH_CAPPED, output_tokens=1
+(EngineCore pid=76650) [PD-DBG][L2] connector_finished: req_id=chatcmpl-906eb8e, delay_free=True, has_xfer_params=True
+(EngineCore pid=76650) [PD-DBG][L2] New req -> running: req_id=chatcmpl-d34baa6, max_tokens=1, prompt_tokens=60005, running=3, waiting=6
+(Worker_PCP3_TP0 pid=77290) 2026-07-24 11:13:51,518 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=2, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=3
+(Worker_PCP3_TP0 pid=77290) 2026-07-24 11:13:51,518 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP1_TP1 pid=76911) 2026-07-24 11:13:51,522 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=2, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=1
+(Worker_PCP3_TP3 pid=77455) 2026-07-24 11:13:51,519 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=2, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=3
+(Worker_PCP3_TP2 pid=77400) 2026-07-24 11:13:51,519 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=2, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=3
+(Worker_PCP3_TP1 pid=77345) 2026-07-24 11:13:51,519 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=2, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=3
+(Worker_PCP2_TP1 pid=77128) 2026-07-24 11:13:51,519 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=2, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=2
+(Worker_PCP2_TP0 pid=77074) 2026-07-24 11:13:51,520 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=2, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=2
+(Worker_PCP2_TP3 pid=77236) 2026-07-24 11:13:51,520 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=2, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=2
+(Worker_PCP2_TP2 pid=77182) 2026-07-24 11:13:51,520 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=2, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=2
+(Worker_PCP1_TP2 pid=76965) 2026-07-24 11:13:51,521 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=2, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=1
+(Worker_PCP0_TP1 pid=76696) 2026-07-24 11:13:51,521 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=2, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=0
+(Worker_PCP1_TP3 pid=77019) 2026-07-24 11:13:51,521 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=2, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=1
+(Worker_PCP2_TP3 pid=77236) 2026-07-24 11:13:51,541 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP2_TP2 pid=77182) 2026-07-24 11:13:51,541 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP0_TP0 pid=76677) 2026-07-24 11:13:51,521 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=2, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=0
+(Worker_PCP1_TP0 pid=76857) 2026-07-24 11:13:51,521 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=2, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=1
+(Worker_PCP1_TP2 pid=76965) 2026-07-24 11:13:51,541 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP1_TP1 pid=76911) 2026-07-24 11:13:51,522 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP0_TP1 pid=76696) 2026-07-24 11:13:51,541 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP3_TP3 pid=77455) 2026-07-24 11:13:51,522 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP1_TP3 pid=77019) 2026-07-24 11:13:51,541 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP0_TP2 pid=76748) 2026-07-24 11:13:51,523 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=2, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=0
+(Worker_PCP0_TP0 pid=76677) 2026-07-24 11:13:51,541 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP0_TP3 pid=76803) 2026-07-24 11:13:51,523 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=2, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=0
+(Worker_PCP1_TP0 pid=76857) 2026-07-24 11:13:51,541 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP3_TP2 pid=77400) 2026-07-24 11:13:51,525 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP3_TP1 pid=77345) 2026-07-24 11:13:51,530 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP0_TP2 pid=76748) 2026-07-24 11:13:51,541 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP2_TP1 pid=77128) 2026-07-24 11:13:51,534 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP0_TP3 pid=76803) 2026-07-24 11:13:51,541 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP2_TP0 pid=77074) 2026-07-24 11:13:51,537 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP1_TP0 pid=76857) 2026-07-24 11:13:51,658 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=0, pcp_rank=1
+(Worker_PCP1_TP1 pid=76911) 2026-07-24 11:13:51,658 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=1, pcp_rank=1
+(Worker_PCP1_TP2 pid=76965) 2026-07-24 11:13:51,659 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=2, pcp_rank=1
+(Worker_PCP1_TP3 pid=77019) 2026-07-24 11:13:51,659 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=3, pcp_rank=1
+(Worker_PCP2_TP0 pid=77074) 2026-07-24 11:13:51,659 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=0, pcp_rank=2
+(Worker_PCP2_TP1 pid=77128) 2026-07-24 11:13:51,661 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=1, pcp_rank=2
+(Worker_PCP2_TP2 pid=77182) 2026-07-24 11:13:51,664 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=2, pcp_rank=2
+(Worker_PCP2_TP3 pid=77236) 2026-07-24 11:13:51,664 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=3, pcp_rank=2
+(Worker_PCP3_TP0 pid=77290) 2026-07-24 11:13:51,669 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=0, pcp_rank=3
+(Worker_PCP3_TP1 pid=77345) 2026-07-24 11:13:51,669 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=1, pcp_rank=3
+(Worker_PCP3_TP2 pid=77400) 2026-07-24 11:13:51,682 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=2, pcp_rank=3
+(Worker_PCP3_TP3 pid=77455) 2026-07-24 11:13:51,686 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=3, pcp_rank=3
+(Worker_PCP0_TP2 pid=76748) 2026-07-24 11:13:51,691 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=2, pcp_rank=0
+(Worker_PCP0_TP1 pid=76696) 2026-07-24 11:13:51,691 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=1, pcp_rank=0
+(Worker_PCP0_TP0 pid=76677) 2026-07-24 11:13:51,692 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=0, pcp_rank=0
+(Worker_PCP0_TP3 pid=76803) 2026-07-24 11:13:51,694 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=3, pcp_rank=0
+(Worker_PCP0_TP0 pid=76677) 2026-07-24 11:13:53,607 - WARNING - [PD-DBG][L3] get_finished: done_sending=1(['chatcmpl-906eb8e']), done_recving=0
+(Worker_PCP0_TP3 pid=76803) 2026-07-24 11:13:53,607 - WARNING - [PD-DBG][L3] get_finished: done_sending=1(['chatcmpl-906eb8e']), done_recving=0
+(Worker_PCP0_TP2 pid=76748) 2026-07-24 11:13:53,607 - WARNING - [PD-DBG][L3] get_finished: done_sending=1(['chatcmpl-906eb8e']), done_recving=0
+(Worker_PCP0_TP1 pid=76696) 2026-07-24 11:13:53,634 - WARNING - [PD-DBG][L3] get_finished: done_sending=1(['chatcmpl-906eb8e']), done_recving=0
+(Worker_PCP3_TP3 pid=77455) 2026-07-24 11:13:53,957 - WARNING - [PD-DBG][L3] get_finished: done_sending=1(['chatcmpl-906eb8e']), done_recving=0
+(Worker_PCP1_TP0 pid=76857) 2026-07-24 11:13:53,957 - WARNING - [PD-DBG][L3] get_finished: done_sending=1(['chatcmpl-906eb8e']), done_recving=0
+(Worker_PCP1_TP2 pid=76965) 2026-07-24 11:13:53,957 - WARNING - [PD-DBG][L3] get_finished: done_sending=1(['chatcmpl-906eb8e']), done_recving=0
+(Worker_PCP2_TP2 pid=77182) 2026-07-24 11:13:53,957 - WARNING - [PD-DBG][L3] get_finished: done_sending=1(['chatcmpl-906eb8e']), done_recving=0
+(Worker_PCP2_TP0 pid=77074) 2026-07-24 11:13:53,957 - WARNING - [PD-DBG][L3] get_finished: done_sending=1(['chatcmpl-906eb8e']), done_recving=0
+(Worker_PCP3_TP1 pid=77345) 2026-07-24 11:13:53,958 - WARNING - [PD-DBG][L3] get_finished: done_sending=1(['chatcmpl-906eb8e']), done_recving=0
+(Worker_PCP1_TP3 pid=77019) 2026-07-24 11:13:53,972 - WARNING - [PD-DBG][L3] get_finished: done_sending=1(['chatcmpl-906eb8e']), done_recving=0
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "\[PD-DBG\]\[L2\]" prefill_node.log
+(EngineCore pid=76650) [PD-DBG][L2] New req -> running: req_id=chatcmpl-906eb8e, max_tokens=1, prompt_tokens=60005, running=1, waiting=0
+(EngineCore pid=76650) [PD-DBG][L2] schedule summary: running=1, waiting=0, finished=0
+(EngineCore pid=76650) [PD-DBG][L2] New req -> running: req_id=chatcmpl-fb78c98, max_tokens=1, prompt_tokens=60005, running=2, waiting=1
+(EngineCore pid=76650) [PD-DBG][L2] New req -> running: req_id=chatcmpl-e09ce2f, max_tokens=1, prompt_tokens=60005, running=3, waiting=0
+(EngineCore pid=76650) [PD-DBG][L2] schedule summary: running=3, waiting=0, finished=0
+(EngineCore pid=76650) [PD-DBG][L2] check_stop STOPPED: req_id=chatcmpl-906eb8e, status=FINISHED_LENGTH_CAPPED, output_tokens=1, max_tokens=1
+(EngineCore pid=76650) [PD-DBG][L2] _free_request: req_id=chatcmpl-906eb8e, status=FINISHED_LENGTH_CAPPED, output_tokens=1
+(EngineCore pid=76650) [PD-DBG][L2] connector_finished: req_id=chatcmpl-906eb8e, delay_free=True, has_xfer_params=True
+(EngineCore pid=76650) [PD-DBG][L2] New req -> running: req_id=chatcmpl-d34baa6, max_tokens=1, prompt_tokens=60005, running=3, waiting=6
+(EngineCore pid=76650) [PD-DBG][L2] check_stop STOPPED: req_id=chatcmpl-fb78c98, status=FINISHED_LENGTH_CAPPED, output_tokens=1, max_tokens=1
+(EngineCore pid=76650) [PD-DBG][L2] _free_request: req_id=chatcmpl-fb78c98, status=FINISHED_LENGTH_CAPPED, output_tokens=1
+(EngineCore pid=76650) [PD-DBG][L2] connector_finished: req_id=chatcmpl-fb78c98, delay_free=True, has_xfer_params=True
+(EngineCore pid=76650) [PD-DBG][L2] New req -> running: req_id=chatcmpl-2f7b4d6, max_tokens=1, prompt_tokens=60005, running=3, waiting=5
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "\[PD-DBG\]\[L3\]" prefill_node.log
+(Worker_PCP3_TP0 pid=77290) 2026-07-24 11:13:43,588 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=3
+(Worker_PCP3_TP0 pid=77290) 2026-07-24 11:13:43,588 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP3_TP3 pid=77455) 2026-07-24 11:13:43,589 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=3
+(Worker_PCP3_TP2 pid=77400) 2026-07-24 11:13:43,589 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=3
+(Worker_PCP3_TP3 pid=77455) 2026-07-24 11:13:43,593 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP0_TP3 pid=76803) 2026-07-24 11:13:43,595 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=0
+(Worker_PCP3_TP2 pid=77400) 2026-07-24 11:13:43,596 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP1_TP3 pid=77019) 2026-07-24 11:13:43,598 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=1
+(Worker_PCP1_TP2 pid=76965) 2026-07-24 11:13:43,598 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=1
+(Worker_PCP3_TP1 pid=77345) 2026-07-24 11:13:43,599 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=3
+(Worker_PCP1_TP1 pid=76911) 2026-07-24 11:13:43,599 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=1
+(Worker_PCP0_TP3 pid=76803) 2026-07-24 11:13:43,600 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP0_TP2 pid=76748) 2026-07-24 11:13:43,600 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=0
+(Worker_PCP2_TP3 pid=77236) 2026-07-24 11:13:43,600 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=2
+(Worker_PCP2_TP2 pid=77182) 2026-07-24 11:13:43,600 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=2
+(Worker_PCP1_TP0 pid=76857) 2026-07-24 11:13:43,601 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=1
+(Worker_PCP2_TP0 pid=77074) 2026-07-24 11:13:43,601 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=2
+(Worker_PCP0_TP1 pid=76696) 2026-07-24 11:13:43,601 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=0
+(Worker_PCP0_TP0 pid=76677) 2026-07-24 11:13:43,601 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=0
+(Worker_PCP2_TP1 pid=77128) 2026-07-24 11:13:43,602 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=2
+(Worker_PCP1_TP3 pid=77019) 2026-07-24 11:13:43,604 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP1_TP2 pid=76965) 2026-07-24 11:13:43,604 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP3_TP1 pid=77345) 2026-07-24 11:13:43,608 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP1_TP1 pid=76911) 2026-07-24 11:13:43,614 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP0_TP0 pid=76677) 2026-07-24 11:13:43,641 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP0_TP2 pid=76748) 2026-07-24 11:13:43,619 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP2_TP1 pid=77128) 2026-07-24 11:13:43,641 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP2_TP3 pid=77236) 2026-07-24 11:13:43,622 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP2_TP2 pid=77182) 2026-07-24 11:13:43,627 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP1_TP0 pid=76857) 2026-07-24 11:13:43,630 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP2_TP0 pid=77074) 2026-07-24 11:13:43,634 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP0_TP1 pid=76696) 2026-07-24 11:13:43,638 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP3_TP0 pid=77290) 2026-07-24 11:13:51,518 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=2, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=3
+(Worker_PCP3_TP0 pid=77290) 2026-07-24 11:13:51,518 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP1_TP1 pid=76911) 2026-07-24 11:13:51,522 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=2, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=1
+(Worker_PCP3_TP3 pid=77455) 2026-07-24 11:13:51,519 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=2, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=3
+(Worker_PCP3_TP2 pid=77400) 2026-07-24 11:13:51,519 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=2, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=3
+(Worker_PCP3_TP1 pid=77345) 2026-07-24 11:13:51,519 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=2, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=3
+(Worker_PCP2_TP1 pid=77128) 2026-07-24 11:13:51,519 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=2, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=2
+(Worker_PCP2_TP0 pid=77074) 2026-07-24 11:13:51,520 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=2, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=2
+(Worker_PCP2_TP3 pid=77236) 2026-07-24 11:13:51,520 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=2, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=2
+(Worker_PCP2_TP2 pid=77182) 2026-07-24 11:13:51,520 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=2, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=2
+(Worker_PCP1_TP2 pid=76965) 2026-07-24 11:13:51,521 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=2, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=1
+(Worker_PCP0_TP1 pid=76696) 2026-07-24 11:13:51,521 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=2, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=0
+(Worker_PCP1_TP3 pid=77019) 2026-07-24 11:13:51,521 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=2, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=1
+(Worker_PCP2_TP3 pid=77236) 2026-07-24 11:13:51,541 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP2_TP2 pid=77182) 2026-07-24 11:13:51,541 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP0_TP0 pid=76677) 2026-07-24 11:13:51,521 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=2, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=0
+(Worker_PCP1_TP0 pid=76857) 2026-07-24 11:13:51,521 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=2, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=1
+(Worker_PCP1_TP2 pid=76965) 2026-07-24 11:13:51,541 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP1_TP1 pid=76911) 2026-07-24 11:13:51,522 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP0_TP1 pid=76696) 2026-07-24 11:13:51,541 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP3_TP3 pid=77455) 2026-07-24 11:13:51,522 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP1_TP3 pid=77019) 2026-07-24 11:13:51,541 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP0_TP2 pid=76748) 2026-07-24 11:13:51,523 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=2, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=0
+(Worker_PCP0_TP0 pid=76677) 2026-07-24 11:13:51,541 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP0_TP3 pid=76803) 2026-07-24 11:13:51,523 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=2, request_to_recv=0, requests_to_send=0, pcp_size=4, pcp_rank=0
+(Worker_PCP1_TP0 pid=76857) 2026-07-24 11:13:51,541 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP3_TP2 pid=77400) 2026-07-24 11:13:51,525 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP3_TP1 pid=77345) 2026-07-24 11:13:51,530 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP0_TP2 pid=76748) 2026-07-24 11:13:51,541 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP2_TP1 pid=77128) 2026-07-24 11:13:51,534 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP0_TP3 pid=76803) 2026-07-24 11:13:51,541 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP2_TP0 pid=77074) 2026-07-24 11:13:51,537 - WARNING - [PD-DBG][L3] PCP send branch: adding 0 delayed reqs, req_ids=[]
+(Worker_PCP1_TP0 pid=76857) 2026-07-24 11:13:51,658 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=0, pcp_rank=1
+(Worker_PCP1_TP1 pid=76911) 2026-07-24 11:13:51,658 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=1, pcp_rank=1
+(Worker_PCP1_TP2 pid=76965) 2026-07-24 11:13:51,659 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=2, pcp_rank=1
+(Worker_PCP1_TP3 pid=77019) 2026-07-24 11:13:51,659 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=3, pcp_rank=1
+(Worker_PCP2_TP0 pid=77074) 2026-07-24 11:13:51,659 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=0, pcp_rank=2
+(Worker_PCP2_TP1 pid=77128) 2026-07-24 11:13:51,661 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=1, pcp_rank=2
+(Worker_PCP2_TP2 pid=77182) 2026-07-24 11:13:51,664 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=2, pcp_rank=2
+(Worker_PCP2_TP3 pid=77236) 2026-07-24 11:13:51,664 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=3, pcp_rank=2
+(Worker_PCP3_TP0 pid=77290) 2026-07-24 11:13:51,669 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=0, pcp_rank=3
+(Worker_PCP3_TP1 pid=77345) 2026-07-24 11:13:51,669 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=1, pcp_rank=3
+(Worker_PCP3_TP2 pid=77400) 2026-07-24 11:13:51,682 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=2, pcp_rank=3
+(Worker_PCP3_TP3 pid=77455) 2026-07-24 11:13:51,686 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=3, pcp_rank=3
+(Worker_PCP0_TP2 pid=76748) 2026-07-24 11:13:51,691 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=2, pcp_rank=0
+(Worker_PCP0_TP1 pid=76696) 2026-07-24 11:13:51,691 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=1, pcp_rank=0
+(Worker_PCP0_TP0 pid=76677) 2026-07-24 11:13:51,692 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=0, pcp_rank=0
+(Worker_PCP0_TP3 pid=76803) 2026-07-24 11:13:51,694 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=3, pcp_rank=0
+(Worker_PCP0_TP0 pid=76677) 2026-07-24 11:13:53,607 - WARNING - [PD-DBG][L3] get_finished: done_sending=1(['chatcmpl-906eb8e']), done_recving=0
+(Worker_PCP0_TP3 pid=76803) 2026-07-24 11:13:53,607 - WARNING - [PD-DBG][L3] get_finished: done_sending=1(['chatcmpl-906eb8e']), done_recving=0
+(Worker_PCP0_TP2 pid=76748) 2026-07-24 11:13:53,607 - WARNING - [PD-DBG][L3] get_finished: done_sending=1(['chatcmpl-906eb8e']), done_recving=0
+(Worker_PCP0_TP1 pid=76696) 2026-07-24 11:13:53,634 - WARNING - [PD-DBG][L3] get_finished: done_sending=1(['chatcmpl-906eb8e']), done_recving=0
+(Worker_PCP3_TP3 pid=77455) 2026-07-24 11:13:53,957 - WARNING - [PD-DBG][L3] get_finished: done_sending=1(['chatcmpl-906eb8e']), done_recving=0
+(Worker_PCP1_TP0 pid=76857) 2026-07-24 11:13:53,957 - WARNING - [PD-DBG][L3] get_finished: done_sending=1(['chatcmpl-906eb8e']), done_recving=0
+(Worker_PCP1_TP2 pid=76965) 2026-07-24 11:13:53,957 - WARNING - [PD-DBG][L3] get_finished: done_sending=1(['chatcmpl-906eb8e']), done_recving=0
+(Worker_PCP2_TP2 pid=77182) 2026-07-24 11:13:53,957 - WARNING - [PD-DBG][L3] get_finished: done_sending=1(['chatcmpl-906eb8e']), done_recving=0
+(Worker_PCP2_TP0 pid=77074) 2026-07-24 11:13:53,957 - WARNING - [PD-DBG][L3] get_finished: done_sending=1(['chatcmpl-906eb8e']), done_recving=0
+(Worker_PCP3_TP1 pid=77345) 2026-07-24 11:13:53,958 - WARNING - [PD-DBG][L3] get_finished: done_sending=1(['chatcmpl-906eb8e']), done_recving=0
+(Worker_PCP1_TP3 pid=77019) 2026-07-24 11:13:53,972 - WARNING - [PD-DBG][L3] get_finished: done_sending=1(['chatcmpl-906eb8e']), done_recving=0
+(Worker_PCP2_TP1 pid=77128) 2026-07-24 11:13:53,972 - WARNING - [PD-DBG][L3] get_finished: done_sending=1(['chatcmpl-906eb8e']), done_recving=0
+(Worker_PCP2_TP3 pid=77236) 2026-07-24 11:13:53,972 - WARNING - [PD-DBG][L3] get_finished: done_sending=1(['chatcmpl-906eb8e']), done_recving=0
+(Worker_PCP3_TP0 pid=77290) 2026-07-24 11:13:53,972 - WARNING - [PD-DBG][L3] get_finished: done_sending=1(['chatcmpl-906eb8e']), done_recving=0
+(Worker_PCP1_TP1 pid=76911) 2026-07-24 11:13:53,972 - WARNING - [PD-DBG][L3] get_finished: done_sending=1(['chatcmpl-906eb8e']), done_recving=0
+(Worker_PCP3_TP2 pid=77400) 2026-07-24 11:13:53,972 - WARNING - [PD-DBG][L3] get_finished: done_sending=1(['chatcmpl-906eb8e']), done_recving=0
+(Worker_PCP3_TP0 pid=77290) 2026-07-24 11:13:59,259 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=1, pcp_size=4, pcp_rank=3
+(Worker_PCP3_TP1 pid=77345) 2026-07-24 11:13:59,266 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=1, pcp_size=4, pcp_rank=3
+(Worker_PCP3_TP3 pid=77455) 2026-07-24 11:13:59,267 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=1, pcp_size=4, pcp_rank=3
+(Worker_PCP3_TP2 pid=77400) 2026-07-24 11:13:59,271 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=1, pcp_size=4, pcp_rank=3
+(Worker_PCP1_TP3 pid=77019) 2026-07-24 11:13:59,274 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=1, pcp_size=4, pcp_rank=1
+(Worker_PCP1_TP2 pid=76965) 2026-07-24 11:13:59,274 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=1, pcp_size=4, pcp_rank=1
+(Worker_PCP2_TP0 pid=77074) 2026-07-24 11:13:59,278 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=1, pcp_size=4, pcp_rank=2
+(Worker_PCP2_TP1 pid=77128) 2026-07-24 11:13:59,278 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=1, pcp_size=4, pcp_rank=2
+(Worker_PCP0_TP1 pid=76696) 2026-07-24 11:13:59,281 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=1, pcp_size=4, pcp_rank=0
+(Worker_PCP0_TP0 pid=76677) 2026-07-24 11:13:59,287 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=1, pcp_size=4, pcp_rank=0
+(Worker_PCP2_TP2 pid=77182) 2026-07-24 11:13:59,291 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=1, pcp_size=4, pcp_rank=2
+(Worker_PCP2_TP3 pid=77236) 2026-07-24 11:13:59,295 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=1, pcp_size=4, pcp_rank=2
+(Worker_PCP3_TP0 pid=77290) 2026-07-24 11:13:59,296 - WARNING - [PD-DBG][L3] PCP send branch: adding 1 delayed reqs, req_ids=['chatcmpl-906eb8e']
+(Worker_PCP3_TP1 pid=77345) 2026-07-24 11:13:59,296 - WARNING - [PD-DBG][L3] PCP send branch: adding 1 delayed reqs, req_ids=['chatcmpl-906eb8e']
+(Worker_PCP0_TP3 pid=76803) 2026-07-24 11:13:59,298 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=1, pcp_size=4, pcp_rank=0
+(Worker_PCP3_TP3 pid=77455) 2026-07-24 11:13:59,301 - WARNING - [PD-DBG][L3] PCP send branch: adding 1 delayed reqs, req_ids=['chatcmpl-906eb8e']
+(Worker_PCP0_TP2 pid=76748) 2026-07-24 11:13:59,302 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=1, pcp_size=4, pcp_rank=0
+(Worker_PCP1_TP0 pid=76857) 2026-07-24 11:13:59,306 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=1, pcp_size=4, pcp_rank=1
+(Worker_PCP1_TP1 pid=76911) 2026-07-24 11:13:59,306 - WARNING - [PD-DBG][L3] start_load_kv: reqs_in_batch=1, request_to_recv=0, requests_to_send=1, pcp_size=4, pcp_rank=1
+(Worker_PCP3_TP2 pid=77400) 2026-07-24 11:13:59,308 - WARNING - [PD-DBG][L3] PCP send branch: adding 1 delayed reqs, req_ids=['chatcmpl-906eb8e']
+(Worker_PCP1_TP3 pid=77019) 2026-07-24 11:13:59,313 - WARNING - [PD-DBG][L3] PCP send branch: adding 1 delayed reqs, req_ids=['chatcmpl-906eb8e']
+(Worker_PCP1_TP2 pid=76965) 2026-07-24 11:13:59,313 - WARNING - [PD-DBG][L3] PCP send branch: adding 1 delayed reqs, req_ids=['chatcmpl-906eb8e']
+(Worker_PCP0_TP2 pid=76748) 2026-07-24 11:13:59,342 - WARNING - [PD-DBG][L3] PCP send branch: adding 1 delayed reqs, req_ids=['chatcmpl-906eb8e']
+(Worker_PCP2_TP0 pid=77074) 2026-07-24 11:13:59,318 - WARNING - [PD-DBG][L3] PCP send branch: adding 1 delayed reqs, req_ids=['chatcmpl-906eb8e']
+(Worker_PCP1_TP0 pid=76857) 2026-07-24 11:13:59,342 - WARNING - [PD-DBG][L3] PCP send branch: adding 1 delayed reqs, req_ids=['chatcmpl-906eb8e']
+(Worker_PCP2_TP1 pid=77128) 2026-07-24 11:13:59,318 - WARNING - [PD-DBG][L3] PCP send branch: adding 1 delayed reqs, req_ids=['chatcmpl-906eb8e']
+(Worker_PCP1_TP1 pid=76911) 2026-07-24 11:13:59,342 - WARNING - [PD-DBG][L3] PCP send branch: adding 1 delayed reqs, req_ids=['chatcmpl-906eb8e']
+(Worker_PCP0_TP1 pid=76696) 2026-07-24 11:13:59,322 - WARNING - [PD-DBG][L3] PCP send branch: adding 1 delayed reqs, req_ids=['chatcmpl-906eb8e']
+(Worker_PCP0_TP0 pid=76677) 2026-07-24 11:13:59,322 - WARNING - [PD-DBG][L3] PCP send branch: adding 1 delayed reqs, req_ids=['chatcmpl-906eb8e']
+(Worker_PCP2_TP2 pid=77182) 2026-07-24 11:13:59,325 - WARNING - [PD-DBG][L3] PCP send branch: adding 1 delayed reqs, req_ids=['chatcmpl-906eb8e']
+(Worker_PCP2_TP3 pid=77236) 2026-07-24 11:13:59,325 - WARNING - [PD-DBG][L3] PCP send branch: adding 1 delayed reqs, req_ids=['chatcmpl-906eb8e']
+(Worker_PCP0_TP3 pid=76803) 2026-07-24 11:13:59,332 - WARNING - [PD-DBG][L3] PCP send branch: adding 1 delayed reqs, req_ids=['chatcmpl-906eb8e']
+(Worker_PCP1_TP0 pid=76857) 2026-07-24 11:13:59,427 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-fb78c98, tp_rank=0, pcp_rank=1
+(Worker_PCP1_TP2 pid=76965) 2026-07-24 11:13:59,427 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-fb78c98, tp_rank=2, pcp_rank=1
+(Worker_PCP1_TP1 pid=76911) 2026-07-24 11:13:59,427 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-fb78c98, tp_rank=1, pcp_rank=1
+(Worker_PCP1_TP3 pid=77019) 2026-07-24 11:13:59,427 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-fb78c98, tp_rank=3, pcp_rank=1
+(Worker_PCP2_TP0 pid=77074) 2026-07-24 11:13:59,429 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-fb78c98, tp_rank=0, pcp_rank=2
+(Worker_PCP2_TP1 pid=77128) 2026-07-24 11:13:59,432 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-fb78c98, tp_rank=1, pcp_rank=2
+(Worker_PCP2_TP2 pid=77182) 2026-07-24 11:13:59,432 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-fb78c98, tp_rank=2, pcp_rank=2
+(Worker_PCP2_TP3 pid=77236) 2026-07-24 11:13:59,436 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-fb78c98, tp_rank=3, pcp_rank=2
+(Worker_PCP3_TP0 pid=77290) 2026-07-24 11:13:59,436 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-fb78c98, tp_rank=0, pcp_rank=3
+(Worker_PCP3_TP1 pid=77345) 2026-07-24 11:13:59,441 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-fb78c98, tp_rank=1, pcp_rank=3
+(Worker_PCP3_TP2 pid=77400) 2026-07-24 11:13:59,444 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-fb78c98, tp_rank=2, pcp_rank=3
+(Worker_PCP3_TP3 pid=77455) 2026-07-24 11:13:59,444 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-fb78c98, tp_rank=3, pcp_rank=3
+(Worker_PCP0_TP0 pid=76677) 2026-07-24 11:13:59,449 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-fb78c98, tp_rank=0, pcp_rank=0
+(Worker_PCP0_TP1 pid=76696) 2026-07-24 11:13:59,449 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-fb78c98, tp_rank=1, pcp_rank=0
+(Worker_PCP0_TP2 pid=76748) 2026-07-24 11:13:59,453 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-fb78c98, tp_rank=2, pcp_rank=0
+(Worker_PCP0_TP3 pid=76803) 2026-07-24 11:13:59,461 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-fb78c98, tp_rank=3, pcp_rank=0
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "NEW req -> running" prefill_node.log
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "check_stop STOPPED" prefill_node.log
+(EngineCore pid=76650) [PD-DBG][L2] check_stop STOPPED: req_id=chatcmpl-906eb8e, status=FINISHED_LENGTH_CAPPED, output_tokens=1, max_tokens=1
+(EngineCore pid=76650) [PD-DBG][L2] check_stop STOPPED: req_id=chatcmpl-fb78c98, status=FINISHED_LENGTH_CAPPED, output_tokens=1, max_tokens=1
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "DELAY blocks\|SKIP transfer" prefill_node.log
+(EngineCore pid=76650) [PD-DEBUG][L3] request_finished DELAY blocks: req_id=chatcmpl-906eb8e, num_blocks=118, prompt_tokens=60005
+(EngineCore pid=76650) [PD-DEBUG][L3] request_finished DELAY blocks: req_id=chatcmpl-fb78c98, num_blocks=118, prompt_tokens=60005
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "DONE_RECVING_MSG" prefill_node.log
+(Worker_PCP1_TP0 pid=76857) 2026-07-24 11:13:51,658 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=0, pcp_rank=1
+(Worker_PCP1_TP1 pid=76911) 2026-07-24 11:13:51,658 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=1, pcp_rank=1
+(Worker_PCP1_TP2 pid=76965) 2026-07-24 11:13:51,659 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=2, pcp_rank=1
+(Worker_PCP1_TP3 pid=77019) 2026-07-24 11:13:51,659 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=3, pcp_rank=1
+(Worker_PCP2_TP0 pid=77074) 2026-07-24 11:13:51,659 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=0, pcp_rank=2
+(Worker_PCP2_TP1 pid=77128) 2026-07-24 11:13:51,661 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=1, pcp_rank=2
+(Worker_PCP2_TP2 pid=77182) 2026-07-24 11:13:51,664 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=2, pcp_rank=2
+(Worker_PCP2_TP3 pid=77236) 2026-07-24 11:13:51,664 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=3, pcp_rank=2
+(Worker_PCP3_TP0 pid=77290) 2026-07-24 11:13:51,669 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=0, pcp_rank=3
+(Worker_PCP3_TP1 pid=77345) 2026-07-24 11:13:51,669 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=1, pcp_rank=3
+(Worker_PCP3_TP2 pid=77400) 2026-07-24 11:13:51,682 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=2, pcp_rank=3
+(Worker_PCP3_TP3 pid=77455) 2026-07-24 11:13:51,686 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=3, pcp_rank=3
+(Worker_PCP0_TP2 pid=76748) 2026-07-24 11:13:51,691 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=2, pcp_rank=0
+(Worker_PCP0_TP1 pid=76696) 2026-07-24 11:13:51,691 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=1, pcp_rank=0
+(Worker_PCP0_TP0 pid=76677) 2026-07-24 11:13:51,692 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=0, pcp_rank=0
+(Worker_PCP0_TP3 pid=76803) 2026-07-24 11:13:51,694 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-906eb8e, tp_rank=3, pcp_rank=0
+(Worker_PCP1_TP0 pid=76857) 2026-07-24 11:13:59,427 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-fb78c98, tp_rank=0, pcp_rank=1
+(Worker_PCP1_TP2 pid=76965) 2026-07-24 11:13:59,427 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-fb78c98, tp_rank=2, pcp_rank=1
+(Worker_PCP1_TP1 pid=76911) 2026-07-24 11:13:59,427 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-fb78c98, tp_rank=1, pcp_rank=1
+(Worker_PCP1_TP3 pid=77019) 2026-07-24 11:13:59,427 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-fb78c98, tp_rank=3, pcp_rank=1
+(Worker_PCP2_TP0 pid=77074) 2026-07-24 11:13:59,429 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-fb78c98, tp_rank=0, pcp_rank=2
+(Worker_PCP2_TP1 pid=77128) 2026-07-24 11:13:59,432 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-fb78c98, tp_rank=1, pcp_rank=2
+(Worker_PCP2_TP2 pid=77182) 2026-07-24 11:13:59,432 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-fb78c98, tp_rank=2, pcp_rank=2
+(Worker_PCP2_TP3 pid=77236) 2026-07-24 11:13:59,436 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-fb78c98, tp_rank=3, pcp_rank=2
+(Worker_PCP3_TP0 pid=77290) 2026-07-24 11:13:59,436 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-fb78c98, tp_rank=0, pcp_rank=3
+(Worker_PCP3_TP1 pid=77345) 2026-07-24 11:13:59,441 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-fb78c98, tp_rank=1, pcp_rank=3
+(Worker_PCP3_TP2 pid=77400) 2026-07-24 11:13:59,444 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-fb78c98, tp_rank=2, pcp_rank=3
+(Worker_PCP3_TP3 pid=77455) 2026-07-24 11:13:59,444 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-fb78c98, tp_rank=3, pcp_rank=3
+(Worker_PCP0_TP0 pid=76677) 2026-07-24 11:13:59,449 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-fb78c98, tp_rank=0, pcp_rank=0
+(Worker_PCP0_TP1 pid=76696) 2026-07-24 11:13:59,449 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-fb78c98, tp_rank=1, pcp_rank=0
+(Worker_PCP0_TP2 pid=76748) 2026-07-24 11:13:59,453 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-fb78c98, tp_rank=2, pcp_rank=0
+(Worker_PCP0_TP3 pid=76803) 2026-07-24 11:13:59,461 - WARNING - [PD-DBG][L3] DONE_RECVING_MSG from D: req_id=chatcmpl-fb78c98, tp_rank=3, pcp_rank=0
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "finished_sending\|FORCE FREED" prefill_node.log
+[root@hyperinstance-229r9-00001 PD_disaggregated_PCP_only]# grep "schedule summary" prefill_node.log
+(EngineCore pid=76650) [PD-DBG][L2] schedule summary: running=1, waiting=0, finished=0
+(EngineCore pid=76650) [PD-DBG][L2] schedule summary: running=3, waiting=0, finished=0
