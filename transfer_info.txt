@@ -1,49 +1,27 @@
-curl发送一条短请求：curl http://10.41.10.161:8000/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model":"glm",
-    "messages": [
-      {"role": "user", "content": "hello"}
-    ],
-    "temperature": 0.6,
-    "top_p": 0.95,
-    "top_k": 20,
-    "max_tokens": 300,
-    "stream": true,
-    "extra_body": {
-      "chat_template_kwargs": {
-        "enable_thinking": false,
-        "enable-preserved-thinking": true
-      }
-    }
-  }'
+# 整体概览
+grep "\[PD-DBG\]" prefill_node.log | head -100
 
-proxy的日志：
-[root@hyperinstance-229r9-00001 proxy_PD]# tail -f log_proxy_1p1d_glm51.log 
-INFO:     Started server process [12258]
-INFO:     Waiting for application startup.
-2026-07-23 15:25:58,062 INFO [load_balance_proxy_server_example] Initialized 1 prefill clients and 4 decode clients in worker 12258.
-INFO:     Application startup complete.
-INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-INFO:     10.41.10.9:49134 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+# 请求生命周期
+grep "\[PD-DBG\]\[L2\]" prefill_node.log
 
-P节点日志：
-(EngineCore pid=940) INFO 07-23 15:29:02 [mooncake_connector.py:1688] Delaying free of 1 blocks for request chatcmpl-152c6850-04b2-4b16-9a2d-ccc412f61623-a5ae49c0
-(APIServer pid=587) INFO:     10.41.10.161:50589 - "POST /v1/chat/completions HTTP/1.1" 200 OK
-(APIServer pid=587) INFO 07-23 15:29:02 [loggers.py:271] Engine 000: Avg prompt throughput: 0.6 tokens/s, Avg generation throughput: 0.1 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%, External prefix cache hit rate: 0.0%
-(APIServer pid=587) INFO:     169.254.30.2:40032 - "GET /metrics HTTP/1.1" 200 OK
-(APIServer pid=587) INFO 07-23 15:29:12 [loggers.py:271] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 0.0 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%, External prefix cache hit rate: 0.0%
+# KV 传输链路
+grep "\[PD-DBG\]\[L3\]" prefill_node.log
 
-d节点日志：
-(APIServer pid=590509) INFO:     10.41.10.161:59661 - "POST /v1/chat/completions HTTP/1.1" 200 OK
-(Worker_DP0_TP1_EP1 pid=592210) INFO 07-23 15:29:02 [mooncake_connector.py:2260] p_node_cp_group_meta is:: {(0, 1): {'cp_groups': [[23600, 23604, 23608, 23612]], 'select_cp_groups_id': 0}, (2, 3): {'cp_groups': [[23601, 23605, 23609, 23613]], 'select_cp_groups_id': 0}, (4, 5): {'cp_groups': [[23602, 23606, 23610, 23614]], 'select_cp_groups_id': 0}, (6, 7): {'cp_groups': [[23603, 23607, 23611, 23615]], 'select_cp_groups_id': 0}}. d_node_cp_group_meta is:: {(0, 1): {'cp_groups': [[20000]], 'select_cp_groups_id': 0}, (2, 3): {'cp_groups': [[20001]], 'select_cp_groups_id': 0}, (4, 5): {'cp_groups': [[20002]], 'select_cp_groups_id': 0}, (6, 7): {'cp_groups': [[20003]], 'select_cp_groups_id': 0}}. local_remote_block_port_mappings is:: {20000: [[23600, 23604, 23608, 23612]], 20001: [[23601, 23605, 23609, 23613]], 20002: [[23602, 23606, 23610, 23614]], 20003: [[23603, 23607, 23611, 23615]]}. 
-(Worker_DP0_TP2_EP2 pid=592336) INFO 07-23 15:29:02 [mooncake_connector.py:2260] p_node_cp_group_meta is:: {(0, 1): {'cp_groups': [[23600, 23604, 23608, 23612]], 'select_cp_groups_id': 0}, (2, 3): {'cp_groups': [[23601, 23605, 23609, 23613]], 'select_cp_groups_id': 0}, (4, 5): {'cp_groups': [[23602, 23606, 23610, 23614]], 'select_cp_groups_id': 0}, (6, 7): {'cp_groups': [[23603, 23607, 23611, 23615]], 'select_cp_groups_id': 0}}. d_node_cp_group_meta is:: {(0, 1): {'cp_groups': [[20000]], 'select_cp_groups_id': 0}, (2, 3): {'cp_groups': [[20001]], 'select_cp_groups_id': 0}, (4, 5): {'cp_groups': [[20002]], 'select_cp_groups_id': 0}, (6, 7): {'cp_groups': [[20003]], 'select_cp_groups_id': 0}}. local_remote_block_port_mappings is:: {20000: [[23600, 23604, 23608, 23612]], 20001: [[23601, 23605, 23609, 23613]], 20002: [[23602, 23606, 23610, 23614]], 20003: [[23603, 23607, 23611, 23615]]}. 
-(Worker_DP0_TP3_EP3 pid=592554) INFO 07-23 15:29:02 [mooncake_connector.py:2260] p_node_cp_group_meta is:: {(0, 1): {'cp_groups': [[23600, 23604, 23608, 23612]], 'select_cp_groups_id': 0}, (2, 3): {'cp_groups': [[23601, 23605, 23609, 23613]], 'select_cp_groups_id': 0}, (4, 5): {'cp_groups': [[23602, 23606, 23610, 23614]], 'select_cp_groups_id': 0}, (6, 7): {'cp_groups': [[23603, 23607, 23611, 23615]], 'select_cp_groups_id': 0}}. d_node_cp_group_meta is:: {(0, 1): {'cp_groups': [[20000]], 'select_cp_groups_id': 0}, (2, 3): {'cp_groups': [[20001]], 'select_cp_groups_id': 0}, (4, 5): {'cp_groups': [[20002]], 'select_cp_groups_id': 0}, (6, 7): {'cp_groups': [[20003]], 'select_cp_groups_id': 0}}. local_remote_block_port_mappings is:: {20000: [[23600, 23604, 23608, 23612]], 20001: [[23601, 23605, 23609, 23613]], 20002: [[23602, 23606, 23610, 23614]], 20003: [[23603, 23607, 23611, 23615]]}. 
-(Worker_DP0_TP0_EP0 pid=592134) INFO 07-23 15:29:02 [mooncake_connector.py:2260] p_node_cp_group_meta is:: {(0, 1): {'cp_groups': [[23600, 23604, 23608, 23612]], 'select_cp_groups_id': 0}, (2, 3): {'cp_groups': [[23601, 23605, 23609, 23613]], 'select_cp_groups_id': 0}, (4, 5): {'cp_groups': [[23602, 23606, 23610, 23614]], 'select_cp_groups_id': 0}, (6, 7): {'cp_groups': [[23603, 23607, 23611, 23615]], 'select_cp_groups_id': 0}}. d_node_cp_group_meta is:: {(0, 1): {'cp_groups': [[20000]], 'select_cp_groups_id': 0}, (2, 3): {'cp_groups': [[20001]], 'select_cp_groups_id': 0}, (4, 5): {'cp_groups': [[20002]], 'select_cp_groups_id': 0}, (6, 7): {'cp_groups': [[20003]], 'select_cp_groups_id': 0}}. local_remote_block_port_mappings is:: {20000: [[23600, 23604, 23608, 23612]], 20001: [[23601, 23605, 23609, 23613]], 20002: [[23602, 23606, 23610, 23614]], 20003: [[23603, 23607, 23611, 23615]]}. 
-(Worker_DP0_TP0_EP0 pid=592134) INFO 07-23 15:29:02 [mooncake_connector.py:825] KV cache transfer for request chatcmpl-152c6850-04b2-4b16-9a2d-ccc412f61623-a5ae49c0 took 135.47 ms. local_ip 10.41.10.9 local_device_id 0 remote_session_id 10.41.10.161:15414
-(Worker_DP0_TP1_EP1 pid=592210) INFO 07-23 15:29:02 [mooncake_connector.py:825] KV cache transfer for request chatcmpl-152c6850-04b2-4b16-9a2d-ccc412f61623-a5ae49c0 took 136.56 ms. local_ip 10.41.10.9 local_device_id 1 remote_session_id 10.41.10.161:16835
-(Worker_DP0_TP3_EP3 pid=592554) INFO 07-23 15:29:02 [mooncake_connector.py:825] KV cache transfer for request chatcmpl-152c6850-04b2-4b16-9a2d-ccc412f61623-a5ae49c0 took 140.39 ms. local_ip 10.41.10.9 local_device_id 3 remote_session_id 10.41.10.161:15755
-(Worker_DP0_TP2_EP2 pid=592336) INFO 07-23 15:29:02 [mooncake_connector.py:825] KV cache transfer for request chatcmpl-152c6850-04b2-4b16-9a2d-ccc412f61623-a5ae49c0 took 196.85 ms. local_ip 10.41.10.9 local_device_id 2 remote_session_id 10.41.10.161:16011
-(APIServer pid=590509) INFO 07-23 15:29:03 [loggers.py:271] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 2.8 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%, External prefix cache hit rate: 50.0%
-(APIServer pid=590509) INFO 07-23 15:29:13 [loggers.py:271] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 16.9 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%, External prefix cache hit rate: 50.0%
-(APIServer pid=590509) INFO 07-23 15:29:23 [loggers.py:271] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 0.0 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%, External prefix cache hit rate: 50.0%
+# 关键问题排查：
+# 1. max_tokens 是多少？
+grep "NEW req -> running" prefill_node.log
+
+# 2. 请求有没有 STOPPED？
+grep "check_stop STOPPED" prefill_node.log
+
+# 3. blocks 有没有被 delay？
+grep "DELAY blocks\|SKIP transfer" prefill_node.log
+
+# 4. D 节点有没有发完成信号？
+grep "DONE_RECVING_MSG" prefill_node.log
+
+# 5. blocks 有没有被释放？
+grep "finished_sending\|FORCE FREED" prefill_node.log
+
+# 6. running 队列变化
+grep "schedule summary" prefill_node.log
