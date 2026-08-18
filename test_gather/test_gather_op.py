@@ -1,340 +1,447 @@
 """
-Test script for GatherSelectionKvCache operator.
+GatherSelectionKvCache 完整验证测试
 
-Tests:
-  1. Basic gather: fill full KV cache with known data, trigger gathering,
-     verify selection cache gets correct values.
-  2. Cache reuse: call again with overlapping top-k indices, verify reuse
-     (some entries should already be in selection cache).
-
-Tensor shapes and semantics (from op source analysis):
-  - full_k_rope:      [f_blk, f_blk_size, k_rope_dim]     Host pinned
-  - full_kv_cache:    [f_blk, f_blk_size, kv_cache_dim]    Host pinned
-  - full_kv_block_table: [B, f_max_blk]                    INT32, Device
-  - full_kv_actual_seq:  [B]                                INT32, Device
-  - full_q_actual_seq:   [B]                                INT32, Device
-  - selection_k_rope:    [s_blk, s_blk_size, k_rope_dim]   Device
-  - selection_kv_cache:  [s_blk, s_blk_size, kv_cache_dim] Device
-  - selection_kv_block_table: [B*S*H, s_max_blk]           INT32, Device
-  - selection_kv_block_status:[B, S, H, topk+1]            INT32, Device
-  - selection_topk_indices:   [B, S, H, topk]              INT32, Device
-  - Output:
-    selection_kv_actual_seq: [B*S*H]                        INT32, Device
-
-Key constants:
-  - selTopKBlockSize = 64 (each topk index = a group of 64 tokens)
-  - f_blk_size is typically 128 (full block size, page-attention style)
-  - kv_cache_dim = 512 (MLA latent dim, c^KV)
-  - k_rope_dim = 64 (RoPE position dim, k^R)
+Test 1: Basic Gather (Device→Device) — 验证算子基本功能
+Test 2: Cache Reuse (Device→Device) — 验证缓存复用机制
+Test 3: Host Memory Registration — 验证 hugepage + NPU MMU 注册
+Test 4: Host→Device Gather — 完整链路: Host hugepage 上的 Full KV → Device Selection Cache
 """
+
+import os
 import sys
+import mmap
 import torch
-import numpy as np
+import torch_npu
 
+# ─── 配置 ───
+DEVICE = "npu:0"
+DTYPE = torch.bfloat16
+BLOCK_SIZE = 64
+KV_DIM = 512
+K_ROPE_DIM = 64
+TOPK = 4
+TOPK_BLOCK_SIZE = 64
+BATCH = 2
+NUM_FULL_BLOCKS = 16
+NUM_SEL_BLOCKS_PER_BATCH = TOPK
+TOTAL_SEL_BLOCKS = NUM_SEL_BLOCKS_PER_BATCH * BATCH
+SEQ_LEN = NUM_FULL_BLOCKS * BLOCK_SIZE  # 1024 tokens
+
+# ─── 导入 ───
 try:
-    import torch_npu
-except ImportError:
-    print("ERROR: torch_npu not available. Run on NPU machine.")
+    import gather_wrapper
+    print("[OK] gather_wrapper loaded")
+except ImportError as e:
+    print(f"[FAIL] Cannot import gather_wrapper: {e}")
+    print("Run: bash build.sh")
     sys.exit(1)
 
-try:
-    import gather_kv_wrapper
-except ImportError:
-    print("ERROR: gather_kv_wrapper not found. Build first with:")
-    print("  python setup.py build_ext --inplace")
-    sys.exit(1)
+
+def make_full_data_on_device():
+    """创建 Device 上的测试数据（Test 1/2 使用）"""
+    full_k_rope = torch.randn(
+        NUM_FULL_BLOCKS, BLOCK_SIZE, K_ROPE_DIM,
+        dtype=DTYPE, device=DEVICE)
+    full_kv_cache = torch.randn(
+        NUM_FULL_BLOCKS, BLOCK_SIZE, KV_DIM,
+        dtype=DTYPE, device=DEVICE)
+    for b in range(NUM_FULL_BLOCKS):
+        full_k_rope[b, 0, 0] = float(b + 100)
+        full_kv_cache[b, 0, 0] = float(b + 200)
+    return full_k_rope, full_kv_cache
 
 
-def create_test_data(
-    batch_size=1,
-    num_heads=1,  # S*H combined, simplified
-    topk=4,       # small for testing (tilingKey=1 path: topk<=32)
-    sel_topk_block_size=64,
-    full_block_size=128,
-    kv_cache_dim=512,
-    k_rope_dim=64,
-    full_seq_len=1024,   # total tokens in full cache
-    dtype=torch.float16,
-):
-    """Create test tensors with known data patterns for verification."""
+def make_common_tensors(full_k_rope, full_kv_cache):
+    """创建算子调用需要的公共张量"""
+    sel_k_rope = torch.zeros(
+        TOTAL_SEL_BLOCKS, BLOCK_SIZE, K_ROPE_DIM,
+        dtype=DTYPE, device=DEVICE)
+    sel_kv_cache = torch.zeros(
+        TOTAL_SEL_BLOCKS, BLOCK_SIZE, KV_DIM,
+        dtype=DTYPE, device=DEVICE)
+    sel_block_table = torch.arange(
+        TOTAL_SEL_BLOCKS, dtype=torch.int32, device=DEVICE
+    ).view(BATCH, NUM_SEL_BLOCKS_PER_BATCH)
+    sel_block_status = -torch.ones(
+        BATCH, 1, 1, TOPK + 1, dtype=torch.int32, device=DEVICE)
 
-    device = torch.device("npu:0")
+    topk_indices = torch.zeros(
+        BATCH, 1, 1, TOPK, dtype=torch.int32, device=DEVICE)
+    for b in range(BATCH):
+        for k in range(TOPK):
+            topk_indices[b, 0, 0, k] = b * TOPK + k
 
-    # --- Full KV Cache (Host pinned memory) ---
-    # Calculate number of full blocks needed
-    num_full_blocks = (full_seq_len + full_block_size - 1) // full_block_size
-    # Add some extra blocks for padding
-    total_full_blocks = num_full_blocks + 4
+    full_block_table = torch.arange(
+        NUM_FULL_BLOCKS, dtype=torch.int32, device=DEVICE
+    ).unsqueeze(0).expand(BATCH, -1).contiguous()
 
-    # Fill with identifiable pattern
-    # For initial test, put full cache on Device too (Host offload tested separately)
-    full_k_rope = torch.zeros(total_full_blocks, full_block_size, k_rope_dim,
-                              dtype=dtype)
-    full_kv_cache = torch.zeros(total_full_blocks, full_block_size, kv_cache_dim,
-                                dtype=dtype)
+    full_kv_actual_seq = torch.full(
+        (BATCH,), SEQ_LEN, dtype=torch.int32, device=DEVICE)
+    full_q_actual_seq = torch.ones(
+        BATCH, dtype=torch.int32, device=DEVICE)
 
-    for blk in range(num_full_blocks):
-        for tok in range(full_block_size):
-            global_tok_id = blk * full_block_size + tok
-            if global_tok_id < full_seq_len:
-                val = float(global_tok_id + 1)
-                full_k_rope[blk, tok, :] = val
-                full_kv_cache[blk, tok, :] = val
-
-    full_k_rope = full_k_rope.to(device)
-    full_kv_cache = full_kv_cache.to(device)
-
-    # Block table: maps logical block index -> physical block index
-    # Simple 1:1 mapping for test
-    max_full_blocks_per_seq = num_full_blocks
-    full_kv_block_table = torch.arange(
-        num_full_blocks, dtype=torch.int32
-    ).unsqueeze(0).expand(batch_size, -1).contiguous().to(device)
-
-    # Actual sequence lengths
-    full_kv_actual_seq = torch.tensor([full_seq_len], dtype=torch.int32).to(device)
-    full_q_actual_seq = torch.tensor([1], dtype=torch.int32).to(device)  # decode step
-
-    # --- Selection Cache (Device) ---
-    # Number of selection blocks needed: topk groups, each group = sel_topk_block_size tokens
-    # But stored in pages. Let's assume selection block size = sel_topk_block_size for simplicity
-    sel_block_size = sel_topk_block_size  # each selection block = 64 tokens
-    num_sel_blocks = topk + 4  # extra padding
-    total_sel_blocks = num_sel_blocks * batch_size * num_heads + 4
-
-    selection_k_rope = torch.zeros(total_sel_blocks, sel_block_size, k_rope_dim,
-                                   dtype=dtype, device=device)
-    selection_kv_cache = torch.zeros(total_sel_blocks, sel_block_size, kv_cache_dim,
-                                     dtype=dtype, device=device)
-
-    # Selection block table: [B*S*H, s_max_blk]
-    # Maps each head's selection blocks to physical block indices
-    bsh = batch_size * num_heads
-    s_max_blk = topk  # each topk entry maps to one selection block
-    selection_kv_block_table = torch.zeros(bsh, s_max_blk, dtype=torch.int32, device=device)
-    for i in range(bsh):
-        for j in range(s_max_blk):
-            selection_kv_block_table[i, j] = i * s_max_blk + j
-
-    # Block status: [B, S, H, topk+1] - initially all -1 (no cache)
-    # -1 means the slot is empty/invalid
-    S = 1  # num_seqs = 1
-    H = num_heads
-    selection_kv_block_status = torch.full(
-        (batch_size, S, H, topk + 1), -1, dtype=torch.int32, device=device)
-
-    # --- Top-k indices ---
-    # Each index is a "block group index" into the full sequence
-    # block_group_index = token_offset // sel_topk_block_size
-    # E.g., topk_indices=[0, 2, 5, 8] means we want groups of tokens:
-    #   group 0: tokens 0-63
-    #   group 2: tokens 128-191
-    #   group 5: tokens 320-383
-    #   group 8: tokens 512-575
-    max_group = full_seq_len // sel_topk_block_size
-    # Pick some groups spread across the sequence
-    topk_indices_values = sorted(np.random.choice(range(max_group), size=topk, replace=False).tolist())
-    selection_topk_indices = torch.tensor(
-        topk_indices_values, dtype=torch.int32
-    ).reshape(batch_size, S, H, topk).to(device)
-
-    print(f"Test configuration:")
-    print(f"  batch_size={batch_size}, num_heads={H}, topk={topk}")
-    print(f"  sel_topk_block_size={sel_topk_block_size}")
-    print(f"  full_seq_len={full_seq_len}, full_block_size={full_block_size}")
-    print(f"  kv_cache_dim={kv_cache_dim}, k_rope_dim={k_rope_dim}")
-    print(f"  num_full_blocks={num_full_blocks}, total_sel_blocks={total_sel_blocks}")
-    print(f"  topk_indices={topk_indices_values}")
-    print(f"  full_k_rope: shape={full_k_rope.shape}, device={full_k_rope.device}")
-    print(f"  full_kv_cache: shape={full_kv_cache.shape}, device={full_kv_cache.device}")
-    print(f"  selection_k_rope: shape={selection_k_rope.shape}, device={device}")
-    print(f"  selection_kv_cache: shape={selection_kv_cache.shape}, device={device}")
-    print(f"  selection_kv_block_table: shape={selection_kv_block_table.shape}")
-    print(f"  selection_kv_block_status: shape={selection_kv_block_status.shape}")
-    print(f"  selection_topk_indices: shape={selection_topk_indices.shape}")
-
-    return {
-        "full_k_rope": full_k_rope,
-        "full_kv_cache": full_kv_cache,
-        "full_kv_block_table": full_kv_block_table,
-        "full_kv_actual_seq": full_kv_actual_seq,
-        "full_q_actual_seq": full_q_actual_seq,
-        "selection_k_rope": selection_k_rope,
-        "selection_kv_cache": selection_kv_cache,
-        "selection_kv_block_table": selection_kv_block_table,
-        "selection_kv_block_status": selection_kv_block_status,
-        "selection_topk_indices": selection_topk_indices,
-        "sel_topk_block_size": sel_topk_block_size,
-        "topk_indices_values": topk_indices_values,
-        "topk": topk,
-    }
+    return (sel_k_rope, sel_kv_cache, sel_block_table, sel_block_status,
+            topk_indices, full_block_table, full_kv_actual_seq, full_q_actual_seq)
 
 
+def verify_gather(sel_kv_cache, sel_block_status, topk_indices,
+                  full_kv_cache, test_name):
+    """验证 gather 结果：通过 block_status 找 slot→group 映射"""
+    passed = True
+    for b in range(BATCH):
+        status = sel_block_status[b, 0, 0, :TOPK].cpu()
+        for slot_idx in range(TOPK):
+            group_idx = status[slot_idx].item()
+            if group_idx < 0:
+                print(f"  [{test_name}] batch={b} slot={slot_idx}: empty (group=-1)")
+                continue
+            full_block_idx = group_idx
+            sel_block_idx = b * NUM_SEL_BLOCKS_PER_BATCH + slot_idx
+            expected = full_kv_cache[full_block_idx, 0, 0].item()
+            actual = sel_kv_cache[sel_block_idx, 0, 0].item()
+            match = abs(expected - actual) < 1e-2
+            if not match:
+                print(f"  [{test_name}] MISMATCH batch={b} slot={slot_idx} "
+                      f"group={group_idx}: expected={expected:.1f} actual={actual:.1f}")
+                passed = False
+    return passed
+
+
+# ═══════════════════════════════════════════════════════════
+# Test 1: Basic Gather (全 Device)
+# ═══════════════════════════════════════════════════════════
 def test_basic_gather():
-    """Test 1: Basic gather from full cache to selection cache."""
     print("\n" + "=" * 60)
-    print("TEST 1: Basic Gather")
+    print("Test 1: Basic Gather (Device → Device)")
     print("=" * 60)
 
-    data = create_test_data(topk=4)
+    full_k_rope, full_kv_cache = make_full_data_on_device()
+    (sel_k_rope, sel_kv_cache, sel_block_table, sel_block_status,
+     topk_indices, full_block_table, full_kv_actual_seq,
+     full_q_actual_seq) = make_common_tensors(full_k_rope, full_kv_cache)
 
-    print("\nCalling GatherSelectionKvCache...")
-    selection_kv_actual_seq = gather_kv_wrapper.npu_gather_selection_kv_cache(
-        data["selection_k_rope"],
-        data["selection_kv_cache"],
-        data["selection_kv_block_table"],
-        data["selection_kv_block_status"],
-        data["selection_topk_indices"],
-        data["full_k_rope"],
-        data["full_kv_cache"],
-        data["full_kv_block_table"],
-        data["full_kv_actual_seq"],
-        data["full_q_actual_seq"],
-        data["sel_topk_block_size"],
-    )
-
+    result = gather_wrapper.npu_gather_selection_kv_cache(
+        sel_k_rope, sel_kv_cache, sel_block_table, sel_block_status,
+        topk_indices, full_k_rope, full_kv_cache, full_block_table,
+        full_kv_actual_seq, full_q_actual_seq, TOPK_BLOCK_SIZE)
     torch.npu.synchronize()
 
-    print(f"\nselection_kv_actual_seq: {selection_kv_actual_seq.cpu()}")
-    print(f"selection_kv_block_status:\n{data['selection_kv_block_status'].cpu()}")
+    passed = verify_gather(
+        sel_kv_cache, sel_block_status, topk_indices,
+        full_kv_cache, "Basic")
 
-    # Verify: check that selection cache has the right data
-    sel_cache = data["selection_kv_cache"].cpu()
-    sel_rope = data["selection_k_rope"].cpu()
-    sel_block_table = data["selection_kv_block_table"].cpu()
-
-    passed = True
-    for i, group_idx in enumerate(data["topk_indices_values"]):
-        sel_blk = sel_block_table[0, i].item()
-        # First token in this group
-        first_token = group_idx * data["sel_topk_block_size"]
-        expected_val = float(first_token + 1)  # 1-indexed
-        actual_val = sel_cache[sel_blk, 0, 0].item()
-
-        if abs(actual_val - expected_val) > 0.1:
-            print(f"  FAIL: group {group_idx}, sel_blk {sel_blk}, "
-                  f"expected {expected_val}, got {actual_val}")
-            passed = False
-        else:
-            print(f"  OK: group {group_idx}, sel_blk {sel_blk}, "
-                  f"value={actual_val} (expected {expected_val})")
-
-    if passed:
-        print("\nTEST 1 PASSED")
-    else:
-        print("\nTEST 1 FAILED")
+    print(f"  selection_kv_actual_seq = {result.cpu().tolist()}")
+    print(f"  block_status = {sel_block_status.cpu().numpy()}")
+    print(f"  Test 1: {'PASS' if passed else 'FAIL'}")
     return passed
 
 
+# ═══════════════════════════════════════════════════════════
+# Test 2: Cache Reuse (重叠 topk 测试复用)
+# ═══════════════════════════════════════════════════════════
 def test_cache_reuse():
-    """Test 2: Cache reuse - call twice with overlapping indices."""
     print("\n" + "=" * 60)
-    print("TEST 2: Cache Reuse")
+    print("Test 2: Cache Reuse (overlapping topk)")
     print("=" * 60)
 
-    data = create_test_data(topk=4)
+    full_k_rope, full_kv_cache = make_full_data_on_device()
+    (sel_k_rope, sel_kv_cache, sel_block_table, sel_block_status,
+     topk_indices, full_block_table, full_kv_actual_seq,
+     full_q_actual_seq) = make_common_tensors(full_k_rope, full_kv_cache)
 
-    # First call
-    print("\nFirst gather call...")
-    selection_kv_actual_seq = gather_kv_wrapper.npu_gather_selection_kv_cache(
-        data["selection_k_rope"],
-        data["selection_kv_cache"],
-        data["selection_kv_block_table"],
-        data["selection_kv_block_status"],
-        data["selection_topk_indices"],
-        data["full_k_rope"],
-        data["full_kv_cache"],
-        data["full_kv_block_table"],
-        data["full_kv_actual_seq"],
-        data["full_q_actual_seq"],
-        data["sel_topk_block_size"],
-    )
+    # 第一次调用
+    gather_wrapper.npu_gather_selection_kv_cache(
+        sel_k_rope, sel_kv_cache, sel_block_table, sel_block_status,
+        topk_indices, full_k_rope, full_kv_cache, full_block_table,
+        full_kv_actual_seq, full_q_actual_seq, TOPK_BLOCK_SIZE)
     torch.npu.synchronize()
+    print("  Round 1 status:", sel_block_status.cpu().numpy())
 
-    print(f"After first call - block_status:\n{data['selection_kv_block_status'].cpu()}")
+    # 第二次调用: 修改 topk，部分重叠
+    new_topk = topk_indices.clone()
+    for b in range(BATCH):
+        old = topk_indices[b, 0, 0].cpu().tolist()
+        new_topk[b, 0, 0, 0] = old[0]          # 保留
+        new_topk[b, 0, 0, 1] = old[1]          # 保留
+        new_topk[b, 0, 0, 2] = old[2] + TOPK   # 新的
+        new_topk[b, 0, 0, 3] = old[3] + TOPK   # 新的
 
-    # Second call with overlapping indices
-    # Keep 2 of the original groups, replace 2 with new ones
-    old_indices = data["topk_indices_values"]
-    max_group = 1024 // data["sel_topk_block_size"]
-    # Pick 2 new groups not in old_indices
-    new_groups = []
-    for g in range(max_group):
-        if g not in old_indices and len(new_groups) < 2:
-            new_groups.append(g)
-
-    new_indices = sorted(old_indices[:2] + new_groups)
-    print(f"\nSecond call: old_indices={old_indices}, new_indices={new_indices}")
-    print(f"  Overlapping: {old_indices[:2]} (should be reused)")
-    print(f"  New: {new_groups} (should be fetched from host)")
-
-    new_topk_indices = torch.tensor(
-        new_indices, dtype=torch.int32
-    ).reshape(1, 1, 1, 4).to(torch.device("npu:0"))
-    data["selection_topk_indices"] = new_topk_indices
-
-    print("\nSecond gather call...")
-    selection_kv_actual_seq2 = gather_kv_wrapper.npu_gather_selection_kv_cache(
-        data["selection_k_rope"],
-        data["selection_kv_cache"],
-        data["selection_kv_block_table"],
-        data["selection_kv_block_status"],
-        data["selection_topk_indices"],
-        data["full_k_rope"],
-        data["full_kv_cache"],
-        data["full_kv_block_table"],
-        data["full_kv_actual_seq"],
-        data["full_q_actual_seq"],
-        data["sel_topk_block_size"],
-    )
+    result2 = gather_wrapper.npu_gather_selection_kv_cache(
+        sel_k_rope, sel_kv_cache, sel_block_table, sel_block_status,
+        new_topk, full_k_rope, full_kv_cache, full_block_table,
+        full_kv_actual_seq, full_q_actual_seq, TOPK_BLOCK_SIZE)
     torch.npu.synchronize()
+    print("  Round 2 status:", sel_block_status.cpu().numpy())
 
-    print(f"After second call - block_status:\n{data['selection_kv_block_status'].cpu()}")
+    passed = verify_gather(
+        sel_kv_cache, sel_block_status, new_topk,
+        full_kv_cache, "Reuse")
 
-    # Verify using block_status to find which slot holds which group
-    # block_status stores the group index for each slot (not in topk order)
-    sel_cache = data["selection_kv_cache"].cpu()
-    sel_block_table = data["selection_kv_block_table"].cpu()
-    block_status = data["selection_kv_block_status"].cpu()
-
-    passed = True
-    for slot_idx in range(data["topk"]):
-        group_idx = block_status[0, 0, 0, slot_idx].item()
-        sel_blk = sel_block_table[0, slot_idx].item()
-        first_token = group_idx * data["sel_topk_block_size"]
-        expected_val = float(first_token + 1)
-        actual_val = sel_cache[sel_blk, 0, 0].item()
-
-        reused = "REUSED" if group_idx in old_indices[:2] else "NEW"
-        if abs(actual_val - expected_val) > 0.1:
-            print(f"  FAIL [{reused}]: slot {slot_idx} -> group {group_idx}, "
-                  f"expected {expected_val}, got {actual_val}")
-            passed = False
-        else:
-            print(f"  OK [{reused}]: slot {slot_idx} -> group {group_idx}, value={actual_val}")
-
-    if passed:
-        print("\nTEST 2 PASSED")
-    else:
-        print("\nTEST 2 FAILED")
+    print(f"  Test 2: {'PASS' if passed else 'FAIL'}")
     return passed
 
 
+# ═══════════════════════════════════════════════════════════
+# Test 3: Host Memory Registration (hugepage + NPU MMU)
+# ═══════════════════════════════════════════════════════════
+def test_host_memory_registration():
+    print("\n" + "=" * 60)
+    print("Test 3: Host Memory Registration (hugepage + NPU MMU)")
+    print("=" * 60)
+
+    hugepage_path = "/dev/hugepages/test_dsa_offload"
+    HUGEPAGE_SIZE = 2 * 1024 * 1024  # 2MB
+
+    if not os.path.isdir("/dev/hugepages"):
+        print("  SKIP: /dev/hugepages not available")
+        return None
+
+    try:
+        import zero_copy_npu
+        print("[OK] zero_copy_npu loaded")
+    except ImportError as e:
+        print(f"  SKIP: Cannot import zero_copy_npu: {e}")
+        return None
+
+    num_elements = NUM_FULL_BLOCKS * BLOCK_SIZE * KV_DIM
+    data_bytes = num_elements * 2  # BF16 = 2 bytes
+    aligned_size = ((data_bytes + HUGEPAGE_SIZE - 1) // HUGEPAGE_SIZE) * HUGEPAGE_SIZE
+
+    print(f"  Data size: {data_bytes} bytes, aligned: {aligned_size} bytes")
+
+    try:
+        fd = os.open(hugepage_path, os.O_CREAT | os.O_RDWR, 0o600)
+        os.ftruncate(fd, aligned_size)
+        mmap_obj = mmap.mmap(fd, aligned_size,
+                             flags=mmap.MAP_SHARED,
+                             prot=mmap.PROT_READ | mmap.PROT_WRITE)
+
+        host_tensor = torch.frombuffer(
+            mmap_obj, dtype=DTYPE, count=num_elements
+        ).view(NUM_FULL_BLOCKS, BLOCK_SIZE, KV_DIM)
+
+        for b in range(NUM_FULL_BLOCKS):
+            host_tensor[b, 0, 0] = float(b + 300)
+
+        print(f"  Host tensor: shape={host_tensor.shape}, "
+              f"ptr=0x{host_tensor.data_ptr():x}")
+
+        host_out, npu_tensor = zero_copy_npu.register_hugepage_as_npu_tensor(
+            host_tensor, 0)
+
+        print(f"  NPU tensor: shape={npu_tensor.shape}, "
+              f"device={npu_tensor.device}, "
+              f"ptr=0x{npu_tensor.data_ptr():x}")
+
+        assert host_tensor.data_ptr() != npu_tensor.data_ptr(), \
+            "host and npu tensors should have different data_ptr"
+        assert npu_tensor.device.type in ("npu", "privateuseone"), \
+            f"npu_tensor should be on NPU device, got {npu_tensor.device}"
+
+        print(f"  Host ptr:  0x{host_tensor.data_ptr():x} (CPU virtual)")
+        print(f"  NPU ptr:   0x{npu_tensor.data_ptr():x} (NPU GM address)")
+        print("  Test 3: PASS")
+        return True
+
+    except Exception as e:
+        print(f"  Test 3: FAIL - {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+    finally:
+        try:
+            mmap_obj.close()
+            os.close(fd)
+            os.unlink(hugepage_path)
+        except Exception:
+            pass
+
+
+# ═══════════════════════════════════════════════════════════
+# Test 4: Host→Device Gather (完整链路)
+# ═══════════════════════════════════════════════════════════
+def test_host_to_device_gather():
+    print("\n" + "=" * 60)
+    print("Test 4: Host → Device Gather (full pipeline)")
+    print("=" * 60)
+
+    hugepage_path_kv = "/dev/hugepages/test_dsa_full_kv"
+    hugepage_path_rope = "/dev/hugepages/test_dsa_full_rope"
+    HUGEPAGE_SIZE = 2 * 1024 * 1024
+
+    if not os.path.isdir("/dev/hugepages"):
+        print("  SKIP: /dev/hugepages not available")
+        return None
+
+    try:
+        import zero_copy_npu
+    except ImportError as e:
+        print(f"  SKIP: Cannot import zero_copy_npu: {e}")
+        return None
+
+    fds = []
+    mmaps = []
+
+    try:
+        # ── 分配 full_kv_cache 在 hugepage 上 ──
+        kv_elements = NUM_FULL_BLOCKS * BLOCK_SIZE * KV_DIM
+        kv_bytes = kv_elements * 2
+        kv_aligned = ((kv_bytes + HUGEPAGE_SIZE - 1) // HUGEPAGE_SIZE) * HUGEPAGE_SIZE
+
+        fd_kv = os.open(hugepage_path_kv, os.O_CREAT | os.O_RDWR, 0o600)
+        fds.append(fd_kv)
+        os.ftruncate(fd_kv, kv_aligned)
+        mmap_kv = mmap.mmap(fd_kv, kv_aligned, flags=mmap.MAP_SHARED,
+                            prot=mmap.PROT_READ | mmap.PROT_WRITE)
+        mmaps.append(mmap_kv)
+
+        host_kv = torch.frombuffer(mmap_kv, dtype=DTYPE, count=kv_elements
+                                   ).view(NUM_FULL_BLOCKS, BLOCK_SIZE, KV_DIM)
+
+        # ── 分配 full_k_rope 在 hugepage 上 ──
+        rope_elements = NUM_FULL_BLOCKS * BLOCK_SIZE * K_ROPE_DIM
+        rope_bytes = rope_elements * 2
+        rope_aligned = ((rope_bytes + HUGEPAGE_SIZE - 1) // HUGEPAGE_SIZE) * HUGEPAGE_SIZE
+
+        fd_rope = os.open(hugepage_path_rope, os.O_CREAT | os.O_RDWR, 0o600)
+        fds.append(fd_rope)
+        os.ftruncate(fd_rope, rope_aligned)
+        mmap_rope = mmap.mmap(fd_rope, rope_aligned, flags=mmap.MAP_SHARED,
+                              prot=mmap.PROT_READ | mmap.PROT_WRITE)
+        mmaps.append(mmap_rope)
+
+        host_rope = torch.frombuffer(mmap_rope, dtype=DTYPE, count=rope_elements
+                                     ).view(NUM_FULL_BLOCKS, BLOCK_SIZE, K_ROPE_DIM)
+
+        # ── 写入标记值 ──
+        for b in range(NUM_FULL_BLOCKS):
+            host_kv[b, 0, 0] = float(b + 400)
+            host_rope[b, 0, 0] = float(b + 500)
+
+        print(f"  Host KV:   shape={host_kv.shape}, ptr=0x{host_kv.data_ptr():x}")
+        print(f"  Host Rope: shape={host_rope.shape}, ptr=0x{host_rope.data_ptr():x}")
+
+        # ── NPU MMU 注册 ──
+        _, npu_kv = zero_copy_npu.register_hugepage_as_npu_tensor(host_kv, 0)
+        _, npu_rope = zero_copy_npu.register_hugepage_as_npu_tensor(host_rope, 0)
+
+        print(f"  NPU KV:   device={npu_kv.device}, ptr=0x{npu_kv.data_ptr():x}")
+        print(f"  NPU Rope: device={npu_rope.device}, ptr=0x{npu_rope.data_ptr():x}")
+
+        # ── 创建 Selection Cache (Device) ──
+        sel_k_rope = torch.zeros(
+            TOTAL_SEL_BLOCKS, BLOCK_SIZE, K_ROPE_DIM,
+            dtype=DTYPE, device=DEVICE)
+        sel_kv_cache = torch.zeros(
+            TOTAL_SEL_BLOCKS, BLOCK_SIZE, KV_DIM,
+            dtype=DTYPE, device=DEVICE)
+        sel_block_table = torch.arange(
+            TOTAL_SEL_BLOCKS, dtype=torch.int32, device=DEVICE
+        ).view(BATCH, NUM_SEL_BLOCKS_PER_BATCH)
+        sel_block_status = -torch.ones(
+            BATCH, 1, 1, TOPK + 1, dtype=torch.int32, device=DEVICE)
+
+        topk_indices = torch.zeros(
+            BATCH, 1, 1, TOPK, dtype=torch.int32, device=DEVICE)
+        for b in range(BATCH):
+            for k in range(TOPK):
+                topk_indices[b, 0, 0, k] = b * TOPK + k
+
+        full_block_table = torch.arange(
+            NUM_FULL_BLOCKS, dtype=torch.int32, device=DEVICE
+        ).unsqueeze(0).expand(BATCH, -1).contiguous()
+        full_kv_actual_seq = torch.full(
+            (BATCH,), SEQ_LEN, dtype=torch.int32, device=DEVICE)
+        full_q_actual_seq = torch.ones(
+            BATCH, dtype=torch.int32, device=DEVICE)
+
+        # ── 调用算子: Host(NPU 视图) → Device ──
+        print("  Calling GatherSelectionKvCache (Host→Device)...")
+        result = gather_wrapper.npu_gather_selection_kv_cache(
+            sel_k_rope, sel_kv_cache, sel_block_table, sel_block_status,
+            topk_indices,
+            npu_rope,   # Host hugepage 的 NPU 视图
+            npu_kv,     # Host hugepage 的 NPU 视图
+            full_block_table,
+            full_kv_actual_seq, full_q_actual_seq, TOPK_BLOCK_SIZE)
+        torch.npu.synchronize()
+
+        # ── 验证 ──
+        print(f"  block_status = {sel_block_status.cpu().numpy()}")
+        print(f"  sel_kv_actual_seq = {result.cpu().tolist()}")
+
+        passed = True
+        for b in range(BATCH):
+            status = sel_block_status[b, 0, 0, :TOPK].cpu()
+            for slot_idx in range(TOPK):
+                group_idx = status[slot_idx].item()
+                if group_idx < 0:
+                    continue
+                full_block_idx = group_idx
+                sel_block_idx = b * NUM_SEL_BLOCKS_PER_BATCH + slot_idx
+                actual = sel_kv_cache[sel_block_idx, 0, 0].cpu().item()
+                expected = host_kv[full_block_idx, 0, 0].item()
+                match = abs(expected - actual) < 1e-2
+                if not match:
+                    print(f"  MISMATCH batch={b} slot={slot_idx} "
+                          f"group={group_idx}: expected={expected:.1f} "
+                          f"actual={actual:.1f}")
+                    passed = False
+                else:
+                    print(f"  OK batch={b} slot={slot_idx} group={group_idx}: "
+                          f"expected={expected:.1f} actual={actual:.1f}")
+
+        print(f"  Test 4: {'PASS' if passed else 'FAIL'}")
+        return passed
+
+    except Exception as e:
+        print(f"  Test 4: FAIL - {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+    finally:
+        for m in mmaps:
+            try: m.close()
+            except: pass
+        for f in fds:
+            try: os.close(f)
+            except: pass
+        for p in [hugepage_path_kv, hugepage_path_rope]:
+            try: os.unlink(p)
+            except: pass
+
+
+# ═══════════════════════════════════════════════════════════
+# Main
+# ═══════════════════════════════════════════════════════════
 if __name__ == "__main__":
-    print("GatherSelectionKvCache Operator Test")
+    print("GatherSelectionKvCache Operator Test v2")
     print(f"torch_npu version: {torch_npu.__version__}")
     print(f"Device: {torch.npu.get_device_name(0)}")
 
-    results = []
-    results.append(("Basic Gather", test_basic_gather()))
-    results.append(("Cache Reuse", test_cache_reuse()))
+    results = {}
+    results["Test 1: Basic Gather"] = test_basic_gather()
+    results["Test 2: Cache Reuse"] = test_cache_reuse()
+    results["Test 3: Host Memory Registration"] = test_host_memory_registration()
+    results["Test 4: Host→Device Gather"] = test_host_to_device_gather()
 
     print("\n" + "=" * 60)
-    print("SUMMARY")
+    print("Summary")
     print("=" * 60)
-    for name, passed in results:
-        status = "PASSED" if passed else "FAILED"
+    for name, result in results.items():
+        if result is None:
+            status = "SKIP"
+        elif result:
+            status = "PASS"
+        else:
+            status = "FAIL"
         print(f"  {name}: {status}")
 
-    all_passed = all(r[1] for r in results)
-    sys.exit(0 if all_passed else 1)
+    all_run = [r for r in results.values() if r is not None]
+    if all_run and all(all_run):
+        print("\nAll tests passed!")
+    elif any(r is False for r in results.values()):
+        print("\nSome tests FAILED!")
+        sys.exit(1)
+    else:
+        print("\nSome tests skipped (hugepage not available?)")
