@@ -1,0 +1,207 @@
+## 概述
+
+此项目是基于昇腾`Atlas A3`和`950PR/DT`的融合算子库，当前项目中包括[SwigluClipQuant](./docs/custom-npu_swiglu_clip_quant.md)和[GatherSelectionKvCache](./docs/custom-npu_gather_selection_kv_cache.md)等算子。
+
+## 目录结构说明
+
+融合算子代码目录结构如下：
+
+  ```
+  ├── cmake                                     # 项目工程编译目录
+  ├── docs                                      # 算子使用说明和资料
+  ├── examples                                  # 算子的使用示例代码
+  ├── src                                       # 算子的源代码
+  |   ├── swiglu_clip_quant                     # 推理SwigluClipQuant算子示例代码
+  |   |   ├── op_host                           # 算子信息库、Tiling、InferShape相关实现目录
+  |   |   ├── op_kernel                         # 算子Kernel目录
+  |   ├── gather_selection_kv_cache             # 推理gather_selection_kv_cache算子示例代码
+  |   |   ├── op_host                           # 算子信息库、Tiling、InferShape相关实现目录
+  |   |   ├── op_kernel                         # 算子Kernel目录
+  |   ├── hc_post                               # 推理hc_post算子示例代码
+  |   |   ├── op_host                           # 算子信息库、Tiling、InferShape相关实现目录
+  |   |   ├── op_kernel                         # 算子Kernel目录
+  |   ├── hc_pre                                # 推理hc_pre算子示例代码
+  |   |   ├── op_host                           # 算子信息库、Tiling、InferShape相关实现目录
+  |   |   ├── op_kernel                         # 算子Kernel目录
+  |   ├── hc_pre_inv_rms                        # 推理hc_pre_inv_rms算子示例代码
+  |   |   ├── op_host                           # 算子信息库、Tiling、InferShape相关实现目录
+  |   |   ├── op_kernel                         # 算子Kernel目录
+  |   ├── hc_pre_sinkhorn                       # 推理hc_pre_sinkhorn算子示例代码
+  |   |   ├── op_host                           # 算子信息库、Tiling、InferShape相关实现目录
+  |   |   ├── op_kernel                         # 算子Kernel目录
+  |   ├── indexer_compress_epilog               # 推理indexer_compress_epilog算子示例代码
+  |   |   ├── op_host                           # 算子信息库、Tiling、InferShape相关实现目录
+  |   |   ├── op_kernel                         # 算子Kernel目录
+  |   ├── inplace_partial_rotary_mul            # 推理inplace_partial_rotary_mul算子示例代码
+  |   |   ├── op_host                           # 算子信息库、Tiling、InferShape相关实现目录
+  |   |   ├── op_kernel                         # 算子Kernel目录
+  |   ├── kv_compress_epilog                    # 推理kv_compress_epilog算子示例代码
+  |   |   ├── op_host                           # 算子信息库、Tiling、InferShape相关实现目录
+  |   |   ├── op_kernel                         # 算子Kernel目录
+  |   ├── moe_gating_top_k_hash                 # 推理moe_gating_top_k_hash算子示例代码
+  |   |   ├── op_host                           # 算子信息库、Tiling、InferShape相关实现目录
+  |   |   ├── op_kernel                         # 算子Kernel目录
+  |   ├── moe_init_routing_group_quant          # 推理moe_init_routing_group_quant算子示例代码
+  |   |   ├── op_host                           # 算子信息库、Tiling、InferShape相关实现目录
+  |   |   ├── op_kernel                         # 算子Kernel目录
+  |   ├── rms_norm_dynamic_quant                # 推理rms_norm_dynamic_quant算子示例代码
+  |   |   ├── op_host                           # 算子信息库、Tiling、InferShape相关实现目录
+  |   |   ├── op_kernel                         # 算子Kernel目录
+  |   ├── dequant_swiglu_clamp_quant            # 推理dequant_swiglu_clamp_quant算子示例代码
+  |   |   ├── op_host                           # 算子信息库、Tiling、InferShape相关实现目录
+  |   |   ├── op_kernel                         # 算子Kernel目录
+  |   ├── scatter_nd_update_asc                 # 推理scatter_nd_update_asc算子示例代码
+  |   |   ├── op_host                           # 算子信息库、Tiling、InferShape相关实现目录
+  |   |   ├── op_kernel                         # 算子Kernel目录
+  |   ├── swiglu_group_quant                    # 推理swiglu_group_quant算子示例代码
+  |   |   ├── op_host                           # 算子信息库、Tiling、InferShape相关实现目录
+  |   |   ├── op_kernel                         # 算子Kernel目录
+  |   ├── utils                                 # 公共工具库
+  |
+  ├── torch_ops_extension                       # torch_ops_extension目录
+      ├── custom_ops
+      │   ├── csrc                              # 自定义算子适配层c++代码目录
+      │   └── converter                         # 自定义算子包python侧converter代码
+      ├── setup.py                              # wheel包编译文件
+      ├── build_and_install.sh                  # 自定义算子wheel包编译与安装脚本
+  |
+  ├── build.sh                                  # 项目工程编译脚本
+  ├── CMakeList.txt                             # 项目工程编译配置文件
+  ├── README.md
+  ├── version.info                              # 项目版本信息
+  ```
+昇腾社区Ascend C自定义算子开发资料：[Ascend C自定义算子开发](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/800alpha002/devguide/opdevg/ascendcopdevg/atlas_ascendc_10_0001.html)
+
+
+## 环境准备<a name="1"></a>
+### 下载源码
+
+  执行如下命令下载 cann-recipes-infer 源码。
+  ```shell
+  mkdir -p /home/code; cd /home/code/
+  git clone git@gitcode.com:cann/cann-recipes-infer.git
+  cd cann-recipes-infer
+  ```
+
+### 获取 docker 镜像
+
+  从[ARM镜像地址](https://cann-ai.obs.cn-north-4.myhuaweicloud.com/cann-quantization/DeepSeek/cann9.0_pt2.8.0_ds_aarch_image_v1.1.tar)中下载 docker 镜像，然后上传到A3服务器上，并通过命令导入镜像 `docker load -i cann9.0_pt2.8.0_ds_aarch_image_v1.1.tar`。
+
+### 拉起 docker 容器
+
+  通过如下脚本拉起容器，默认容器名为 cann_recipes_infer。
+  ```
+  docker run -u root -itd --name cann_recipes_infer --ulimit nproc=65535:65535 --ipc=host \
+      --device=/dev/davinci0     --device=/dev/davinci1 \
+      --device=/dev/davinci2     --device=/dev/davinci3 \
+      --device=/dev/davinci4     --device=/dev/davinci5 \
+      --device=/dev/davinci6     --device=/dev/davinci7 \
+      --device=/dev/davinci8     --device=/dev/davinci9 \
+      --device=/dev/davinci10    --device=/dev/davinci11 \
+      --device=/dev/davinci12    --device=/dev/davinci13 \
+      --device=/dev/davinci14    --device=/dev/davinci15 \
+      --device=/dev/davinci_manager --device=/dev/devmm_svm \
+      --device=/dev/hisi_hdc \
+      -v /home/:/home \
+      -v /data:/data \
+      -v /etc/localtime:/etc/localtime \
+      -v /usr/local/Ascend/driver:/usr/local/Ascend/driver \
+      -v /etc/ascend_install.info:/etc/ascend_install.info -v /var/log/npu/:/usr/slog \
+      -v /usr/local/bin/npu-smi:/usr/local/bin/npu-smi -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+      -v /usr/local/dcmi:/usr/local/dcmi -v /usr/local/sbin:/usr/local/sbin \
+      -v /etc/hccn.conf:/etc/hccn.conf -v /root/.pip:/root/.pip -v /etc/hosts:/etc/hosts \
+      -v /usr/bin/hostname:/usr/bin/hostname \
+      --net=host \
+      --shm-size=128g \
+      --privileged \
+      cann9.0_pt2.8.0_ds_aarch_image:v1.1 /bin/bash
+  ```
+  通过如下命令进入容器：
+  ```
+  docker attach cann_recipes_infer
+  ```
+
+### 设置环境变量
+
+  ```bash
+  source /usr/local/Ascend/ascend-toolkit/set_env.sh
+  ```
+
+## 编译执行
+
+### 自定义融合算子编译
+
+#### 编译所有算子
+
+Atlas A3 执行如下命令编译所有自定义算子：
+
+  ```bash
+  cd /home/code/cann-recipes-infer/ops/ascendc
+  bash build.sh
+  ```
+
+`950PR/DT` 执行如下命令编译所有自定义算子：
+
+  ```bash
+  cd /home/code/cann-recipes-infer/ops/ascendc
+  bash build.sh -c ascend950
+  ```
+
+#### 编译部分算子
+
+使用 `-n` 参数指定要编译的算子名称，多个算子用分号分隔：
+
+  ```bash
+  # 编译单个算子
+  bash build.sh -n "swiglu_clip_quant"
+
+  # 编译多个算子
+  bash build.sh -n "swiglu_clip_quant;gather_selection_kv_cache;hc_pre"
+  ```
+
+**说明：**
+
+若提示如下信息，则说明编译成功。
+
+  ```
+  Self-extractable archive "CANN-custom_ops-<cann_version>-linux.<arch>.run" successfully created.
+  ```
+如果遇到版本校验拦截，可执行`bash build.sh --disable-check-compatible`命令跳过拦截，当前生成的自定义算子包：`CANN-custom_ops-linux.<arch>.run`
+
+编译成功后在 `output` 目录生成自定义算子包：`CANN-custom_ops-<cann_version>-linux.<arch>.run`。其中，\<cann_version>表示软件版本号，\<arch>表示操作系统架构。
+
+### 自定义融合算子安装
+
+安装前，需确保所安装的自定义算子包与所安装CANN开发套件包CPU架构一致，安装命令如下：
+
+  ```bash
+  cd /home/code/cann-recipes-infer/ops/ascendc/output
+  chmod +x CANN-custom_ops-<cann_version>-linux.<arch>.run
+  ./CANN-custom_ops-<cann_version>-linux.<arch>.run --quiet --install-path=/usr/local/Ascend/ascend-toolkit/latest/opp
+  source /usr/local/Ascend/ascend-toolkit/latest/opp/vendors/customize/bin/set_env.bash
+  ```
+
+执行上述命令后，自定义融合算子对应的run包会安装到对应的CANN软件包目录:`/usr/local/Ascend/ascend-toolkit/latest/opp/vendors/`
+
+### torch_ops_extension算子包编译与安装
+编译与安装命令如下：
+  ```shell
+  cd /home/code/cann-recipes-infer/ops/ascendc/torch_ops_extension
+  bash build_and_install.sh
+  ```
+
+编译成功后在 `dist` 目录生成自定义custom-ops算子包：`custom_ops-1.0-<python_version>-<python_version>-<arch>.whl`。其中，\<python_version>表示python版本号，\<arch>表示操作系统架构。
+
+
+### examples用例运行
+examples用例运行命令如下：
+  ```shell
+  cd /home/code/cann-recipes-infer/ops/ascendc/examples
+  python3 test_npu_swiglu_clip_quant.py
+  ```
+
+## 附录
+### FAQ
+- **如何查看 build.sh 支持的所有参数**：执行 `bash build.sh --help` 查看完整的参数列表。
+- **A2环境如何编译执行ascendc算子**：ascendc算子默认基于A3环境编译，包含Atlas A3 训练系列产品/Atlas A3 推理系列产品。其他环境需要在编译时通过`-c ${soc_version}`指定NPU型号，如Atlas A2 训练系列产品/Atlas 800I A2 推理产品/A200I A2 Box 异构组件使用`ascend910b`，编译命令为`bash build.sh -c ascend910b`。
+- **非标准镜像CANN包如何编译执行ascendc算子**：建议使用镜像版本，如果要使用不配套的cann包需要在算子编译时加上`--disable-check-compatible`配置项。
