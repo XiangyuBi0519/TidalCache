@@ -1,3 +1,33 @@
-cd /mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading && git pull && grep "507910" test_gather/zero_copy_npu.cpp && grep "Unified VA" test_gather/test_gather_op.py
+[root@hyperinstance-229r9-00001 vllm-ascend-DSA-offloading]# cd /mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading && grep "507910" test_gather/zero_copy_npu.cpp && grep "Unified VA" test_ga
+ther/test_gather_op.py
+    // 507910 = already registered (e.g. OS reused virtual address after munmap)
+    if (ret != ACL_SUCCESS && ret != 507910) {
+        print(f"  Unified VA: host=0x{host_tensor.data_ptr():x} "
+[root@hyperinstance-229r9-00001 vllm-ascend-DSA-offloading]# cd test_gather && rm -rf build && bash build.sh && python3 test_gather_op.py
+=== Environment ===
+CANN_HOME: /usr/local/Ascend/cann-9.0.1
+torch: 2.10.0+cpu
+torch_npu: 2.10.0.post2
 
-cd test_gather && rm -rf build && bash build.sh && python3 test_gather_op.py
+=== Checking prerequisites ===
+Custom op header: FOUND
+
+=== Building tensor_register.so (ctypes) ===
+OK: tensor_register.so
+
+=== Building PyTorch extensions ===
+g++ -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O3 -Wall -shared -Wl,-rpath /usr/local/python3.12.13/lib /mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/test_gather/build/temp.linux-aarch64-cpython-312/zero_copy_npu.o -L/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/lib -L/usr/local/Ascend/cann-9.0.1/lib64 -L/usr/local/python3.12.13/lib/python3.12/site-packages/torch/lib -L/usr/local/python3.12.13/lib -lascendcl -lc10 -ltorch -ltorch_cpu -ltorch_python -o build/lib.linux-aarch64-cpython-312/zero_copy_npu.cpython-312-aarch64-linux-gnu.so
+g++ -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O3 -Wall -shared -Wl,-rpath /usr/local/python3.12.13/lib /mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/test_gather/build/temp.linux-aarch64-cpython-312/gather_wrapper.o -L/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/lib -L/usr/local/Ascend/cann-9.0.1/lib64 -L/usr/local/Ascend/cann-9.0.1/opp/vendors/customize/op_api/lib -L/usr/local/python3.12.13/lib/python3.12/site-packages/torch/lib -L/usr/local/python3.12.13/lib -ltorch_npu -lcust_opapi -lnnopbase -lascendcl -lc10 -ltorch -ltorch_cpu -ltorch_python -o build/lib.linux-aarch64-cpython-312/gather_wrapper.cpython-312-aarch64-linux-gnu.so
+/usr/bin/ld: cannot find /mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/test_gather/build/temp.linux-aarch64-cpython-312/zero_copy_npu.o: No such file or directory
+collect2: error: ld returned 1 exit status
+error: command '/usr/bin/g++' failed with exit code 1
+
+=== Build complete ===
+-rwxr-xr-x 1 root root 109600 Aug 20 15:36 tensor_register.so
+
+=== Before running tests, set: ===
+export LD_LIBRARY_PATH=/usr/local/Ascend/cann-9.0.1/opp/vendors/customize/op_api/lib/:/usr/local/Ascend/cann-9.0.1/lib64/:/usr/local/python3.12.13/lib/python3.12/site-packages/torch/lib:/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/lib:${LD_LIBRARY_PATH}
+
+Then run: python3 test_gather_op.py
+[FAIL] Cannot import gather_wrapper: No module named 'gather_wrapper'
+Run: bash build.sh
