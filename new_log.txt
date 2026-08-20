@@ -1,233 +1,48 @@
-[root@hyperinstance-229r9-00001 ops_ascendc]# bash build.sh -n "gather_selection_kv_cache" -c "ascend910_93" -p /usr/local/Ascend/cann-9.0.1
-which: no ccache in (/usr/local/Ascend/cann-9.0.1/bin:/usr/local/Ascend/cann-9.0.1/tools/ccec_compiler/bin:/usr/local/Ascend/cann-9.0.1/tools/profiler/bin:/usr/local/Ascend/cann-9.0.1/tools/ascend_system_advisor/asys:/usr/local/Ascend/cann-9.0.1/tools/show_kernel_debug_data:/usr/local/Ascend/cann-9.0.1/tools/msobjdump:/usr/local/Ascend/nnal/atb/latest/atb/cxx_abi_1/bin:/usr/local/Ascend/nnal/atb/latest/atb/cxx_abi_1/bin:/usr/local/Ascend/ascend-toolkit/latest/bin:/usr/local/Ascend/ascend-toolkit/latest/compiler/ccec_compiler/bin:/usr/local/Ascend/ascend-toolkit/latest/tools/ccec_compiler/bin:/usr/local/python3.12.13/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin)
-[2026-08-20 09:34:46] Info: cmake config -DBUILD_OPEN_PROJECT=ON -DCMAKE_CXX_FLAGS="-w" -DCMAKE_C_FLAGS="-w" -DASCEND_COMPUTE_UNIT=ascend910_93 -DASCEND_OP_NAME=gather_selection_kv_cache -DCUSTOM_ASCEND_CANN_PACKAGE_PATH=/usr/local/Ascend/cann-9.0.1 -DCHECK_COMPATIBLE=true .
--- The C compiler identification is GNU 12.3.1
--- The CXX compiler identification is GNU 12.3.1
--- Detecting C compiler ABI info
--- Detecting C compiler ABI info - done
--- Check for working C compiler: /usr/bin/cc - skipped
--- Detecting C compile features
--- Detecting C compile features - done
--- Detecting CXX compiler ABI info
--- Detecting CXX compiler ABI info - done
--- Check for working CXX compiler: /usr/bin/c++ - skipped
--- Detecting CXX compile features
--- Detecting CXX compile features - done
--- Found Python3: /usr/local/python3.12.13/bin/python3.12 (found version "3.12.13") found components: Interpreter
--- ASCEND_CANN_PACKAGE_PATH=/usr/local/Ascend/cann-9.0.1
--- ENABLE_CCACHE=ON, CUSTOM_CCACHE=
--- CCACHE_PROGRAM=CCACHE_PROGRAM-NOTFOUND
--- ASCEND_COMPUTE_UNIT=ascend910_93
--- ASCEND_OP_NAME=gather_selection_kv_cache
--- TILING_KEY=
-check_version_compatible.py:47 [WARNING] CANN version info file(/usr/local/Ascend/cann-9.0.1/toolkit/version.info) not exist.
-check_version_compatible.py:47 [WARNING] CANN version info file(/usr/local/Ascend/cann-9.0.1/toolkit/version.info) not exist.
-cc1plus: warning: /usr/local/Ascend/cann-9.0.1/include/experiment/platform: No such file or directory [-Wmissing-include-dirs]
-cc1plus: warning: /usr/local/Ascend/cann-9.0.1/include/experiment/platform: No such file or directory [-Wmissing-include-dirs]
-cc1plus: warning: /usr/local/Ascend/cann-9.0.1/include/experiment/platform: No such file or directory [-Wmissing-include-dirs]
-/usr/local/Ascend/cann-9.0.1/tools/op_project_templates/ascendc/customize/cmake/util/ascendc_impl_build.py:194: SyntaxWarning: invalid escape sequence '\d'
-  ascendc_api_version = re.findall(r"#define ASCENDC_API_VERSION (\d+)", ascendc_api_version_file.read())
--- Found alog: /usr/local/Ascend/cann-9.0.1/include
--- Variables in alog module:
--- alog_a_INCLUDE_DIR="/usr/local/Ascend/cann-9.0.1/include"
--- slog_a_SHARED_LIBRARY="/usr/local/Ascend/cann-9.0.1/lib64/libascendalog.so"
--- alog_a_SHARED_LIBRARY="/usr/local/Ascend/cann-9.0.1/lib64/libascendalog.so"
--- 
- Properties for TARGET slog_a:
-   slog_a.INTERFACE_COMPILE_DEFINITIONS = "LOG_CPP;PROCESS_LOG"
-   slog_a.INTERFACE_LINK_LIBRARIES = "alog_headers"
-   slog_a.IMPORTED_LOCATION = "/usr/local/Ascend/cann-9.0.1/lib64/libascendalog.so"
+[root@hyperinstance-229r9-00001 test_gather]# python3 test_gather_op.py
+[OK] gather_wrapper loaded
+GatherSelectionKvCache Operator Test v2
+torch_npu version: 2.10.0.post2
+Device: Ascend910_9392
 
--- 
- Properties for TARGET alog_a:
-   alog_a.INTERFACE_COMPILE_DEFINITIONS = "LOG_CPP;PROCESS_LOG"
-   alog_a.INTERFACE_LINK_LIBRARIES = "alog_headers"
-   alog_a.IMPORTED_LOCATION = "/usr/local/Ascend/cann-9.0.1/lib64/libascendalog.so"
-
--- 
- Properties for TARGET alog_headers:
-   alog_headers.INTERFACE_INCLUDE_DIRECTORIES = "/usr/local/Ascend/cann-9.0.1/include;/usr/local/Ascend/cann-9.0.1/include/base"
-
--- Configuring done (43.6s)
--- Generating done (7.4s)
--- Build files have been written to: /mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/ops_ascendc/build
-[ 26%] Generating binary/ascend910_93/src/gather_selection_kv_cache/gather_selection_kv_cache_ascend910_93_src_copy.done
-[ 20%] Generating binary/ascend910_93/bin/gather_selection_kv_cache
-[ 20%] Generating scripts/install.sh, scripts/upgrade.sh
-[ 20%] Generating version.info
-[ 20%] Generating op_host_aclnn_inner_stub.cpp
-[ 26%] Generating binary/ascend910_93/src/gather_selection_kv_cache/GatherSelectionKvCache.py
-[ 20%] Generating op_host_aclnn_exc_stub.cpp
-[ 26%] Building CXX object CMakeFiles/op_host_aclnn.dir/src/gather_selection_kv_cache/op_host/gather_selection_kv_cache_def.cpp.o
-[ 26%] Building CXX object CMakeFiles/optiling.dir/src/gather_selection_kv_cache/op_host/gather_selection_kv_cache_tiling.cpp.o
-[ 26%] Built target gather_selection_kv_cache_ascend910_93_mkdir
-[ 26%] Built target gen_version_info
-[ 26%] Built target gather_selection_kv_cache_ascend910_93_py_copy
-[ 32%] Building CXX object CMakeFiles/op_host_aclnnInner.dir/op_host_aclnn_inner_stub.cpp.o
-[ 32%] Building CXX object CMakeFiles/op_host_aclnnExc.dir/op_host_aclnn_exc_stub.cpp.o
-[ 32%] Built target modify_vendor
-[ 32%] Built target gather_selection_kv_cache_ascend910_93_src_copy
-[ 38%] Linking CXX shared library libop_host_aclnnExc.so
-[ 38%] Linking CXX shared library libop_host_aclnnInner.so
-[ 38%] Built target op_host_aclnnInner
-[ 38%] Built target op_host_aclnnExc
-[ 38%] Built target opbuild_gen_inner
-[ 38%] Built target opbuild_gen_exc
-[ 41%] Linking CXX shared library libop_host_aclnn.so
-[ 41%] Built target op_host_aclnn
-[ 44%] Built target opbuild_gen_default
-[ 47%] Generating autogen/aic-ascend910_93-ops-info.json
-/usr/local/Ascend/cann-9.0.1/tools/op_project_templates/ascendc/customize/cmake/util/ascendc_impl_build.py:194: SyntaxWarning: invalid escape sequence '\d'
-  ascendc_api_version = re.findall(r"#define ASCENDC_API_VERSION (\d+)", ascendc_api_version_file.read())
-[ 55%] Building CXX object CMakeFiles/ops_aclnn.dir/autogen/aclnn_gather_selection_kv_cache.cpp.o
-[ 55%] Building CXX object CMakeFiles/opsproto.dir/src/gather_selection_kv_cache/op_host/gather_selection_kv_cache_proto.cpp.o
-[ 55%] Building CXX object CMakeFiles/opsproto.dir/autogen/gather_selection_kv_cache_proto.cpp.o
+============================================================
+Test 1: Basic Gather (Device → Device)
+============================================================
+  selection_kv_actual_seq = [256, 256]
+  block_status = [[[[  0   1   2   3 256]]]
 
 
-==============check valid for ops info start==============
-==============check valid for ops info end================
+ [[[  4   5   6   7 256]]]]
+  Test 1: PASS
+
+============================================================
+Test 2: Cache Reuse (overlapping topk)
+============================================================
+  Round 1 status: [[[[  0   1   2   3 256]]]
 
 
-Compile op info cfg successfully.
-[ 55%] Built target generate_adapt_py
-[ 55%] Built target generate_ops_info_ascend910_93
-[ 55%] Built target generate_ops_info
-INFO: /mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/ops_ascendc/build/autogen/inner/aic-ascend910_93-ops-info.ini does not exists in this project, skip generating compile commands.
-INFO: /mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/ops_ascendc/build/autogen/exc/aic-ascend910_93-ops-info.ini does not exists in this project, skip generating compile commands.
-[ 55%] Built target generate_compile_cmd_ascend910_93
-[ 55%] Built target generate_compile_cmd
-[ 55%] Built target prepare_build
-[ 58%] Linking CXX static library libops_aclnn.a
-[ 61%] Built target ops_aclnn
-[ 64%] Generating opapi_stub.cpp
-[ 67%] Building CXX object CMakeFiles/opapi.dir/opapi_stub.cpp.o
-[ 70%] Linking CXX shared library libcust_opapi.so
-[ 73%] Linking CXX shared library libcust_opmaster_rt2.0.so
-[ 73%] Built target opapi
-[ 76%] Linking CXX shared library libcust_opsproto_rt2.0.so
-[ 76%] Built target optiling
-[ 76%] Built target opsproto
-[ 97%] Generating binary/ascend910_93/gen/gather_selection_kv_cache_ascend910_93_1.done
-[ 97%] Generating binary/ascend910_93/gen/gather_selection_kv_cache_ascend910_93_2.done
-[ 97%] Generating binary/ascend910_93/gen/gather_selection_kv_cache_ascend910_93_5.done
-[ 97%] Generating compat/liboptiling.so
-[ 97%] Generating binary/ascend910_93/gen/gather_selection_kv_cache_ascend910_93_4.done
-[ 97%] Generating binary/ascend910_93/gen/gather_selection_kv_cache_ascend910_93_0.done
-[ 97%] Generating binary/ascend910_93/gen/gather_selection_kv_cache_ascend910_93_3.done
-[ascend910_93] Generating GatherSelectionKvCache_600ec491ef2fc3b4e0ea32778e386037_relocatable ...
-[ascend910_93] Generating GatherSelectionKvCache_f37ec75d4c883225a56b6b0b4719b46b_relocatable ...
-[ascend910_93] Generating GatherSelectionKvCache_600ec491ef2fc3b4e0ea32778e386037 ...
-[ascend910_93] Generating GatherSelectionKvCache_f37ec75d4c883225a56b6b0b4719b46b ...
-[ascend910_93] Generating GatherSelectionKvCache_707a2446a5edc15f7d875c87115bd834_relocatable ...
-[ascend910_93] Generating GatherSelectionKvCache_707a2446a5edc15f7d875c87115bd834 ...
-[ 97%] Built target optiling_compat
-[INFO] RUNTIME(471878,python3):2026-08-20-09:35:49.550.973 [task_fail_callback_data_manager.cc:93] 471878 TaskFailCallBackManager: Constructor.
-[INFO] RUNTIME(471878,python3):2026-08-20-09:35:49.551.005 [xpu_task_fail_callback_data_manager.cc:59] 471878 XpuTaskFailCallBackManager: XpuTaskFailCallBackManager Constructor.
-Opc tool start working now, please wait for a moment.
-[INFO] RUNTIME(471878,python3):2026-08-20-09:35:56.145.708 [xpu_task_fail_callback_data_manager.cc:64] 471878 ~XpuTaskFailCallBackManager: XpuTaskFailCallBackManager Destructor.
-[INFO] RUNTIME(471878,python3):2026-08-20-09:35:56.145.739 [task_fail_callback_data_manager.cc:98] 471878 ~TaskFailCallBackManager: Destructor.
-[INFO] ATRACE(471878,python3):2026-08-20-09:35:56.241.136 [stacktrace_signal.c:194](tid:471878) unregister all signal handlers, can not capture signal.
-[ascend910_93] Generating GatherSelectionKvCache_600ec491ef2fc3b4e0ea32778e386037 Done
-/usr/bin/gmake
-[ 97%] Built target gather_selection_kv_cache_ascend910_93_4
-[INFO] RUNTIME(471872,python3):2026-08-20-09:35:49.526.020 [task_fail_callback_data_manager.cc:93] 471872 TaskFailCallBackManager: Constructor.
-[INFO] RUNTIME(471872,python3):2026-08-20-09:35:49.526.057 [xpu_task_fail_callback_data_manager.cc:59] 471872 XpuTaskFailCallBackManager: XpuTaskFailCallBackManager Constructor.
-Opc tool start working now, please wait for a moment.
-[INFO] RUNTIME(471872,python3):2026-08-20-09:35:56.322.297 [xpu_task_fail_callback_data_manager.cc:64] 471872 ~XpuTaskFailCallBackManager: XpuTaskFailCallBackManager Destructor.
-[INFO] RUNTIME(471872,python3):2026-08-20-09:35:56.322.320 [task_fail_callback_data_manager.cc:98] 471872 ~TaskFailCallBackManager: Destructor.
-[INFO] ATRACE(471872,python3):2026-08-20-09:35:56.398.077 [stacktrace_signal.c:194](tid:471872) unregister all signal handlers, can not capture signal.
-[ascend910_93] Generating GatherSelectionKvCache_f37ec75d4c883225a56b6b0b4719b46b Done
-/usr/bin/gmake
-[ 97%] Built target gather_selection_kv_cache_ascend910_93_0
-[INFO] RUNTIME(471879,python3):2026-08-20-09:35:49.557.457 [task_fail_callback_data_manager.cc:93] 471879 TaskFailCallBackManager: Constructor.
-[INFO] RUNTIME(471879,python3):2026-08-20-09:35:49.557.487 [xpu_task_fail_callback_data_manager.cc:59] 471879 XpuTaskFailCallBackManager: XpuTaskFailCallBackManager Constructor.
-Opc tool start working now, please wait for a moment.
-[INFO] RUNTIME(471879,python3):2026-08-20-09:35:56.457.493 [xpu_task_fail_callback_data_manager.cc:64] 471879 ~XpuTaskFailCallBackManager: XpuTaskFailCallBackManager Destructor.
-[INFO] RUNTIME(471879,python3):2026-08-20-09:35:56.457.518 [task_fail_callback_data_manager.cc:98] 471879 ~TaskFailCallBackManager: Destructor.
-[INFO] ATRACE(471879,python3):2026-08-20-09:35:56.559.802 [stacktrace_signal.c:194](tid:471879) unregister all signal handlers, can not capture signal.
-[ascend910_93] Generating GatherSelectionKvCache_707a2446a5edc15f7d875c87115bd834 Done
-/usr/bin/gmake
-[ 97%] Built target gather_selection_kv_cache_ascend910_93_2
-[INFO] RUNTIME(471871,python3):2026-08-20-09:35:50.787.402 [task_fail_callback_data_manager.cc:93] 471871 TaskFailCallBackManager: Constructor.
-[INFO] RUNTIME(471871,python3):2026-08-20-09:35:50.787.436 [xpu_task_fail_callback_data_manager.cc:59] 471871 XpuTaskFailCallBackManager: XpuTaskFailCallBackManager Constructor.
-Opc tool start working now, please wait for a moment.
-[INFO] RUNTIME(471871,python3):2026-08-20-09:35:57.514.132 [xpu_task_fail_callback_data_manager.cc:64] 471871 ~XpuTaskFailCallBackManager: XpuTaskFailCallBackManager Destructor.
-[INFO] RUNTIME(471871,python3):2026-08-20-09:35:57.514.171 [task_fail_callback_data_manager.cc:98] 471871 ~TaskFailCallBackManager: Destructor.
-[INFO] ATRACE(471871,python3):2026-08-20-09:35:57.609.016 [stacktrace_signal.c:194](tid:471871) unregister all signal handlers, can not capture signal.
-[ascend910_93] Generating GatherSelectionKvCache_600ec491ef2fc3b4e0ea32778e386037_relocatable Done
-/usr/bin/gmake
-[INFO] RUNTIME(471873,python3):2026-08-20-09:35:50.806.913 [task_fail_callback_data_manager.cc:93] 471873 TaskFailCallBackManager: Constructor.
-[INFO] RUNTIME(471873,python3):2026-08-20-09:35:50.806.948 [xpu_task_fail_callback_data_manager.cc:59] 471873 XpuTaskFailCallBackManager: XpuTaskFailCallBackManager Constructor.
-Opc tool start working now, please wait for a moment.
-[INFO] RUNTIME(471873,python3):2026-08-20-09:35:57.469.569 [xpu_task_fail_callback_data_manager.cc:64] 471873 ~XpuTaskFailCallBackManager: XpuTaskFailCallBackManager Destructor.
-[INFO] RUNTIME(471873,python3):2026-08-20-09:35:57.469.593 [task_fail_callback_data_manager.cc:98] 471873 ~TaskFailCallBackManager: Destructor.
-[INFO] ATRACE(471873,python3):2026-08-20-09:35:57.579.773 [stacktrace_signal.c:194](tid:471873) unregister all signal handlers, can not capture signal.
-[ascend910_93] Generating GatherSelectionKvCache_f37ec75d4c883225a56b6b0b4719b46b_relocatable Done
-/usr/bin/gmake
-[ 97%] Built target gather_selection_kv_cache_ascend910_93_5
-[INFO] RUNTIME(471877,python3):2026-08-20-09:35:50.824.658 [task_fail_callback_data_manager.cc:93] 471877 TaskFailCallBackManager: Constructor.
-[INFO] RUNTIME(471877,python3):2026-08-20-09:35:50.824.690 [xpu_task_fail_callback_data_manager.cc:59] 471877 XpuTaskFailCallBackManager: XpuTaskFailCallBackManager Constructor.
-Opc tool start working now, please wait for a moment.
-[INFO] RUNTIME(471877,python3):2026-08-20-09:35:57.583.700 [xpu_task_fail_callback_data_manager.cc:64] 471877 ~XpuTaskFailCallBackManager: XpuTaskFailCallBackManager Destructor.
-[INFO] RUNTIME(471877,python3):2026-08-20-09:35:57.583.735 [task_fail_callback_data_manager.cc:98] 471877 ~TaskFailCallBackManager: Destructor.
-[INFO] ATRACE(471877,python3):2026-08-20-09:35:57.704.411 [stacktrace_signal.c:194](tid:471877) unregister all signal handlers, can not capture signal.
-[ascend910_93] Generating GatherSelectionKvCache_707a2446a5edc15f7d875c87115bd834_relocatable Done
-/usr/bin/gmake
-[ 97%] Built target gather_selection_kv_cache_ascend910_93_1
-[ 97%] Built target gather_selection_kv_cache_ascend910_93_3
-[ 97%] Built target gather_selection_kv_cache_ascend910_93
-[ 97%] Built target gather_selection_kv_cache
-[100%] Generating binary/ascend910_93/bin/binary_info_config.json
-[100%] Built target ops_config_ascend910_93
-[100%] Built target ops_config
-[100%] Built target ops_kernel
-Run CPack packaging tool...
-CPack: Create package using External
-CPack: Install projects
-CPack: - Run preinstall target for: cann_ops_adv
-CPack: - Install project: cann_ops_adv []
-CPack: Create package
+ [[[  4   5   6   7 256]]]]
+  Round 2 status: [[[[  0   1   6   7 256]]]
 
-About to compress 6572 KB of data...
-Adding files to archive named "CANN-custom_ops-none-linux.aarch64.run"...
-./help.info
-./install.sh
-./packages/vendors/customize/op_api/include/aclnn_gather_selection_kv_cache.h
-./packages/vendors/customize/op_api/lib/libcust_opapi.so
-./packages/vendors/customize/op_impl/ai_core/tbe/config/ascend910_93/aic-ascend910_93-ops-info.json
-./packages/vendors/customize/op_impl/ai_core/tbe/customize_impl/ascendc/gather_selection_kv_cache/gather_selection_kv_cache.cpp
-./packages/vendors/customize/op_impl/ai_core/tbe/customize_impl/ascendc/gather_selection_kv_cache/gather_selection_kv_cache_split_bs_reuse.h
-./packages/vendors/customize/op_impl/ai_core/tbe/customize_impl/ascendc/gather_selection_kv_cache/gather_selection_kv_cache_split_bs_reuse_vec.h
-./packages/vendors/customize/op_impl/ai_core/tbe/customize_impl/ascendc/gather_selection_kv_cache/op_kernel/gather_selection_kv_cache.cpp
-./packages/vendors/customize/op_impl/ai_core/tbe/customize_impl/ascendc/gather_selection_kv_cache/op_kernel/gather_selection_kv_cache_split_bs_reuse.h
-./packages/vendors/customize/op_impl/ai_core/tbe/customize_impl/ascendc/gather_selection_kv_cache/op_kernel/gather_selection_kv_cache_split_bs_reuse_vec.h
-./packages/vendors/customize/op_impl/ai_core/tbe/customize_impl/dynamic/gather_selection_kv_cache.py
-./packages/vendors/customize/op_impl/ai_core/tbe/kernel/ascend910_93/gather_selection_kv_cache/GatherSelectionKvCache_600ec491ef2fc3b4e0ea32778e386037.json
-./packages/vendors/customize/op_impl/ai_core/tbe/kernel/ascend910_93/gather_selection_kv_cache/GatherSelectionKvCache_600ec491ef2fc3b4e0ea32778e386037.o
-./packages/vendors/customize/op_impl/ai_core/tbe/kernel/ascend910_93/gather_selection_kv_cache/GatherSelectionKvCache_600ec491ef2fc3b4e0ea32778e386037_relocatable.json
-./packages/vendors/customize/op_impl/ai_core/tbe/kernel/ascend910_93/gather_selection_kv_cache/GatherSelectionKvCache_600ec491ef2fc3b4e0ea32778e386037_relocatable.o
-./packages/vendors/customize/op_impl/ai_core/tbe/kernel/ascend910_93/gather_selection_kv_cache/GatherSelectionKvCache_707a2446a5edc15f7d875c87115bd834.json
-./packages/vendors/customize/op_impl/ai_core/tbe/kernel/ascend910_93/gather_selection_kv_cache/GatherSelectionKvCache_707a2446a5edc15f7d875c87115bd834.o
-./packages/vendors/customize/op_impl/ai_core/tbe/kernel/ascend910_93/gather_selection_kv_cache/GatherSelectionKvCache_707a2446a5edc15f7d875c87115bd834_relocatable.json
-./packages/vendors/customize/op_impl/ai_core/tbe/kernel/ascend910_93/gather_selection_kv_cache/GatherSelectionKvCache_707a2446a5edc15f7d875c87115bd834_relocatable.o
-./packages/vendors/customize/op_impl/ai_core/tbe/kernel/ascend910_93/gather_selection_kv_cache/GatherSelectionKvCache_f37ec75d4c883225a56b6b0b4719b46b.json
-./packages/vendors/customize/op_impl/ai_core/tbe/kernel/ascend910_93/gather_selection_kv_cache/GatherSelectionKvCache_f37ec75d4c883225a56b6b0b4719b46b.o
-./packages/vendors/customize/op_impl/ai_core/tbe/kernel/ascend910_93/gather_selection_kv_cache/GatherSelectionKvCache_f37ec75d4c883225a56b6b0b4719b46b_relocatable.json
-./packages/vendors/customize/op_impl/ai_core/tbe/kernel/ascend910_93/gather_selection_kv_cache/GatherSelectionKvCache_f37ec75d4c883225a56b6b0b4719b46b_relocatable.o
-./packages/vendors/customize/op_impl/ai_core/tbe/kernel/config/ascend910_93/binary_info_config.json
-./packages/vendors/customize/op_impl/ai_core/tbe/kernel/config/ascend910_93/gather_selection_kv_cache.json
-./packages/vendors/customize/op_impl/ai_core/tbe/op_tiling/lib/linux/aarch64/libcust_opmaster_rt2.0.so
-./packages/vendors/customize/op_impl/ai_core/tbe/op_tiling/liboptiling.so
-./packages/vendors/customize/op_proto/inc/gather_selection_kv_cache_proto.h
-./packages/vendors/customize/op_proto/lib/linux/aarch64/libcust_opsproto_rt2.0.so
-./packages/vendors/customize/version.info
-./upgrade.sh
-CRC: 3231172013
-SHA256: 15860510169fbf2007eb8ecba738fa5380d5d2eefaeec7ac55773bea5744ca5d
-Skipping md5sum at user request
 
-Self-extractable archive "CANN-custom_ops-none-linux.aarch64.run" successfully created.
-Copy /mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/ops_ascendc/build/_CPack_Packages/Linux/External/CANN-custom_ops-none-linux.aarch64.run/CANN-custom_ops-none-linux.aarch64.run to /mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/ops_ascendc/build/
-Copy /mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/ops_ascendc/build/_CPack_Packages/Linux/External/CANN-custom_ops-none-linux.aarch64.run/CANN-custom_ops-none-linux.aarch64.run to /mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/ops_ascendc/output/
-CPack: - package: /mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/ops_ascendc/build/CANN-custom_ops-none-linux.aarch64.run.json generated.
-CPack: - package: /mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/ops_ascendc/build/CANN-custom_ops-none-linux.aarch64.run generated.
+ [[[  4   5  10  11 256]]]]
+  Test 2: PASS
+
+============================================================
+Test 3: Host Memory Registration (hugepage + NPU MMU)
+============================================================
+  SKIP: /dev/hugepages not available
+
+============================================================
+Test 4: Host → Device Gather (full pipeline)
+============================================================
+  SKIP: /dev/hugepages not available
+
+============================================================
+Summary
+============================================================
+  Test 1: Basic Gather: PASS
+  Test 2: Cache Reuse: PASS
+  Test 3: Host Memory Registration: SKIP
+  Test 4: Host→Device Gather: SKIP
+
+All tests passed!
