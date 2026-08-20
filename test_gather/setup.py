@@ -14,9 +14,9 @@ CANN_HOME = os.environ.get(
 CUSTOM_OPP = os.path.join(CANN_HOME, "opp/vendors/customize")
 
 common_include = [
+    CANN_HOME + "/include",
     torch_npu_dir + "/include",
     torch_npu_dir + "/include/third_party/acl/inc",
-    CANN_HOME + "/include",
 ]
 
 common_lib_dirs = [

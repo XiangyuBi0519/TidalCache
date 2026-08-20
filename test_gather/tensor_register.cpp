@@ -33,6 +33,7 @@ extern "C" int register_tensor(
         std::cerr << "Warning: CPU pointer not 4K aligned: " << cpu_ptr << std::endl;
     }
 
+    void* out_dev_ptr = nullptr;
     aclError ret = aclrtHostRegisterV2(
         cpu_ptr, size, ACL_HOST_REG_PINNED | ACL_HOST_REG_MAPPED);
     if (ret != ACL_SUCCESS) {
@@ -40,8 +41,12 @@ extern "C" int register_tensor(
         return static_cast<int>(ret);
     }
 
-    // ACL_HOST_REG_MAPPED: unified virtual address, dev_ptr == cpu_ptr
-    void* out_dev_ptr = cpu_ptr;
+    aclError ret_ptr = aclrtHostGetDevicePointer(cpu_ptr, &out_dev_ptr, 0);
+    if (ret_ptr != ACL_SUCCESS) {
+        std::cerr << "aclrtHostGetDevicePointer failed: " << ret_ptr << std::endl;
+        aclrtHostUnregister(cpu_ptr);
+        return static_cast<int>(ret_ptr);
+    }
 
     std::cout << "Registered: cpu_ptr=" << cpu_ptr
               << " dev_ptr=" << out_dev_ptr
@@ -64,15 +69,18 @@ extern "C" int register_tensor(
 extern "C" int unregister_tensor(void* cpu_ptr) {
     if (cpu_ptr == nullptr) return -1;
 
+    RegisteredTensor info;
     {
         std::lock_guard<std::mutex> lk(g_registry_mutex);
         auto it = g_registry.find(cpu_ptr);
         if (it == g_registry.end()) return -1;
+        info = it->second;
         g_registry.erase(it);
     }
 
-    // CANN 9.x removed aclrtHostUnregister; registration persists until process exit
-    return 0;
+    if (info.device_id >= 0) aclrtSetDevice(info.device_id);
+    aclError ret = aclrtHostUnregister(info.cpu_ptr);
+    return static_cast<int>(ret);
 }
 
 extern "C" void* get_dev_ptr_from_cpu(void* cpu_ptr) {
