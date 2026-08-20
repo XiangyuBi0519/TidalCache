@@ -17,10 +17,8 @@ std::tuple<torch::Tensor, torch::Tensor> register_hugepage_as_npu_tensor(
         std::cerr << "[ZeroCopy] mlock warning: " << strerror(errno) << std::endl;
     }
 
-    aclrtHostUnregister(host_ptr);
     aclrtSetDevice(device_id);
 
-    void* dev_ptr = nullptr;
     aclError ret = aclrtHostRegisterV2(
         host_ptr, size, ACL_HOST_REG_PINNED | ACL_HOST_REG_MAPPED);
     if (ret != ACL_SUCCESS) {
@@ -28,12 +26,8 @@ std::tuple<torch::Tensor, torch::Tensor> register_hugepage_as_npu_tensor(
             "aclrtHostRegisterV2 failed: " + std::to_string(ret));
     }
 
-    aclError ret_ptr = aclrtHostGetDevicePointer(host_ptr, &dev_ptr, 0);
-    if (ret_ptr != ACL_SUCCESS) {
-        aclrtHostUnregister(host_ptr);
-        throw std::runtime_error(
-            "aclrtHostGetDevicePointer failed: " + std::to_string(ret_ptr));
-    }
+    // ACL_HOST_REG_MAPPED: unified virtual address, dev_ptr == host_ptr
+    void* dev_ptr = host_ptr;
 
     std::cout << "[ZeroCopy] registered: host=" << host_ptr
               << " dev=" << dev_ptr << " size=" << size << std::endl;
@@ -67,8 +61,8 @@ std::tuple<torch::Tensor, torch::Tensor> register_hugepage_as_npu_tensor(
 }
 
 void unregister_host(torch::Tensor host_tensor) {
-    void* ptr = host_tensor.data_ptr();
-    aclrtHostUnregister(ptr);
+    (void)host_tensor;
+    // CANN 9.x removed aclrtHostUnregister; registration persists until process exit
 }
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
@@ -76,5 +70,5 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
           &register_hugepage_as_npu_tensor,
           "Register hugepage host tensor as NPU-addressable tensor");
     m.def("unregister_host", &unregister_host,
-          "Unregister host tensor from NPU MMU");
+          "Unregister host tensor from NPU MMU (no-op on CANN 9.x)");
 }
