@@ -1,5 +1,63 @@
-mkdir -p /dev/hugepages && mount -t hugetlbfs nodev /dev/hugepages
+[root@hyperinstance-229r9-00001 test_gather]# python3 test_gather_op.py
+[OK] gather_wrapper loaded
+GatherSelectionKvCache Operator Test v2
+torch_npu version: 2.10.0.post2
+Device: Ascend910_9392
 
-python3 -c "import os; print(os.path.isdir('/dev/hugepages'))" && mount | grep hugepages
+============================================================
+Test 1: Basic Gather (Device → Device)
+============================================================
+  selection_kv_actual_seq = [256, 256]
+  block_status = [[[[  0   1   2   3 256]]]
 
-python3 test_gather_op.py
+
+ [[[  4   5   6   7 256]]]]
+  Test 1: PASS
+
+============================================================
+Test 2: Cache Reuse (overlapping topk)
+============================================================
+  Round 1 status: [[[[  0   1   2   3 256]]]
+
+
+ [[[  4   5   6   7 256]]]]
+  Round 2 status: [[[[  0   1   6   7 256]]]
+
+
+ [[[  4   5  10  11 256]]]]
+  Test 2: PASS
+
+============================================================
+Test 3: Host Memory Registration (hugepage + NPU MMU)
+============================================================
+[OK] zero_copy_npu loaded
+  Data size: 1048576 bytes, aligned: 2097152 bytes
+  Host tensor: shape=torch.Size([16, 64, 512]), ptr=0xfffebf400000
+[ZeroCopy] registered: host=0xfffebf400000 dev=0xfffebf400000 size=1048576
+  NPU tensor: shape=torch.Size([16, 64, 512]), device=npu:0, ptr=0xfffebf400000
+  Test 3: FAIL - host and npu tensors should have different data_ptr
+Traceback (most recent call last):
+  File "/mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/test_gather/test_gather_op.py", line 236, in test_host_memory_registration
+    assert host_tensor.data_ptr() != npu_tensor.data_ptr(), \
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: host and npu tensors should have different data_ptr
+
+============================================================
+Test 4: Host → Device Gather (full pipeline)
+============================================================
+  Host KV:   shape=torch.Size([16, 64, 512]), ptr=0xfffebf400000
+  Host Rope: shape=torch.Size([16, 64, 64]), ptr=0xfffebf200000
+  Test 4: FAIL - aclrtHostRegisterV2 failed: 507910
+Traceback (most recent call last):
+  File "/mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/test_gather/test_gather_op.py", line 325, in test_host_to_device_gather
+    _, npu_kv = zero_copy_npu.register_hugepage_as_npu_tensor(host_kv, 0)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: aclrtHostRegisterV2 failed: 507910
+
+============================================================
+Summary
+============================================================
+  Test 1: Basic Gather: PASS
+  Test 2: Cache Reuse: PASS
+  Test 3: Host Memory Registration: FAIL
+  Test 4: Host→Device Gather: FAIL
