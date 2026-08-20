@@ -1,100 +1,16 @@
-[root@hyperinstance-229r9-00001 vllm-ascend-DSA-offloading]# cd test_gather && rm -rf build && bash build.sh && python3 test_gather_op.py
-=== Environment ===
-CANN_HOME: /usr/local/Ascend/cann-9.0.1
-torch: 2.10.0+cpu
-torch_npu: 2.10.0.post2
+grep -rn "DevicePointer\|GetDev\|HostMap\|HostMem\|MappedPtr" /usr/local/Ascend/cann-9.0.1/include/acl/ 2>/dev/null | head -20
 
-=== Checking prerequisites ===
-Custom op header: FOUND
-
-=== Building tensor_register.so (ctypes) ===
-OK: tensor_register.so
-
-=== Building gather_wrapper ===
-      |                                                 ^~~~~~~~~~~~~~~~~~~
-g++ -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O3 -Wall -shared -Wl,-rpath /usr/local/python3.12.13/lib /mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/test_gather/build/temp.linux-aarch64-cpython-312/gather_wrapper.o -L/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/lib -L/usr/local/Ascend/cann-9.0.1/lib64 -L/usr/local/Ascend/cann-9.0.1/opp/vendors/customize/op_api/lib -L/usr/local/python3.12.13/lib/python3.12/site-packages/torch/lib -L/usr/local/python3.12.13/lib -ltorch_npu -lcust_opapi -lnnopbase -lascendcl -lc10 -ltorch -ltorch_cpu -ltorch_python -o build/lib.linux-aarch64-cpython-312/gather_wrapper.cpython-312-aarch64-linux-gnu.so
-copying build/lib.linux-aarch64-cpython-312/gather_wrapper.cpython-312-aarch64-linux-gnu.so -> 
-
-=== Building zero_copy_npu ===
-[1/1] c++ -MMD -MF /mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/test_gather/build/temp.linux-aarch64-cpython-312/zero_copy_npu.o.d -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O3 -Wall -fPIC -I/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/include -I/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/include/third_party/acl/inc -I/usr/local/Ascend/cann-9.0.1/include -I/usr/local/python3.12.13/lib/python3.12/site-packages/torch/include -I/usr/local/python3.12.13/lib/python3.12/site-packages/torch/include/torch/csrc/api/include -I/usr/local/python3.12.13/include/python3.12 -c -c /mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/test_gather/zero_copy_npu.cpp -o /mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/test_gather/build/temp.linux-aarch64-cpython-312/zero_copy_npu.o -std=c++17 -O2 -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=zero_copy_npu -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=zero_copy_npu
-g++ -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O3 -Wall -shared -Wl,-rpath /usr/local/python3.12.13/lib /mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/test_gather/build/temp.linux-aarch64-cpython-312/zero_copy_npu.o -L/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/lib -L/usr/local/Ascend/cann-9.0.1/lib64 -L/usr/local/python3.12.13/lib/python3.12/site-packages/torch/lib -L/usr/local/python3.12.13/lib -lascendcl -lc10 -ltorch -ltorch_cpu -ltorch_python -o build/lib.linux-aarch64-cpython-312/zero_copy_npu.cpython-312-aarch64-linux-gnu.so
-copying build/lib.linux-aarch64-cpython-312/zero_copy_npu.cpython-312-aarch64-linux-gnu.so -> 
-
-=== Build complete ===
--rwxr-xr-x 1 root root 10230864 Aug 20 15:53 gather_wrapper.cpython-312-aarch64-linux-gnu.so
--rwxr-xr-x 1 root root   109600 Aug 20 15:50 tensor_register.so
--rwxr-xr-x 1 root root 10185888 Aug 20 15:54 zero_copy_npu.cpython-312-aarch64-linux-gnu.so
-
-=== Before running tests, set: ===
-export LD_LIBRARY_PATH=/usr/local/Ascend/cann-9.0.1/opp/vendors/customize/op_api/lib/:/usr/local/Ascend/cann-9.0.1/lib64/:/usr/local/python3.12.13/lib/python3.12/site-packages/torch/lib:/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/lib:${LD_LIBRARY_PATH}
-
-Then run: python3 test_gather_op.py
-[OK] gather_wrapper loaded
-GatherSelectionKvCache Operator Test v2
-torch_npu version: 2.10.0.post2
-Device: Ascend910_9392
-
-============================================================
-Test 1: Basic Gather (Device → Device)
-============================================================
-  selection_kv_actual_seq = [256, 256]
-  block_status = [[[[  0   1   2   3 256]]]
-
-
- [[[  4   5   6   7 256]]]]
-  Test 1: PASS
-
-============================================================
-Test 2: Cache Reuse (overlapping topk)
-============================================================
-  Round 1 status: [[[[  0   1   2   3 256]]]
-
-
- [[[  4   5   6   7 256]]]]
-  Round 2 status: [[[[  0   1   6   7 256]]]
-
-
- [[[  4   5  10  11 256]]]]
-  Test 2: PASS
-
-============================================================
-Test 3: Host Memory Registration (hugepage + NPU MMU)
-============================================================
-[OK] zero_copy_npu loaded
-  Data size: 1048576 bytes, aligned: 2097152 bytes
-  Host tensor: shape=torch.Size([16, 64, 512]), ptr=0xfffedd400000
-[ZeroCopy] registered: host=0xfffedd400000 dev=0xfffedd400000 size=1048576
-  NPU tensor: shape=torch.Size([16, 64, 512]), device=npu:0, ptr=0xfffedd400000
-  Unified VA: host=0xfffedd400000 npu=0xfffedd400000 (same=True)
-  Test 3: PASS
-
-============================================================
-Test 4: Host → Device Gather (full pipeline)
-============================================================
-  Host KV:   shape=torch.Size([16, 64, 512]), ptr=0xfffedd400000
-  Host Rope: shape=torch.Size([16, 64, 64]), ptr=0xfffedd200000
-[ZeroCopy] registered: host=0xfffedd400000 dev=0xfffedd400000 size=1048576
-[ZeroCopy] registered: host=0xfffedd200000 dev=0xfffedd200000 size=131072
-  NPU KV:   device=npu:0, ptr=0xfffedd400000
-  NPU Rope: device=npu:0, ptr=0xfffedd200000
-  Calling GatherSelectionKvCache (Host→Device)...
-  Test 4: FAIL - npuSynchronizeDevice:../torch_npu/csrc/core/npu/NPUStream.cpp:565 NPU function error: SUSPECT REMOTE ERROR, error code is 507057
-[ERROR] 2026-08-20-15:55:07 (PID:476743, Device:0, RankID:-1) ERR00100 PTA call acl api failed
-Traceback (most recent call last):
-  File "/mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/test_gather/test_gather_op.py", line 366, in test_host_to_device_gather
-    torch.npu.synchronize()
-  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/npu/utils.py", line 72, in synchronize
-    return torch_npu._C._npu_synchronize()
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-RuntimeError: npuSynchronizeDevice:../torch_npu/csrc/core/npu/NPUStream.cpp:565 NPU function error: SUSPECT REMOTE ERROR, error code is 507057
-[ERROR] 2026-08-20-15:55:07 (PID:476743, Device:0, RankID:-1) ERR00100 PTA call acl api failed
-
-============================================================
-Summary
-============================================================
-  Test 1: Basic Gather: PASS
-  Test 2: Cache Reuse: PASS
-  Test 3: Host Memory Registration: PASS
-  Test 4: Host→Device Gather: FAIL
-
-Some tests FAILED!
+python3 -c "
+import torch, torch_npu, mmap, os
+os.makedirs('/dev/hugepages', exist_ok=True)
+fd = os.open('/dev/hugepages/test_dma', os.O_CREAT|os.O_RDWR, 0o600)
+os.ftruncate(fd, 2*1024*1024)
+mm = mmap.mmap(fd, 2*1024*1024, flags=mmap.MAP_SHARED, prot=mmap.PROT_READ|mmap.PROT_WRITE)
+ht = torch.frombuffer(mm, dtype=torch.bfloat16, count=1024)
+ht[:] = 42.0
+# 普通 .to() 拷贝测试
+dt = ht.to('npu:0')
+print('DMA copy val:', dt[0].cpu().item())
+print('Basic DMA: OK')
+mm.close(); os.close(fd); os.unlink('/dev/hugepages/test_dma')
+"
