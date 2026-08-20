@@ -1,1 +1,71 @@
-cd /mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/test_gather && rm -rf build && python3 setup.py build_ext --inplace 2>&1 | tail -5
+[root@hyperinstance-229r9-00001 test_gather]# cd /mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/test_gather && rm -rf build && python3 setup.py build_ext --inplace 2>&1 | tail -5
+building 'zero_copy_npu' extension
+[1/1] c++ -MMD -MF /mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/test_gather/build/temp.linux-aarch64-cpython-312/zero_copy_npu.o.d -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O3 -Wall -fPIC -I/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/include -I/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/include/third_party/acl/inc -I/usr/local/Ascend/cann-9.0.1/include -I/usr/local/python3.12.13/lib/python3.12/site-packages/torch/include -I/usr/local/python3.12.13/lib/python3.12/site-packages/torch/include/torch/csrc/api/include -I/usr/local/python3.12.13/include/python3.12 -c -c /mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/test_gather/zero_copy_npu.cpp -o /mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/test_gather/build/temp.linux-aarch64-cpython-312/zero_copy_npu.o -std=c++17 -O2 -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=zero_copy_npu
+g++ -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O3 -Wall -shared -Wl,-rpath /usr/local/python3.12.13/lib /mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/test_gather/build/temp.linux-aarch64-cpython-312/zero_copy_npu.o -L/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/lib -L/usr/local/Ascend/cann-9.0.1/lib64 -L/usr/local/python3.12.13/lib/python3.12/site-packages/torch/lib -L/usr/local/python3.12.13/lib -lascendcl -lc10 -ltorch -ltorch_cpu -ltorch_python -o build/lib.linux-aarch64-cpython-312/zero_copy_npu.cpython-312-aarch64-linux-gnu.so
+copying build/lib.linux-aarch64-cpython-312/gather_wrapper.cpython-312-aarch64-linux-gnu.so -> 
+copying build/lib.linux-aarch64-cpython-312/zero_copy_npu.cpython-312-aarch64-linux-gnu.so -> 
+[root@hyperinstance-229r9-00001 test_gather]# python3 test_gather_op.py
+[OK] gather_wrapper loaded
+GatherSelectionKvCache Operator Test v2
+torch_npu version: 2.10.0.post2
+Device: Ascend910_9392
+
+============================================================
+Test 1: Basic Gather (Device → Device)
+============================================================
+  selection_kv_actual_seq = [256, 256]
+  block_status = [[[[  0   1   2   3 256]]]
+
+
+ [[[  4   5   6   7 256]]]]
+  Test 1: PASS
+
+============================================================
+Test 2: Cache Reuse (overlapping topk)
+============================================================
+  Round 1 status: [[[[  0   1   2   3 256]]]
+
+
+ [[[  4   5   6   7 256]]]]
+  Round 2 status: [[[[  0   1   6   7 256]]]
+
+
+ [[[  4   5  10  11 256]]]]
+  Test 2: PASS
+
+============================================================
+Test 3: Host Memory Registration (hugepage + NPU MMU)
+============================================================
+[OK] zero_copy_npu loaded
+  Data size: 1048576 bytes, aligned: 2097152 bytes
+  Host tensor: shape=torch.Size([16, 64, 512]), ptr=0xfffeb6800000
+[ZeroCopy] registered: host=0xfffeb6800000 dev=0xfffeb6800000 size=1048576
+  NPU tensor: shape=torch.Size([16, 64, 512]), device=npu:0, ptr=0xfffeb6800000
+  Test 3: FAIL - host and npu tensors should have different data_ptr
+Traceback (most recent call last):
+  File "/mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/test_gather/test_gather_op.py", line 236, in test_host_memory_registration
+    assert host_tensor.data_ptr() != npu_tensor.data_ptr(), \
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: host and npu tensors should have different data_ptr
+
+============================================================
+Test 4: Host → Device Gather (full pipeline)
+============================================================
+  Host KV:   shape=torch.Size([16, 64, 512]), ptr=0xfffeb6800000
+  Host Rope: shape=torch.Size([16, 64, 64]), ptr=0xfffeb6600000
+  Test 4: FAIL - aclrtHostRegisterV2 failed: 507910
+Traceback (most recent call last):
+  File "/mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/test_gather/test_gather_op.py", line 325, in test_host_to_device_gather
+    _, npu_kv = zero_copy_npu.register_hugepage_as_npu_tensor(host_kv, 0)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: aclrtHostRegisterV2 failed: 507910
+
+============================================================
+Summary
+============================================================
+  Test 1: Basic Gather: PASS
+  Test 2: Cache Reuse: PASS
+  Test 3: Host Memory Registration: FAIL
+  Test 4: Host→Device Gather: FAIL
+
+Some tests FAILED!
