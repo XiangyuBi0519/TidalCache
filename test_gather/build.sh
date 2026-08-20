@@ -36,9 +36,23 @@ g++ -fPIC -shared -std=c++11 \
 echo "OK: tensor_register.so"
 echo ""
 
-# Build gather_wrapper + zero_copy_npu (PyTorch extensions)
-echo "=== Building PyTorch extensions ==="
-python3 setup.py build_ext --inplace -j8 2>&1 | tail -5
+# Build PyTorch extensions sequentially (parallel builds have race conditions)
+echo "=== Building gather_wrapper ==="
+python3 -c "
+from setup import extensions
+from setuptools import setup
+from torch.utils.cpp_extension import BuildExtension
+setup(name='gw', version='0.1', ext_modules=[extensions[0]], cmdclass={'build_ext': BuildExtension})
+" build_ext --inplace 2>&1 | tail -3
+echo ""
+
+echo "=== Building zero_copy_npu ==="
+python3 -c "
+from setup import extensions
+from setuptools import setup
+from torch.utils.cpp_extension import BuildExtension
+setup(name='zc', version='0.1', ext_modules=[extensions[1]], cmdclass={'build_ext': BuildExtension})
+" build_ext --inplace 2>&1 | tail -3
 echo ""
 
 echo "=== Build complete ==="
