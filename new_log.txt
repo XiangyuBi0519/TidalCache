@@ -1,5 +1,6 @@
-python3 -c "import os; print(os.path.isdir('/dev/hugepages'))"
-
-mount | grep hugepages
-
-mount -t hugetlbfs nodev /dev/hugepages
+[root@hyperinstance-229r9-00001 test_gather]# python3 -c "import os; print(os.path.isdir('/dev/hugepages'))"
+False
+[root@hyperinstance-229r9-00001 test_gather]# mount | grep hugepages
+[root@hyperinstance-229r9-00001 test_gather]# mount -t hugetlbfs nodev /dev/hugepages
+mount: /dev/hugepages: mount point does not exist.
+       dmesg(1) may have more information after failed mount system call.
