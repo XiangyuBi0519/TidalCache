@@ -1,3 +1,12 @@
+[root@hyperinstance-229r9-00001 test_gather]# echo 512 > /proc/sys/vm/nr_hugepages
+[root@hyperinstance-229r9-00001 test_gather]# grep HugePages /proc/meminfo 
+AnonHugePages:  201656320 kB
+ShmemHugePages:        0 kB
+FileHugePages:         0 kB
+HugePages_Total:     512
+HugePages_Free:      512
+HugePages_Rsvd:        0
+HugePages_Surp:        0
 [root@hyperinstance-229r9-00001 test_gather]# python3 test_gather_op.py
 [OK] gather_wrapper loaded
 GatherSelectionKvCache Operator Test v2
