@@ -21,7 +21,8 @@ std::tuple<torch::Tensor, torch::Tensor> register_hugepage_as_npu_tensor(
 
     aclError ret = aclrtHostRegisterV2(
         host_ptr, size, ACL_HOST_REG_PINNED | ACL_HOST_REG_MAPPED);
-    if (ret != ACL_SUCCESS) {
+    // 507910 = already registered (e.g. OS reused virtual address after munmap)
+    if (ret != ACL_SUCCESS && ret != 507910) {
         throw std::runtime_error(
             "aclrtHostRegisterV2 failed: " + std::to_string(ret));
     }
