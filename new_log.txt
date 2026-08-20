@@ -14,3 +14,37 @@ print('DMA copy val:', dt[0].cpu().item())
 print('Basic DMA: OK')
 mm.close(); os.close(fd); os.unlink('/dev/hugepages/test_dma')
 "
+
+[root@hyperinstance-229r9-00001 test_gather]# grep -rn "DevicePointer\|GetDev\|HostMap\|HostMem\|MappedPtr" /usr/local/Ascend/cann-9.0.1/include/acl/ 2>/dev/null | head -20
+/usr/local/Ascend/cann-9.0.1/include/acl/acl_rt.h:827:} aclrtHostMemMapCapability;
+/usr/local/Ascend/cann-9.0.1/include/acl/acl_rt.h:997:ACL_FUNC_VISIBILITY uint32_t aclrtGetDeviceIdFromExceptionInfo(const aclrtExceptionInfo *info);
+/usr/local/Ascend/cann-9.0.1/include/acl/acl_rt.h:1345:ACL_FUNC_VISIBILITY aclError aclrtGetDevice(int32_t *deviceId);
+/usr/local/Ascend/cann-9.0.1/include/acl/acl_rt.h:1408:ACL_FUNC_VISIBILITY aclError aclrtGetDeviceUtilizationRate(int32_t deviceId, aclrtUtilizationInfo *utilizationInfo);
+/usr/local/Ascend/cann-9.0.1/include/acl/acl_rt.h:1419:ACL_FUNC_VISIBILITY aclError aclrtGetDeviceCount(uint32_t *count);
+/usr/local/Ascend/cann-9.0.1/include/acl/acl_rt.h:1774:ACL_FUNC_VISIBILITY aclError aclrtHostGetDevicePointer(void *pHost, void **pDevice, uint32_t flag);
+/usr/local/Ascend/cann-9.0.1/include/acl/acl_rt.h:1798:ACL_FUNC_VISIBILITY aclError aclrtHostMemMapCapabilities(uint32_t deviceId, aclrtHacType hacType, aclrtHostMemMapCapability *capabilities);
+/usr/local/Ascend/cann-9.0.1/include/acl/acl_rt.h:2689:ACL_FUNC_VISIBILITY aclError aclrtGetDeviceSatMode(aclrtFloatOverflowMode *mode);
+/usr/local/Ascend/cann-9.0.1/include/acl/acl_rt.h:3038:ACL_FUNC_VISIBILITY aclError aclrtBinaryGetDevAddress(const aclrtBinHandle binHandle, void **binAddr, size_t *binSize);
+/usr/local/Ascend/cann-9.0.1/include/acl/acl_rt.h:3152: * @param [in] userHostMem
+/usr/local/Ascend/cann-9.0.1/include/acl/acl_rt.h:3158:                                                          void *userHostMem, size_t actualArgsSize);
+/usr/local/Ascend/cann-9.0.1/include/acl/acl_rt.h:3394:ACL_FUNC_VISIBILITY aclError aclrtGetDeviceInfo(uint32_t deviceId, aclrtDevAttr attr, int64_t *value);
+/usr/local/Ascend/cann-9.0.1/include/acl/acl_rt.h:3415:ACL_FUNC_VISIBILITY aclError aclrtGetDeviceCapability(int32_t deviceId, aclrtDevFeatureType devFeatureType,
+/usr/local/Ascend/cann-9.0.1/include/acl/acl_rt.h:3474:ACL_FUNC_VISIBILITY aclError aclrtGetDeviceResLimit(int32_t deviceId, aclrtDevResLimitType type, uint32_t *value);
+/usr/local/Ascend/cann-9.0.1/include/acl/acl_rt.h:3843:ACL_FUNC_VISIBILITY aclError aclrtGetDevicesTopo(uint32_t deviceId, uint32_t otherDeviceId, uint64_t *value);
+/usr/local/Ascend/cann-9.0.1/include/acl/acl_base_rt.h:409:ACL_FUNC_VISIBILITY aclError aclGetDeviceCapability(uint32_t deviceId, aclDeviceInfo deviceInfo, int64_t *value);
+[root@hyperinstance-229r9-00001 test_gather]# python3 -c "
+import torch, torch_npu, mmap, os
+os.makedirs('/dev/hugepages', exist_ok=True)
+fd = os.open('/dev/hugepages/test_dma', os.O_CREAT|os.O_RDWR, 0o600)
+os.ftruncate(fd, 2*1024*1024)
+mm = mmap.mmap(fd, 2*1024*1024, flags=mmap.MAP_SHARED, prot=mmap.PROT_READ|mmap.PROT_WRITE)
+ht = torch.frombuffer(mm, dtype=torch.bfloat16, count=1024)
+ht[:] = 42.0
+# 普通 .to() 拷贝测试
+dt = ht.to('npu:0')
+print('DMA copy val:', dt[0].cpu().item())
+print('Basic DMA: OK')
+mm.close(); os.close(fd); os.unlink('/dev/hugepages/test_dma')
+"
+DMA copy val: 42.0
+Basic DMA: OK
