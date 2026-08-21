@@ -1,106 +1,71 @@
-[root@hyperinstance-229r9-00001 vllm-ascend-DSA-offloading]# cd test_gather && rm -rf build && bash build.sh && python3 test_gather_op.py
-=== Environment ===
-CANN_HOME: /usr/local/Ascend/cann-9.0.1
-torch: 2.10.0+cpu
+[root@hyperinstance-229r9-00001 vllm-ascend-DSA-offloading]# python3 -m tidalcache.test_manager
+TidalCacheManager Integration Test
 torch_npu: 2.10.0.post2
-
-=== Checking prerequisites ===
-Custom op header: FOUND
-
-=== Building tensor_register.so (ctypes) ===
-OK: tensor_register.so
-
-=== Building gather_wrapper ===
-      |                                                 ^~~~~~~~~~~~~~~~~~~
-g++ -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O3 -Wall -shared -Wl,-rpath /usr/local/python3.12.13/lib /mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/test_gather/build/temp.linux-aarch64-cpython-312/gather_wrapper.o -L/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/lib -L/usr/local/Ascend/cann-9.0.1/lib64 -L/usr/local/Ascend/cann-9.0.1/opp/vendors/customize/op_api/lib -L/usr/local/python3.12.13/lib/python3.12/site-packages/torch/lib -L/usr/local/python3.12.13/lib -ltorch_npu -lcust_opapi -lnnopbase -lascendcl -lc10 -ltorch -ltorch_cpu -ltorch_python -o build/lib.linux-aarch64-cpython-312/gather_wrapper.cpython-312-aarch64-linux-gnu.so
-copying build/lib.linux-aarch64-cpython-312/gather_wrapper.cpython-312-aarch64-linux-gnu.so -> 
-
-=== Building zero_copy_npu ===
-[1/1] c++ -MMD -MF /mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/test_gather/build/temp.linux-aarch64-cpython-312/zero_copy_npu.o.d -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O3 -Wall -fPIC -I/usr/local/Ascend/cann-9.0.1/include -I/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/include -I/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/include/third_party/acl/inc -I/usr/local/python3.12.13/lib/python3.12/site-packages/torch/include -I/usr/local/python3.12.13/lib/python3.12/site-packages/torch/include/torch/csrc/api/include -I/usr/local/python3.12.13/include/python3.12 -c -c /mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/test_gather/zero_copy_npu.cpp -o /mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/test_gather/build/temp.linux-aarch64-cpython-312/zero_copy_npu.o -std=c++17 -O2 -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=zero_copy_npu -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=zero_copy_npu
-g++ -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O3 -Wall -shared -Wl,-rpath /usr/local/python3.12.13/lib /mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/test_gather/build/temp.linux-aarch64-cpython-312/zero_copy_npu.o -L/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/lib -L/usr/local/Ascend/cann-9.0.1/lib64 -L/usr/local/python3.12.13/lib/python3.12/site-packages/torch/lib -L/usr/local/python3.12.13/lib -lascendcl -lc10 -ltorch -ltorch_cpu -ltorch_python -o build/lib.linux-aarch64-cpython-312/zero_copy_npu.cpython-312-aarch64-linux-gnu.so
-copying build/lib.linux-aarch64-cpython-312/zero_copy_npu.cpython-312-aarch64-linux-gnu.so -> 
-
-=== Build complete ===
--rwxr-xr-x 1 root root 10230864 Aug 20 16:16 gather_wrapper.cpython-312-aarch64-linux-gnu.so
--rwxr-xr-x 1 root root   109704 Aug 20 16:13 tensor_register.so
--rwxr-xr-x 1 root root 10195520 Aug 20 16:17 zero_copy_npu.cpython-312-aarch64-linux-gnu.so
-
-=== Before running tests, set: ===
-export LD_LIBRARY_PATH=/usr/local/Ascend/cann-9.0.1/opp/vendors/customize/op_api/lib/:/usr/local/Ascend/cann-9.0.1/lib64/:/usr/local/python3.12.13/lib/python3.12/site-packages/torch/lib:/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/lib:${LD_LIBRARY_PATH}
-
-Then run: python3 test_gather_op.py
-[OK] gather_wrapper loaded
-GatherSelectionKvCache Operator Test v2
-torch_npu version: 2.10.0.post2
 Device: Ascend910_9392
 
 ============================================================
-Test 1: Basic Gather (Device → Device)
+Test: TidalCacheManager Lifecycle
 ============================================================
-  selection_kv_actual_seq = [256, 256]
-  block_status = [[[[  0   1   2   3 256]]]
+[ZeroCopy] registered: host=0xffff16800000 dev=0x3ffddc00000 size=2097152
+[ZeroCopy] registered: host=0xffff16600000 dev=0x3fff8200000 size=262144
+  Allocated model.layers.0.self_attn:
+    host_kv: shape=torch.Size([32, 64, 512]), ptr=0xffff16800000
+    npu_kv:  shape=torch.Size([32, 64, 512]), device=npu:0, ptr=0x3ffddc00000
+    sel_kv:  shape=torch.Size([16, 64, 512]), device=npu:0
+[ZeroCopy] registered: host=0xfffed0a00000 dev=0x3ffdd800000 size=2097152
+[ZeroCopy] registered: host=0xfffed0800000 dev=0x3ffdd600000 size=262144
+  Allocated model.layers.1.self_attn:
+    host_kv: shape=torch.Size([32, 64, 512]), ptr=0xfffed0a00000
+    npu_kv:  shape=torch.Size([32, 64, 512]), device=npu:0, ptr=0x3ffdd800000
+    sel_kv:  shape=torch.Size([16, 64, 512]), device=npu:0
 
+  Writing marker data to Host Full KV Cache...
 
- [[[  4   5   6   7 256]]]]
-  Test 1: PASS
+  Simulating decode gather...
 
-============================================================
-Test 2: Cache Reuse (overlapping topk)
-============================================================
-  Round 1 status: [[[[  0   1   2   3 256]]]
+  Layer model.layers.0.self_attn:
+    sel_actual_seq = [256, 256]
+    MISMATCH b=0 slot=1 group=3: kv=1004(exp 1003) rope=2000(exp 2003)
+    MISMATCH b=0 slot=2 group=7: kv=1008(exp 1007) rope=2008(exp 2007)
+    MISMATCH b=0 slot=3 group=15: kv=1016(exp 1015) rope=2016(exp 2015)
+    MISMATCH b=1 slot=0 group=1: kv=1000(exp 1001) rope=2000(exp 2001)
+    MISMATCH b=1 slot=1 group=5: kv=1004(exp 1005) rope=2008(exp 2005)
+    MISMATCH b=1 slot=2 group=10: kv=1008(exp 1010) rope=2008(exp 2010)
+    MISMATCH b=1 slot=3 group=20: kv=1020(exp 1020) rope=2016(exp 2020)
 
+  Layer model.layers.1.self_attn:
+    sel_actual_seq = [256, 256]
+    MISMATCH b=0 slot=1 group=3: kv=1004(exp 1003) rope=2000(exp 2003)
+    MISMATCH b=0 slot=2 group=7: kv=1008(exp 1007) rope=2008(exp 2007)
+    MISMATCH b=0 slot=3 group=15: kv=1016(exp 1015) rope=2016(exp 2015)
+    MISMATCH b=1 slot=0 group=1: kv=1000(exp 1001) rope=2000(exp 2001)
+    MISMATCH b=1 slot=1 group=5: kv=1004(exp 1005) rope=2008(exp 2005)
+    MISMATCH b=1 slot=2 group=10: kv=1008(exp 1010) rope=2008(exp 2010)
+    MISMATCH b=1 slot=3 group=20: kv=1020(exp 1020) rope=2016(exp 2020)
 
- [[[  4   5   6   7 256]]]]
-  Round 2 status: [[[[  0   1   6   7 256]]]
+  Testing cache reuse (second gather with overlap)...
+  Layer model.layers.0.self_attn round 2 status: [[0, 3, 8, 12], [1, 5, 11, 25]]
+    REUSE MISMATCH b=0 slot=1 group=3: 1004 != 1003
+    REUSE MISMATCH b=1 slot=0 group=1: 1000 != 1001
+    REUSE MISMATCH b=1 slot=1 group=5: 1004 != 1005
+    REUSE MISMATCH b=1 slot=2 group=11: 1012 != 1011
+    REUSE MISMATCH b=1 slot=3 group=25: 1024 != 1025
+  Layer model.layers.1.self_attn round 2 status: [[0, 3, 8, 12], [1, 5, 11, 25]]
+    REUSE MISMATCH b=0 slot=1 group=3: 1004 != 1003
+    REUSE MISMATCH b=1 slot=0 group=1: 1000 != 1001
+    REUSE MISMATCH b=1 slot=1 group=5: 1004 != 1005
+    REUSE MISMATCH b=1 slot=2 group=11: 1012 != 1011
+    REUSE MISMATCH b=1 slot=3 group=25: 1024 != 1025
 
-
- [[[  4   5  10  11 256]]]]
-  Test 2: PASS
-
-============================================================
-Test 3: Host Memory Registration (hugepage + NPU MMU)
-============================================================
-[OK] zero_copy_npu loaded
-  Data size: 1048576 bytes, aligned: 2097152 bytes
-  Host tensor: shape=torch.Size([16, 64, 512]), ptr=0xfffee9c00000
-[ZeroCopy] registered: host=0xfffee9c00000 dev=0x3ffe9c00000 size=1048576
-  NPU tensor: shape=torch.Size([16, 64, 512]), device=npu:0, ptr=0x3ffe9c00000
-  Host ptr:  0xfffee9c00000
-  NPU ptr:   0x3ffe9c00000
-  Same ptr:  False
-  Test 3: PASS
-
-============================================================
-Test 4: Host → Device Gather (full pipeline)
-============================================================
-  Host KV:   shape=torch.Size([16, 64, 512]), ptr=0xfffee9c00000
-  Host Rope: shape=torch.Size([16, 64, 64]), ptr=0xfffee9a00000
-[ZeroCopy] registered: host=0xfffee9c00000 dev=0x3ffe9c00000 size=1048576
-[ZeroCopy] registered: host=0xfffee9a00000 dev=0x3fff8200000 size=131072
-  NPU KV:   device=npu:0, ptr=0x3ffe9c00000
-  NPU Rope: device=npu:0, ptr=0x3fff8200000
-  Calling GatherSelectionKvCache (Host→Device)...
-  block_status = [[[[  0   1   2   3 256]]]
-
-
- [[[  4   5   6   7 256]]]]
-  sel_kv_actual_seq = [256, 256]
-  OK batch=0 slot=0 group=0: expected=400.0 actual=400.0
-  OK batch=0 slot=1 group=1: expected=400.0 actual=400.0
-  OK batch=0 slot=2 group=2: expected=402.0 actual=402.0
-  OK batch=0 slot=3 group=3: expected=404.0 actual=404.0
-  OK batch=1 slot=0 group=4: expected=404.0 actual=404.0
-  OK batch=1 slot=1 group=5: expected=404.0 actual=404.0
-  OK batch=1 slot=2 group=6: expected=406.0 actual=406.0
-  OK batch=1 slot=3 group=7: expected=408.0 actual=408.0
-  Test 4: PASS
-
-============================================================
-Summary
-============================================================
-  Test 1: Basic Gather: PASS
-  Test 2: Cache Reuse: PASS
-  Test 3: Host Memory Registration: PASS
-  Test 4: Host→Device Gather: PASS
-
-All tests passed!
+  Testing batch reset...
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/tidalcache/test_manager.py", line 242, in <module>
+    "Lifecycle": test_manager_lifecycle(),
+                 ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/tidalcache/test_manager.py", line 179, in test_manager_lifecycle
+    assert (b0_status == -1).all(), \
+           ^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Batch 0 should be reset to -1, got tensor([ 0,  3,  8, 12], dtype=torch.int32)
+[ERROR] 2026-08-21-15:11:19 (PID:488422, Device:0, RankID:-1) ERR99999 UNKNOWN applicaiton exception
