@@ -114,7 +114,7 @@ def test_manager_lifecycle():
         print(f"\n  Layer {name}:")
         print(f"    sel_actual_seq = {sel_actual.cpu().tolist()}")
 
-        # Verify: check each batch's gathered data
+        # Verify: check each batch's gathered data against Host source (BF16)
         for b in range(batch_size):
             bs = status[b, 0, 0, :INDEX_TOPK].cpu()
             for slot in range(INDEX_TOPK):
@@ -123,9 +123,9 @@ def test_manager_lifecycle():
                     continue
                 sel_block_idx = b * INDEX_TOPK + slot
                 actual_kv = sel_kv[sel_block_idx, 0, 0].cpu().item()
-                expected_kv = float(group + 1000)
+                expected_kv = state.host_kv_cache[group, 0, 0].item()
                 actual_rope = sel_rope[sel_block_idx, 0, 0].cpu().item()
-                expected_rope = float(group + 2000)
+                expected_rope = state.host_k_rope[group, 0, 0].item()
                 kv_ok = abs(actual_kv - expected_kv) < 1e-2
                 rope_ok = abs(actual_rope - expected_rope) < 1e-2
                 if not kv_ok or not rope_ok:
@@ -163,7 +163,7 @@ def test_manager_lifecycle():
                     continue
                 sel_block_idx = b * INDEX_TOPK + slot
                 actual_kv = sel_kv[sel_block_idx, 0, 0].cpu().item()
-                expected_kv = float(group + 1000)
+                expected_kv = state.host_kv_cache[group, 0, 0].item()
                 if abs(actual_kv - expected_kv) > 1e-2:
                     print(f"    REUSE MISMATCH b={b} slot={slot} "
                           f"group={group}: {actual_kv:.0f} != {expected_kv:.0f}")
@@ -223,9 +223,11 @@ def test_multi_layer_independence():
 
     val0 = sel0[0, 0, 0].cpu().item()
     val1 = sel1[0, 0, 0].cpu().item()
-    passed = abs(val0 - 100.0) < 1e-2 and abs(val1 - 200.0) < 1e-2
-    print(f"  Layer 0 gathered: {val0:.0f} (expect 100)")
-    print(f"  Layer 1 gathered: {val1:.0f} (expect 200)")
+    exp0 = mgr.layers["layer_0"].host_kv_cache[0, 0, 0].item()
+    exp1 = mgr.layers["layer_1"].host_kv_cache[0, 0, 0].item()
+    passed = abs(val0 - exp0) < 1e-2 and abs(val1 - exp1) < 1e-2
+    print(f"  Layer 0 gathered: {val0:.0f} (expect {exp0:.0f})")
+    print(f"  Layer 1 gathered: {val1:.0f} (expect {exp1:.0f})")
     print(f"  Test: {'PASS' if passed else 'FAIL'}")
 
     mgr.cleanup()

@@ -268,7 +268,8 @@ class TidalCacheManager:
         knows those slots have no valid cached blocks.
         """
         state = self.layers[layer_name]
-        state.sel_block_status[batch_indices].fill_(-1)
+        for idx in batch_indices.tolist():
+            state.sel_block_status[idx].fill_(-1)
 
     def reset_all(self, layer_name: str):
         """Reset all batch slots for a layer."""
