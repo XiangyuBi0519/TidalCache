@@ -1,71 +1,201 @@
-[root@hyperinstance-229r9-00001 vllm-ascend-DSA-offloading]# python3 -m tidalcache.test_manager
-TidalCacheManager Integration Test
-torch_npu: 2.10.0.post2
-Device: Ascend910_9392
-
-============================================================
-Test: TidalCacheManager Lifecycle
-============================================================
-[ZeroCopy] registered: host=0xffff16800000 dev=0x3ffddc00000 size=2097152
-[ZeroCopy] registered: host=0xffff16600000 dev=0x3fff8200000 size=262144
-  Allocated model.layers.0.self_attn:
-    host_kv: shape=torch.Size([32, 64, 512]), ptr=0xffff16800000
-    npu_kv:  shape=torch.Size([32, 64, 512]), device=npu:0, ptr=0x3ffddc00000
-    sel_kv:  shape=torch.Size([16, 64, 512]), device=npu:0
-[ZeroCopy] registered: host=0xfffed0a00000 dev=0x3ffdd800000 size=2097152
-[ZeroCopy] registered: host=0xfffed0800000 dev=0x3ffdd600000 size=262144
-  Allocated model.layers.1.self_attn:
-    host_kv: shape=torch.Size([32, 64, 512]), ptr=0xfffed0a00000
-    npu_kv:  shape=torch.Size([32, 64, 512]), device=npu:0, ptr=0x3ffdd800000
-    sel_kv:  shape=torch.Size([16, 64, 512]), device=npu:0
-
-  Writing marker data to Host Full KV Cache...
-
-  Simulating decode gather...
-
-  Layer model.layers.0.self_attn:
-    sel_actual_seq = [256, 256]
-    MISMATCH b=0 slot=1 group=3: kv=1004(exp 1003) rope=2000(exp 2003)
-    MISMATCH b=0 slot=2 group=7: kv=1008(exp 1007) rope=2008(exp 2007)
-    MISMATCH b=0 slot=3 group=15: kv=1016(exp 1015) rope=2016(exp 2015)
-    MISMATCH b=1 slot=0 group=1: kv=1000(exp 1001) rope=2000(exp 2001)
-    MISMATCH b=1 slot=1 group=5: kv=1004(exp 1005) rope=2008(exp 2005)
-    MISMATCH b=1 slot=2 group=10: kv=1008(exp 1010) rope=2008(exp 2010)
-    MISMATCH b=1 slot=3 group=20: kv=1020(exp 1020) rope=2016(exp 2020)
-
-  Layer model.layers.1.self_attn:
-    sel_actual_seq = [256, 256]
-    MISMATCH b=0 slot=1 group=3: kv=1004(exp 1003) rope=2000(exp 2003)
-    MISMATCH b=0 slot=2 group=7: kv=1008(exp 1007) rope=2008(exp 2007)
-    MISMATCH b=0 slot=3 group=15: kv=1016(exp 1015) rope=2016(exp 2015)
-    MISMATCH b=1 slot=0 group=1: kv=1000(exp 1001) rope=2000(exp 2001)
-    MISMATCH b=1 slot=1 group=5: kv=1004(exp 1005) rope=2008(exp 2005)
-    MISMATCH b=1 slot=2 group=10: kv=1008(exp 1010) rope=2008(exp 2010)
-    MISMATCH b=1 slot=3 group=20: kv=1020(exp 1020) rope=2016(exp 2020)
-
-  Testing cache reuse (second gather with overlap)...
-  Layer model.layers.0.self_attn round 2 status: [[0, 3, 8, 12], [1, 5, 11, 25]]
-    REUSE MISMATCH b=0 slot=1 group=3: 1004 != 1003
-    REUSE MISMATCH b=1 slot=0 group=1: 1000 != 1001
-    REUSE MISMATCH b=1 slot=1 group=5: 1004 != 1005
-    REUSE MISMATCH b=1 slot=2 group=11: 1012 != 1011
-    REUSE MISMATCH b=1 slot=3 group=25: 1024 != 1025
-  Layer model.layers.1.self_attn round 2 status: [[0, 3, 8, 12], [1, 5, 11, 25]]
-    REUSE MISMATCH b=0 slot=1 group=3: 1004 != 1003
-    REUSE MISMATCH b=1 slot=0 group=1: 1000 != 1001
-    REUSE MISMATCH b=1 slot=1 group=5: 1004 != 1005
-    REUSE MISMATCH b=1 slot=2 group=11: 1012 != 1011
-    REUSE MISMATCH b=1 slot=3 group=25: 1024 != 1025
-
-  Testing batch reset...
+为何会触日志字段描述：
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm/v1/core/kv_cache_coordinator.py", line 304, in remove_skipped_blocks
+    manager.remove_skipped_blocks(request_id, total_computed_tokens)
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm/v1/core/single_type_kv_cache_manager.py", line 501, in remove_skipped_blocks
+    self.block_pool.free_blocks(removed_uncached_blocks, prepend=True)
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm/v1/core/block_pool.py", line 439, in free_blocks
+    self.free_block_queue.prepend_n(freed_blocks)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'TwoPhaseBlockQueue' object has no attribute 'prepend_n'. Did you mean: 'append_n'?
+2026-08-22 10:24:47,596 - vllm.v1.executor.multiproc_executor - INFO - [shutdown] Executor: waiting for worker exit count=1
+2026-08-22 10:24:47,596 - vllm.v1.executor.multiproc_executor - INFO - Parent process exited, terminating worker queues
+2026-08-22 10:24:47,596 - vllm.v1.engine.async_llm - ERROR - AsyncLLM output_handler failed.
 Traceback (most recent call last):
-  File "<frozen runpy>", line 198, in _run_module_as_main
-  File "<frozen runpy>", line 88, in _run_code
-  File "/mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/tidalcache/test_manager.py", line 242, in <module>
-    "Lifecycle": test_manager_lifecycle(),
-                 ^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/mnt/sfs_turbo/b30080604/vllm-ascend-DSA-offloading/tidalcache/test_manager.py", line 179, in test_manager_lifecycle
-    assert (b0_status == -1).all(), \
-           ^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError: Batch 0 should be reset to -1, got tensor([ 0,  3,  8, 12], dtype=torch.int32)
-[ERROR] 2026-08-21-15:11:19 (PID:488422, Device:0, RankID:-1) ERR99999 UNKNOWN applicaiton exception
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm/v1/engine/async_llm.py", line 660, in output_handler
+    outputs = await engine_core.get_output_async()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm/v1/engine/core_client.py", line 1046, in get_output_async
+    raise self._format_exception(outputs) from None
+vllm.v1.engine.exceptions.EngineDeadError: EngineCore encountered an issue. See stack trace (above) for the root cause.
+2026-08-22 10:24:47,763 - vllm.v1.engine.core_client - INFO - [shutdown] MPClient: start timeout=0s
+2026-08-22 10:24:47,763 - vllm.v1.engine.core_client - INFO - [shutdown] MPClient: stopping engine manager
+2026-08-22 10:24:47,764 - vllm.v1.engine.core - INFO - [shutdown] EngineCore: trigger received signal=SIGTERM
+2026-08-22 10:24:47,764 - vllm.v1.engine.core - INFO - [shutdown] EngineCore: trigger received signal=SIGTERM
+2026-08-22 10:24:47,764 - vllm.v1.engine.core - INFO - [shutdown] EngineCore: trigger received signal=SIGTERM
+2026-08-22 10:24:47,764 - vllm.v1.engine.core - INFO - [shutdown] EngineCore: trigger received signal=SIGTERM
+2026-08-22 10:24:47,764 - vllm.v1.engine.core - INFO - [shutdown] EngineCore: trigger received signal=SIGTERM
+2026-08-22 10:24:47,764 - vllm.v1.engine.core - INFO - [shutdown] EngineCore: trigger received signal=SIGTERM
+2026-08-22 10:24:47,764 - vllm.v1.engine.core - INFO - [shutdown] EngineCore: trigger received signal=SIGTERM
+2026-08-22 10:24:47,764 - vllm.v1.utils - WARNING - [shutdown] Process manager: force killing remaining processes count=16
+2026-08-22 10:24:47,764 - vllm.v1.engine.core - INFO - [shutdown] EngineCore: trigger received signal=SIGTERM
+2026-08-22 10:24:47,764 - vllm.v1.engine.core - INFO - [shutdown] EngineCore: trigger received signal=SIGTERM
+2026-08-22 10:24:47,764 - vllm.v1.engine.core - INFO - [shutdown] EngineCore: trigger received signal=SIGTERM
+2026-08-22 10:24:47,764 - vllm.v1.engine.core - INFO - [shutdown] EngineCore: trigger received signal=SIGTERM
+2026-08-22 10:24:47,764 - vllm.v1.engine.core - INFO - [shutdown] EngineCore: trigger received signal=SIGTERM
+2026-08-22 10:24:47,764 - vllm.v1.engine.core - INFO - [shutdown] EngineCore: trigger received signal=SIGTERM
+2026-08-22 10:24:47,764 - vllm.v1.engine.core - INFO - [shutdown] EngineCore: trigger received signal=SIGTERM
+2026-08-22 10:24:47,764 - vllm.v1.engine.core - INFO - [shutdown] EngineCore: trigger received signal=SIGTERM
+2026-08-22 10:24:47,792 - vllm.v1.executor.multiproc_executor - ERROR - WorkerProc hit an exception.
+Traceback (most recent call last):
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 982, in worker_busy_loop
+    output = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm_ascend/worker/worker.py", line 973, in execute_dummy_batch
+    self.model_runner._dummy_run(num_tokens=self.model_runner.decode_token_per_req, uniform_decode=True)
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm_ascend/worker/model_runner_v1.py", line 3373, in _dummy_run
+    _cudagraph_mode, batch_desc, _, num_tokens_across_dp, _ = self._determine_batch_execution_and_padding(
+                                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm_ascend/worker/model_runner_v1.py", line 2939, in _determine_batch_execution_and_padding
+    _, num_tokens_across_dp, synced_cudagraph_mode = self._sync_metadata_across_dp(
+                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm_ascend/worker/model_runner_v1.py", line 703, in _sync_metadata_across_dp
+    dist.all_reduce(packed_tensor, group=group)
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/torch/distributed/c10d_logger.py", line 83, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/torch/distributed/distributed_c10d.py", line 3014, in all_reduce
+    work.wait()
+RuntimeError: [/pytorch/third_party/gloo/gloo/transport/tcp/pair.cc:547] Connection closed by peer [10.37.137.94]:2262
+Traceback (most recent call last):
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 982, in worker_busy_loop
+    output = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm_ascend/worker/worker.py", line 973, in execute_dummy_batch
+    self.model_runner._dummy_run(num_tokens=self.model_runner.decode_token_per_req, uniform_decode=True)
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm_ascend/worker/model_runner_v1.py", line 3373, in _dummy_run
+    _cudagraph_mode, batch_desc, _, num_tokens_across_dp, _ = self._determine_batch_execution_and_padding(
+                                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm_ascend/worker/model_runner_v1.py", line 2939, in _determine_batch_execution_and_padding
+    _, num_tokens_across_dp, synced_cudagraph_mode = self._sync_metadata_across_dp(
+                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm_ascend/worker/model_runner_v1.py", line 703, in _sync_metadata_across_dp
+    dist.all_reduce(packed_tensor, group=group)
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/torch/distributed/c10d_logger.py", line 83, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/torch/distributed/distributed_c10d.py", line 3014, in all_reduce
+    work.wait()
+RuntimeError: [/pytorch/third_party/gloo/gloo/transport/tcp/pair.cc:547] Connection closed by peer [10.37.137.94]:2262
+
+2026-08-22 10:24:47,794 - vllm.v1.engine.core - ERROR - EngineCore encountered a fatal error.
+Traceback (most recent call last):
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 1188, in run_engine_core
+    engine_core.run_busy_loop()
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 1899, in run_busy_loop
+    self.execute_dummy_batch()
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 786, in execute_dummy_batch
+    self.model_executor.execute_dummy_batch()
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 332, in execute_dummy_batch
+    self.collective_rpc("execute_dummy_batch", unique_reply_rank=self.output_rank)
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 404, in collective_rpc
+    return future if non_block else future.result()
+                                    ^^^^^^^^^^^^^^^
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 91, in result
+    return super().result()
+           ^^^^^^^^^^^^^^^^
+  File "/opt/huawei/miniconda3/lib/python3.12/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/huawei/miniconda3/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 95, in _wait_for_response
+    response = self.aggregate(self.get_response())
+                              ^^^^^^^^^^^^^^^^^^^
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 391, in get_response
+    raise RuntimeError(
+RuntimeError: Worker failed with error '[/pytorch/third_party/gloo/gloo/transport/tcp/pair.cc:547] Connection closed by peer [10.37.137.94]:2262', please check the stack trace above for the root cause
+2026-08-22 10:24:47,797 - vllm.v1.executor.multiproc_executor - INFO - [shutdown] Executor: waiting for worker exit count=1
+2026-08-22 10:24:47,797 - vllm.v1.executor.multiproc_executor - INFO - Parent process exited, terminating worker queues
+2026-08-22 10:24:47,829 - vllm.v1.executor.multiproc_executor - ERROR - WorkerProc hit an exception.
+Traceback (most recent call last):
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 982, in worker_busy_loop
+    output = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm_ascend/worker/worker.py", line 973, in execute_dummy_batch
+    self.model_runner._dummy_run(num_tokens=self.model_runner.decode_token_per_req, uniform_decode=True)
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm_ascend/worker/model_runner_v1.py", line 3373, in _dummy_run
+    _cudagraph_mode, batch_desc, _, num_tokens_across_dp, _ = self._determine_batch_execution_and_padding(
+                                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm_ascend/worker/model_runner_v1.py", line 2939, in _determine_batch_execution_and_padding
+    _, num_tokens_across_dp, synced_cudagraph_mode = self._sync_metadata_across_dp(
+                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm_ascend/worker/model_runner_v1.py", line 703, in _sync_metadata_across_dp
+    dist.all_reduce(packed_tensor, group=group)
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/torch/distributed/c10d_logger.py", line 83, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/torch/distributed/distributed_c10d.py", line 3014, in all_reduce
+    work.wait()
+RuntimeError: [/pytorch/third_party/gloo/gloo/transport/tcp/pair.cc:547] Connection closed by peer [10.37.137.94]:39058
+Traceback (most recent call last):
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 982, in worker_busy_loop
+    output = func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm_ascend/worker/worker.py", line 973, in execute_dummy_batch
+    self.model_runner._dummy_run(num_tokens=self.model_runner.decode_token_per_req, uniform_decode=True)
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm_ascend/worker/model_runner_v1.py", line 3373, in _dummy_run
+    _cudagraph_mode, batch_desc, _, num_tokens_across_dp, _ = self._determine_batch_execution_and_padding(
+                                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm_ascend/worker/model_runner_v1.py", line 2939, in _determine_batch_execution_and_padding
+    _, num_tokens_across_dp, synced_cudagraph_mode = self._sync_metadata_across_dp(
+                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm_ascend/worker/model_runner_v1.py", line 703, in _sync_metadata_across_dp
+    dist.all_reduce(packed_tensor, group=group)
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/torch/distributed/c10d_logger.py", line 83, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/torch/distributed/distributed_c10d.py", line 3014, in all_reduce
+    work.wait()
+RuntimeError: [/pytorch/third_party/gloo/gloo/transport/tcp/pair.cc:547] Connection closed by peer [10.37.137.94]:39058
+
+2026-08-22 10:24:47,830 - vllm.v1.engine.core - ERROR - EngineCore encountered a fatal error.
+Traceback (most recent call last):
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 1188, in run_engine_core
+    engine_core.run_busy_loop()
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 1899, in run_busy_loop
+    self.execute_dummy_batch()
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 786, in execute_dummy_batch
+    self.model_executor.execute_dummy_batch()
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 332, in execute_dummy_batch
+    self.collective_rpc("execute_dummy_batch", unique_reply_rank=self.output_rank)
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 404, in collective_rpc
+    return future if non_block else future.result()
+                                    ^^^^^^^^^^^^^^^
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 91, in result
+    return super().result()
+           ^^^^^^^^^^^^^^^^
+  File "/opt/huawei/miniconda3/lib/python3.12/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/huawei/miniconda3/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 95, in _wait_for_response
+    response = self.aggregate(self.get_response())
+                              ^^^^^^^^^^^^^^^^^^^
+  File "/opt/huawei/miniconda3/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 391, in get_response
+    raise RuntimeError(
+RuntimeError: Worker failed with error '[/pytorch/third_party/gloo/gloo/transport/tcp/pair.cc:547] Connection closed by peer [10.37.137.94]:39058', please check the stack trace above for the root cause
+2026-08-22 10:24:47,833 - vllm.v1.executor.multiproc_executor - INFO - [shutdown] Executor: waiting for worker exit count=1
+2026-08-22 10:24:47,911 - vllm.v1.executor.multiproc_executor - ERROR - Worker proc VllmWorker-0 died unexpectedly, shutting down executor.
+2026-08-22 10:24:47,913 - vllm.v1.executor.multiproc_executor - INFO - [shutdown] Executor: waiting for worker exit count=1
+2026-08-22 10:24:47,967 - vllm.v1.executor.multiproc_executor - ERROR - Worker proc VllmWorker-0 died unexpectedly, shutting down executor.
+2026-08-22 10:24:47,969 - vllm.v1.executor.multiproc_executor - INFO - [shutdown] Executor: waiting for worker exit count=1
+2026-08-22 10:24:48,005 - vllm.v1.executor.multiproc_executor - ERROR - Worker proc VllmWorker-0 died unexpectedly, shutting down executor.
+2026-08-22 10:24:48,006 - vllm.v1.executor.multiproc_executor - INFO - [shutdown] Executor: waiting for worker exit count=1
+2026-08-22 10:24:48,051 - vllm.v1.executor.multiproc_executor - ERROR - Worker proc VllmWorker-0 died unexpectedly, shutting down executor.
+2026-08-22 10:24:48,052 - vllm.v1.executor.multiproc_executor - INFO - [shutdown] Executor: waiting for worker exit count=1
+2026-08-22 10:24:48,146 - vllm.v1.engine.core_client - INFO - [shutdown] MPClient: engine manager stopped
+2026-08-22 10:24:48,184 - vllm.v1.engine.core_client - INFO - [shutdown] MPClient: cleaning up background resources
+2026-08-22 10:24:49,928 - vllm.v1.engine.core_client - INFO - [shutdown] MPClient: complete
