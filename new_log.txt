@@ -1,1 +1,58 @@
+[root@hyperinstance-229r9-00014 vllm-ascend-DSA-offloading]# python3 -m tidalcache.test_manager
+TidalCacheManager Integration Test
+torch_npu: 2.10.0.post2
+Device: Ascend910_9392
 
+============================================================
+Test: TidalCacheManager Lifecycle
+============================================================
+[ZeroCopy] registered: host=0xffff03600000 dev=0x3ffcf600000 size=2097152
+[ZeroCopy] registered: host=0xffff03400000 dev=0x3fff8200000 size=262144
+  Allocated model.layers.0.self_attn:
+    host_kv: shape=torch.Size([32, 64, 512]), ptr=0xffff03600000
+    npu_kv:  shape=torch.Size([32, 64, 512]), device=npu:0, ptr=0x3ffcf600000
+    sel_kv:  shape=torch.Size([16, 64, 512]), device=npu:0
+[ZeroCopy] registered: host=0xfffebd800000 dev=0x3ffcf200000 size=2097152
+[ZeroCopy] registered: host=0xfffebd600000 dev=0x3ffcf000000 size=262144
+  Allocated model.layers.1.self_attn:
+    host_kv: shape=torch.Size([32, 64, 512]), ptr=0xfffebd800000
+    npu_kv:  shape=torch.Size([32, 64, 512]), device=npu:0, ptr=0x3ffcf200000
+    sel_kv:  shape=torch.Size([16, 64, 512]), device=npu:0
+
+  Writing marker data to Host Full KV Cache...
+
+  Simulating decode gather...
+
+  Layer model.layers.0.self_attn:
+    sel_actual_seq = [256, 256]
+
+  Layer model.layers.1.self_attn:
+    sel_actual_seq = [256, 256]
+
+  Testing cache reuse (second gather with overlap)...
+  Layer model.layers.0.self_attn round 2 status: [[0, 3, 8, 12], [1, 5, 11, 25]]
+  Layer model.layers.1.self_attn round 2 status: [[0, 3, 8, 12], [1, 5, 11, 25]]
+
+  Testing batch reset...
+  Reset OK: batch 0 cleared, batch 1 preserved
+
+  Test: PASS
+
+============================================================
+Test: Multi-Layer Independence
+============================================================
+[ZeroCopy] registered: host=0xffff03600000 dev=0x3ffcf600000 size=2097152
+[ZeroCopy] registered: host=0xfffebd800000 dev=0x3fff8200000 size=262144
+[ZeroCopy] registered: host=0xfffeb5800000 dev=0x3ffcf200000 size=2097152
+[ZeroCopy] registered: host=0xfffeb5600000 dev=0x3ffcf000000 size=262144
+  Layer 0 gathered: 100 (expect 100)
+  Layer 1 gathered: 200 (expect 200)
+  Test: PASS
+
+============================================================
+Summary
+============================================================
+  Lifecycle: PASS
+  Multi-Layer Independence: PASS
+
+All tests passed!
