@@ -1,14 +1,18 @@
 """
 TidalCache Offload Manager
 
-Manages the full lifecycle of DSA KV Cache offloading:
+Manages the full lifecycle of sparse-attention KV Cache offloading:
   1. Host hugepage allocation + NPU MMU registration (HostKVPool)
   2. Per-layer Device Selection Cache buffers (SelectionCache)
   3. GatherSelectionKvCache operator calls
 
+Supports both DeepSeek-V3 (DSA) and DeepSeek-V4 (CSA) sparse attention.
+HCA layers (dense attention with heavy compression) are excluded — they
+don't use Lightning Indexer / top-k selection.
+
 Usage in vllm-ascend:
   - Instantiate TidalCacheManager at model init time
-  - Call alloc_layer() for each DSA layer during KV cache allocation
+  - Call alloc_layer() for each sparse attention layer (DSA/CSA only)
   - Call gather() in _forward_decode() after Lightning Indexer produces topk_idxs
 """
 
@@ -67,6 +71,7 @@ class TidalCacheManager:
         max_batch_size: int,
         dtype: torch.dtype,
         device: torch.device,
+        rope_dtype: torch.dtype | None = None,
     ):
         self.num_blocks = num_blocks
         self.block_size = block_size
@@ -75,6 +80,7 @@ class TidalCacheManager:
         self.index_topk = index_topk
         self.max_batch_size = max_batch_size
         self.dtype = dtype
+        self.rope_dtype = rope_dtype if rope_dtype is not None else dtype
         self.device = device
 
         self.layers: dict[str, LayerOffloadState] = {}
@@ -82,9 +88,9 @@ class TidalCacheManager:
 
         logger.info(
             "TidalCache init: blocks=%d, block_size=%d, kv_dim=%d, "
-            "rope_dim=%d, topk=%d, max_batch=%d, dtype=%s",
+            "rope_dim=%d, topk=%d, max_batch=%d, kv_dtype=%s, rope_dtype=%s",
             num_blocks, block_size, kv_dim, rope_dim,
-            index_topk, max_batch_size, dtype,
+            index_topk, max_batch_size, dtype, self.rope_dtype,
         )
 
     def _get_zero_copy(self):
@@ -144,9 +150,10 @@ class TidalCacheManager:
     # ── Per-Layer Allocation ──
 
     def alloc_layer(self, layer_name: str) -> LayerOffloadState:
-        """Allocate Host + Device buffers for one DSA layer.
+        """Allocate Host + Device buffers for one sparse attention layer.
 
-        Call this during _allocate_kv_cache_tensors() for each sparse layer.
+        Call this during _allocate_kv_cache_tensors() for each DSA/CSA layer.
+        HCA layers should NOT call this — they use dense attention.
         """
         if layer_name in self.layers:
             return self.layers[layer_name]
@@ -161,7 +168,7 @@ class TidalCacheManager:
         )
         host_rope, mmap_rope, fd_rope, path_rope = self._alloc_hugepage_tensor(
             [self.num_blocks, self.block_size, self.rope_dim],
-            self.dtype,
+            self.rope_dtype,
             f"{safe_name}_rope",
         )
 
@@ -182,7 +189,7 @@ class TidalCacheManager:
         )
         sel_rope = torch.zeros(
             sel_blocks, self.block_size, self.rope_dim,
-            dtype=self.dtype, device=self.device,
+            dtype=self.rope_dtype, device=self.device,
         )
         sel_block_table = torch.arange(
             sel_blocks, dtype=torch.int32, device=self.device,
