@@ -72,16 +72,11 @@ DSA_PATCHES = {
         "after",
     ),
 
-    "PATCH2_gather": (
-        # Anchor: after _update_indexcache_topk_indices, before attn_op
-        '''            if self.compress_ratio == 4 and self.use_index_cache:
-                self._update_indexcache_topk_indices(compress_topk_idxs, offset=0)
+}
 
-        attn_op = DeviceOperator.get_dsa_sparse_attn_op()''',
-
-        '''            if self.compress_ratio == 4 and self.use_index_cache:
-                self._update_indexcache_topk_indices(compress_topk_idxs, offset=0)
-
+# PATCH2: insert gather after _update_indexcache_topk_indices, before attn_op
+# Use regex to handle version differences (some versions have extra lines between)
+PATCH2_GATHER_CODE = '''
             # ── TidalCache: Sparse Host→Device Gather ──
             if self.kv_offload_enabled and self._tidalcache_mgr is not None:
                 B = hidden_states.shape[0]
@@ -93,34 +88,11 @@ DSA_PATCHES = {
                     full_q_actual_seq=actual_seq_lengths_query,
                 )
                 compress_kv_cache = sel_kv
+'''
 
-        attn_op = DeviceOperator.get_dsa_sparse_attn_op()''',
-        "replace",
-    ),
-}
-
-# PATCH3: scatter redirect — need to find the DECODE path's scatter
-# We match the unique context around the decode scatter
-DSA_PATCH3_ANCHOR = '''                q_quant, q_scale = DeviceOperator.indexer_quantize_query(indexer_q)
-
-            # A zero-row compressor output has no KV writes. Skip scatter
-            # instead of passing None; A5 scatter dereferences x.view().
-            if compressed_kv.shape[0] > 0:
-                DeviceOperator.dsa_kv_compress_scatter(compress_kv_cache, compressed_kv, compress_slot_mapping)'''
-
-DSA_PATCH3_REPLACE = '''                q_quant, q_scale = DeviceOperator.indexer_quantize_query(indexer_q)
-
-            # A zero-row compressor output has no KV writes. Skip scatter
-            # instead of passing None; A5 scatter dereferences x.view().
-            if compressed_kv.shape[0] > 0:
-                # ── TidalCache: scatter to Host NPU view ──
-                if self.kv_offload_enabled and self._tidalcache_mgr is not None:
-                    host_kv = self._tidalcache_mgr.layers[layer_name].npu_kv_cache
-                    DeviceOperator.dsa_kv_compress_scatter(host_kv, compressed_kv, compress_slot_mapping)
-                else:
-                    DeviceOperator.dsa_kv_compress_scatter(compress_kv_cache, compressed_kv, compress_slot_mapping)'''
-
-DSA_PATCHES["PATCH3_scatter"] = (DSA_PATCH3_ANCHOR, DSA_PATCH3_REPLACE, "replace")
+# PATCH3: scatter redirect — replace dsa_kv_compress_scatter target
+# Use regex: find the scatter call with compress_kv_cache as first arg (decode path)
+# Capture the remaining args so the replacement preserves them exactly.
 
 # PATCH4: attn_op block_table replacement
 # Match the unique decode-path attn_op call
@@ -287,7 +259,90 @@ def main():
 
     # Patch dsa_v1.py
     print(f"\n--- {dsa_path} ---")
-    patch_file(dsa_path, DSA_PATCHES, dry_run=dry_run)
+    with open(dsa_path, "r") as f:
+        dsa_content = f.read()
+
+    if MARKER in dsa_content:
+        print("  SKIP (already patched)")
+    else:
+        # PATCH1, PATCH3, PATCH4 via string matching
+        for name, (anchor, insertion, mode) in DSA_PATCHES.items():
+            if anchor not in dsa_content:
+                print(f"  ERROR: anchor not found for {name}")
+                print(f"    Expected: {anchor[:80]}...")
+                sys.exit(1)
+            if mode == "after":
+                dsa_content = dsa_content.replace(anchor, anchor + insertion, 1)
+            elif mode == "replace":
+                dsa_content = dsa_content.replace(anchor, insertion, 1)
+            print(f"  {name}: OK")
+
+        # PATCH2: regex — insert gather code after _update_indexcache_topk_indices
+        # in the decode path, before attn_op. Handle extra lines between them.
+        p2_pattern = re.compile(
+            r'(            if self\.compress_ratio == 4 and self\.use_index_cache:\n'
+            r'                self\._update_indexcache_topk_indices\(compress_topk_idxs, offset=0\)\n)'
+            r'(\n(?:        [^\n]*\n)*?)'  # any lines between (same or lower indent)
+            r'(        attn_op = DeviceOperator\.get_dsa_sparse_attn_op\(\))'
+        )
+        m = p2_pattern.search(dsa_content)
+        if m is None:
+            print("  ERROR: PATCH2_gather regex not matched")
+            sys.exit(1)
+        dsa_content = (
+            dsa_content[:m.end(1)]
+            + PATCH2_GATHER_CODE
+            + m.group(2)
+            + m.group(3)
+            + dsa_content[m.end(3):]
+        )
+        print("  PATCH2_gather: OK")
+
+        # PATCH3: regex — replace scatter target with offload-aware branch
+        # Match scatter call where first arg is compress_kv_cache (decode path).
+        # Capture indent and remaining args (may be single-line or multi-line).
+        p3_pattern = re.compile(
+            r'( +)(DeviceOperator\.dsa_kv_compress_scatter\()'
+            r'\s*compress_kv_cache,\s*(.*?\))',
+            re.DOTALL,
+        )
+        m3 = p3_pattern.search(dsa_content)
+        if m3 is None:
+            print("  ERROR: PATCH3_scatter regex not matched")
+            sys.exit(1)
+        indent = m3.group(1)
+        # Normalize rest_args: collapse whitespace, extract just the args
+        rest_args_raw = m3.group(3)
+        # rest_args_raw is like "compressed_kv, compress_slot_mapping)" (with possible whitespace/newlines)
+        # Strip the trailing ) and normalize whitespace
+        args_inner = rest_args_raw.rstrip(")").strip()
+        # args_inner is now like "compressed_kv, compress_slot_mapping"
+        scatter = "DeviceOperator.dsa_kv_compress_scatter"
+        replacement = (
+            f"{indent}# ── TidalCache: scatter to Host NPU view ──\n"
+            f"{indent}if self.kv_offload_enabled and self._tidalcache_mgr is not None:\n"
+            f"{indent}    host_kv = self._tidalcache_mgr.layers[layer_name].npu_kv_cache\n"
+            f"{indent}    {scatter}(host_kv, {args_inner})\n"
+            f"{indent}else:\n"
+            f"{indent}    {scatter}(compress_kv_cache, {args_inner})"
+        )
+        dsa_content = (
+            dsa_content[:m3.start()]
+            + replacement
+            + dsa_content[m3.end():]
+        )
+        print("  PATCH3_scatter: OK")
+
+        if not dry_run:
+            bak = dsa_path + ".bak"
+            if not os.path.exists(bak):
+                shutil.copy2(dsa_path, bak)
+                print(f"  Backed up: {bak}")
+            with open(dsa_path, "w") as f:
+                f.write(dsa_content)
+            print(f"  Written: {dsa_path}")
+        else:
+            print("  (dry-run, not written)")
 
     # Patch model_runner_v1.py
     print(f"\n--- {mr_path} ---")
