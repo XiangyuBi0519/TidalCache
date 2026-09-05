@@ -74,26 +74,26 @@ DSA_PATCHES = {
 
 }
 
-# PATCH2: insert gather after _update_indexcache_topk_indices, before attn_op
-# Use regex to handle version differences (some versions have extra lines between)
+# PATCH2: insert gather BEFORE attn_op (outside use_index_cache if block)
+# Use regex to find attn_op line in the decode path
 PATCH2_GATHER_CODE = '''
-            # ── TidalCache: lazy init + Sparse Host→Device Gather ──
-            if self.kv_offload_enabled:
-                if self._tidalcache_mgr is None:
-                    import tidalcache as _tc
-                    self._tidalcache_mgr = _tc._GLOBAL_MANAGER
-                if self._tidalcache_mgr is not None:
-                    if layer_name not in self._tidalcache_mgr.layers:
-                        self._tidalcache_mgr.alloc_layer(layer_name)
-                    B = hidden_states.shape[0]
-                    sel_kv, sel_rope, sel_actual_seq = self._tidalcache_mgr.gather(
-                        layer_name=layer_name,
-                        topk_indices=compress_topk_idxs.view(B, 1, 1, self.index_topk),
-                        full_block_table=compressor_decode_metadata.block_table,
-                        full_actual_seq=actual_seq_lengths_key,
-                        full_q_actual_seq=actual_seq_lengths_query,
-                    )
-                    compress_kv_cache = sel_kv
+        # ── TidalCache: lazy init + Sparse Host→Device Gather ──
+        if self.kv_offload_enabled:
+            if self._tidalcache_mgr is None:
+                import tidalcache as _tc
+                self._tidalcache_mgr = _tc._GLOBAL_MANAGER
+            if self._tidalcache_mgr is not None:
+                if layer_name not in self._tidalcache_mgr.layers:
+                    self._tidalcache_mgr.alloc_layer(layer_name)
+                B = hidden_states.shape[0]
+                sel_kv, sel_rope, sel_actual_seq = self._tidalcache_mgr.gather(
+                    layer_name=layer_name,
+                    topk_indices=compress_topk_idxs.view(B, 1, 1, self.index_topk),
+                    full_block_table=compressor_decode_metadata.block_table,
+                    full_actual_seq=actual_seq_lengths_key,
+                    full_q_actual_seq=actual_seq_lengths_query,
+                )
+                compress_kv_cache = sel_kv
 '''
 
 # PATCH3: scatter redirect — replace dsa_kv_compress_scatter target
@@ -291,9 +291,8 @@ def main():
             print("  ERROR: PATCH2_gather regex not matched")
             sys.exit(1)
         dsa_content = (
-            dsa_content[:m.end(1)]
+            dsa_content[:m.start(3)]
             + PATCH2_GATHER_CODE
-            + m.group(2)
             + m.group(3)
             + dsa_content[m.end(3):]
         )
