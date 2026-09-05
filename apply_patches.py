@@ -237,15 +237,17 @@ def main():
 
     dsa_path = os.path.join(vllm_dir, "vllm_ascend/attention/dsa_v1.py")
     mr_path = os.path.join(vllm_dir, "vllm_ascend/worker/model_runner_v1.py")
+    dsa_cp_path = os.path.join(vllm_dir, "vllm_ascend/attention/context_parallel/dsa_cp.py")
 
     for p in [dsa_path, mr_path]:
         if not os.path.exists(p):
             print(f"ERROR: {p} not found")
             sys.exit(1)
+    has_dsa_cp = os.path.exists(dsa_cp_path)
 
     if action == "--rollback":
         print("=== TidalCache Rollback ===")
-        for p in [dsa_path, mr_path]:
+        for p in [dsa_path, mr_path, dsa_cp_path]:
             bak = p + ".bak"
             if os.path.exists(bak):
                 shutil.copy2(bak, p)
@@ -381,6 +383,129 @@ def main():
             print(f"  Written: {mr_path}")
         else:
             print("  (dry-run, not written)")
+
+    # Patch dsa_cp.py (V4 Context-Parallel path)
+    if has_dsa_cp:
+        print(f"\n--- {dsa_cp_path} ---")
+        with open(dsa_cp_path, "r") as f:
+            cp_content = f.read()
+
+        if MARKER in cp_content:
+            print("  SKIP (already patched)")
+        else:
+            # CP_PATCH1: init — add kv_offload attrs after index_topk assignment
+            cp1_anchor = "self.index_topk = self.indexer.index_topk"
+            if cp1_anchor not in cp_content:
+                print("  ERROR: CP_PATCH1 anchor not found")
+                sys.exit(1)
+            cp1_insert = cp1_anchor + '''
+
+            # ── TidalCache: KV offload ──
+            from tidalcache import TIDALCACHE_ENABLED
+            self.kv_offload_enabled = TIDALCACHE_ENABLED
+            self._tidalcache_mgr = None'''
+            cp_content = cp_content.replace(cp1_anchor, cp1_insert, 1)
+            print("  CP_PATCH1_init: OK")
+
+            # CP_PATCH2: gather — insert before attn_op in _forward
+            # Use the same anchor: attn_op = DeviceOperator.get_dsa_sparse_attn_op()
+            # But scope it to _forward by requiring notify_kv_cache_written before it
+            cp2_pattern = re.compile(
+                r'(        notify_kv_cache_written\(layer_name\)\n'
+                r'        record_attention_compute_start\(\)\n)'
+                r'(        attn_op = DeviceOperator\.get_dsa_sparse_attn_op\(\))'
+            )
+            m_cp2 = cp2_pattern.search(cp_content)
+            if m_cp2 is None:
+                print("  ERROR: CP_PATCH2 gather anchor not found")
+                sys.exit(1)
+            cp2_gather = '''
+        # ── TidalCache: lazy init + Sparse Host→Device Gather ──
+        if getattr(self, 'kv_offload_enabled', False):
+            if self._tidalcache_mgr is None:
+                import tidalcache as _tc
+                self._tidalcache_mgr = _tc._GLOBAL_MANAGER
+            if self._tidalcache_mgr is not None:
+                if layer_name not in self._tidalcache_mgr.layers:
+                    self._tidalcache_mgr.alloc_layer(layer_name)
+                _B = hidden_states.shape[0]
+                sel_kv, sel_rope, sel_actual_seq = self._tidalcache_mgr.gather(
+                    layer_name=layer_name,
+                    topk_indices=compress_topk_idxs.view(_B, 1, 1, self.index_topk),
+                    full_block_table=compressor_attn_metadata.req_metadata.block_table,
+                    full_actual_seq=local_seq_lengths_key,
+                    full_q_actual_seq=local_seq_lengths_query,
+                )
+                compress_kv_cache = sel_kv
+
+'''
+            cp_content = (
+                cp_content[:m_cp2.end(1)]
+                + cp2_gather
+                + m_cp2.group(2)
+                + cp_content[m_cp2.end(2):]
+            )
+            print("  CP_PATCH2_gather: OK")
+
+            # CP_PATCH3: scatter — replace scatter target
+            cp3_pattern = re.compile(
+                r'( +)(DeviceOperator\.dsa_kv_compress_scatter\()'
+                r'\s*compress_kv_cache,\s*(.*?\))',
+                re.DOTALL,
+            )
+            m_cp3 = cp3_pattern.search(cp_content)
+            if m_cp3 is None:
+                print("  ERROR: CP_PATCH3 scatter not found")
+                sys.exit(1)
+            cp3_indent = m_cp3.group(1)
+            cp3_args = m_cp3.group(3).rstrip(")").strip()
+            scatter = "DeviceOperator.dsa_kv_compress_scatter"
+            cp3_replace = (
+                f"{cp3_indent}# ── TidalCache: scatter to Host NPU view ──\n"
+                f"{cp3_indent}if getattr(self, 'kv_offload_enabled', False) and self._tidalcache_mgr is not None:\n"
+                f"{cp3_indent}    host_kv = self._tidalcache_mgr.layers[layer_name].npu_kv_cache\n"
+                f"{cp3_indent}    {scatter}(host_kv, {cp3_args})\n"
+                f"{cp3_indent}else:\n"
+                f"{cp3_indent}    {scatter}(compress_kv_cache, {cp3_args})"
+            )
+            cp_content = (
+                cp_content[:m_cp3.start()]
+                + cp3_replace
+                + cp_content[m_cp3.end():]
+            )
+            print("  CP_PATCH3_scatter: OK")
+
+            # CP_PATCH4: attn_op block_table replacement
+            cp4_anchor = "cmp_block_table=compressor_attn_metadata.req_metadata.block_table,"
+            if cp4_anchor not in cp_content:
+                print("  ERROR: CP_PATCH4 anchor not found")
+                sys.exit(1)
+            # Find the first occurrence (in compress_ratio == 4 branch)
+            cp4_pos = cp_content.index(cp4_anchor)
+            cp4_indent = "            "
+            cp4_replace = (
+                f"# ── TidalCache: use selection block_table ──\n"
+                f"{cp4_indent}cmp_block_table=(\n"
+                f"{cp4_indent}    self._tidalcache_mgr.layers[layer_name].sel_block_table[:hidden_states.shape[0]]\n"
+                f"{cp4_indent}    if getattr(self, 'kv_offload_enabled', False) and self._tidalcache_mgr is not None\n"
+                f"{cp4_indent}    else compressor_attn_metadata.req_metadata.block_table\n"
+                f"{cp4_indent}),"
+            )
+            cp_content = cp_content[:cp4_pos] + cp4_replace + cp_content[cp4_pos + len(cp4_anchor):]
+            print("  CP_PATCH4_attn_op: OK")
+
+            if not dry_run:
+                bak = dsa_cp_path + ".bak"
+                if not os.path.exists(bak):
+                    shutil.copy2(dsa_cp_path, bak)
+                    print(f"  Backed up: {bak}")
+                with open(dsa_cp_path, "w") as f:
+                    f.write(cp_content)
+                print(f"  Written: {dsa_cp_path}")
+            else:
+                print("  (dry-run, not written)")
+    else:
+        print(f"\n--- dsa_cp.py not found (V3-only mode) ---")
 
     print("\n=== Done ===")
     if not dry_run:
