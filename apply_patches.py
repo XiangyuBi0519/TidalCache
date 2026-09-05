@@ -77,17 +77,23 @@ DSA_PATCHES = {
 # PATCH2: insert gather after _update_indexcache_topk_indices, before attn_op
 # Use regex to handle version differences (some versions have extra lines between)
 PATCH2_GATHER_CODE = '''
-            # ── TidalCache: Sparse Host→Device Gather ──
-            if self.kv_offload_enabled and self._tidalcache_mgr is not None:
-                B = hidden_states.shape[0]
-                sel_kv, sel_rope, sel_actual_seq = self._tidalcache_mgr.gather(
-                    layer_name=layer_name,
-                    topk_indices=compress_topk_idxs.view(B, 1, 1, self.index_topk),
-                    full_block_table=compressor_decode_metadata.block_table,
-                    full_actual_seq=actual_seq_lengths_key,
-                    full_q_actual_seq=actual_seq_lengths_query,
-                )
-                compress_kv_cache = sel_kv
+            # ── TidalCache: lazy init + Sparse Host→Device Gather ──
+            if self.kv_offload_enabled:
+                if self._tidalcache_mgr is None:
+                    import tidalcache as _tc
+                    self._tidalcache_mgr = _tc._GLOBAL_MANAGER
+                if self._tidalcache_mgr is not None:
+                    if layer_name not in self._tidalcache_mgr.layers:
+                        self._tidalcache_mgr.alloc_layer(layer_name)
+                    B = hidden_states.shape[0]
+                    sel_kv, sel_rope, sel_actual_seq = self._tidalcache_mgr.gather(
+                        layer_name=layer_name,
+                        topk_indices=compress_topk_idxs.view(B, 1, 1, self.index_topk),
+                        full_block_table=compressor_decode_metadata.block_table,
+                        full_actual_seq=actual_seq_lengths_key,
+                        full_q_actual_seq=actual_seq_lengths_query,
+                    )
+                    compress_kv_cache = sel_kv
 '''
 
 # PATCH3: scatter redirect — replace dsa_kv_compress_scatter target
@@ -147,21 +153,20 @@ MR_PATCHES["PATCH1_init"] = (MR_PATCH1_ANCHOR, MR_PATCH1_INSERT + MR_PATCH1_ANCH
 # Anchor: "return kv_caches" at the end of initialize_kv_cache_tensors
 # We need a unique anchor — use the function's return + its next method def
 MR_PATCH2_CODE = '''
-        # ── TidalCache: allocate Host KV + Selection Cache ──
+        # ── TidalCache: create manager, layers allocated lazily in dsa_v1 ──
         _hf_cfg = getattr(self.model_config, 'hf_text_config', None)
         _has_topk = _hf_cfg is not None and hasattr(_hf_cfg, 'index_topk')
         if self.kv_offload_enabled and _has_topk:
             import torch as _torch
+            import tidalcache
             from tidalcache.offload_manager import TidalCacheManager
 
             hf_config = _hf_cfg
             index_topk = getattr(hf_config, 'index_topk', 512)
-            # V3: kv_lora_rank; V4: head_dim
             kv_dim = getattr(hf_config, 'kv_lora_rank', None)
             if kv_dim is None:
                 kv_dim = getattr(hf_config, 'head_dim', 512)
             qk_rope_head_dim = getattr(hf_config, 'qk_rope_head_dim', 64)
-            # Get block_size: try hf_config first, then kv_cache_config
             block_size = getattr(hf_config, 'compress_block_size', None)
             if block_size is None:
                 try:
@@ -170,9 +175,6 @@ MR_PATCH2_CODE = '''
                     block_size = _spec.block_size
                 except (AttributeError, IndexError, KeyError):
                     block_size = self.cache_config.block_size
-
-            # V4 CSA/HCA layer filtering via compress_ratios
-            compress_ratios = getattr(hf_config, 'compress_ratios', None)
 
             kv_dtype = self.model_config.dtype
             rope_dtype = self.model_config.dtype
@@ -191,36 +193,12 @@ MR_PATCH2_CODE = '''
                 device=self.device,
                 rope_dtype=rope_dtype,
             )
-
-            num_layers_allocated = 0
-            for layer_idx, layer_name in enumerate(kv_caches):
-                # Skip HCA layers (compress_ratio=128) and dense layers (0)
-                if compress_ratios is not None:
-                    if layer_idx < len(compress_ratios) and compress_ratios[
-                            layer_idx] not in (4,):
-                        continue
-
-                ctx = self.compilation_config.static_forward_context.get(
-                    layer_name)
-                if ctx is None:
-                    continue
-                dsa_attn = getattr(ctx, 'dsa_attn', None)
-                if dsa_attn is None:
-                    continue
-                impl = getattr(dsa_attn, 'impl', None)
-                if impl is None or not getattr(
-                        impl, 'kv_offload_enabled', False):
-                    continue
-
-                self._tidalcache_mgr.alloc_layer(layer_name)
-                impl._tidalcache_mgr = self._tidalcache_mgr
-                num_layers_allocated += 1
+            tidalcache._GLOBAL_MANAGER = self._tidalcache_mgr
 
             logger.info(
-                "TidalCache: initialized %d layers, topk=%d, blocks=%d, "
-                "kv_dim=%d, block_size=%d",
-                num_layers_allocated, index_topk,
-                kv_cache_config.num_blocks, kv_dim, block_size,
+                "TidalCache: manager created, topk=%d, blocks=%d, "
+                "kv_dim=%d, block_size=%d (layers allocated lazily)",
+                index_topk, kv_cache_config.num_blocks, kv_dim, block_size,
             )
 
 '''
