@@ -148,15 +148,31 @@ MR_PATCHES["PATCH1_init"] = (MR_PATCH1_ANCHOR, MR_PATCH1_INSERT + MR_PATCH1_ANCH
 # We need a unique anchor — use the function's return + its next method def
 MR_PATCH2_CODE = '''
         # ── TidalCache: allocate Host KV + Selection Cache ──
-        if self.kv_offload_enabled and self.use_sparse:
+        _hf_cfg = getattr(self.model_config, 'hf_text_config', None)
+        _has_topk = _hf_cfg is not None and hasattr(_hf_cfg, 'index_topk')
+        if self.kv_offload_enabled and _has_topk:
             import torch as _torch
             from tidalcache.offload_manager import TidalCacheManager
 
-            hf_config = self.model_config.hf_text_config
-            index_topk = getattr(hf_config, 'index_topk', 4)
-            kv_lora_rank = getattr(hf_config, 'kv_lora_rank', 512)
+            hf_config = _hf_cfg
+            index_topk = getattr(hf_config, 'index_topk', 512)
+            # V3: kv_lora_rank; V4: head_dim
+            kv_dim = getattr(hf_config, 'kv_lora_rank', None)
+            if kv_dim is None:
+                kv_dim = getattr(hf_config, 'head_dim', 512)
             qk_rope_head_dim = getattr(hf_config, 'qk_rope_head_dim', 64)
-            block_size = getattr(hf_config, 'compress_block_size', 64)
+            # Get block_size: try hf_config first, then kv_cache_config
+            block_size = getattr(hf_config, 'compress_block_size', None)
+            if block_size is None:
+                try:
+                    _grp = kv_cache_config.kv_cache_groups[0]
+                    _spec = list(_grp.kv_cache_spec.values())[0]
+                    block_size = _spec.block_size
+                except (AttributeError, IndexError, KeyError):
+                    block_size = self.cache_config.block_size
+
+            # V4 CSA/HCA layer filtering via compress_ratios
+            compress_ratios = getattr(hf_config, 'compress_ratios', None)
 
             kv_dtype = self.model_config.dtype
             rope_dtype = self.model_config.dtype
@@ -167,7 +183,7 @@ MR_PATCH2_CODE = '''
             self._tidalcache_mgr = TidalCacheManager(
                 num_blocks=kv_cache_config.num_blocks,
                 block_size=block_size,
-                kv_dim=kv_lora_rank,
+                kv_dim=kv_dim,
                 rope_dim=qk_rope_head_dim,
                 index_topk=index_topk,
                 max_batch_size=self.scheduler_config.max_num_seqs,
@@ -177,7 +193,13 @@ MR_PATCH2_CODE = '''
             )
 
             num_layers_allocated = 0
-            for layer_name in kv_caches:
+            for layer_idx, layer_name in enumerate(kv_caches):
+                # Skip HCA layers (compress_ratio=128) and dense layers (0)
+                if compress_ratios is not None:
+                    if layer_idx < len(compress_ratios) and compress_ratios[
+                            layer_idx] not in (4,):
+                        continue
+
                 ctx = self.compilation_config.static_forward_context.get(
                     layer_name)
                 if ctx is None:
@@ -195,9 +217,10 @@ MR_PATCH2_CODE = '''
                 num_layers_allocated += 1
 
             logger.info(
-                "TidalCache: initialized %d layers, topk=%d, blocks=%d",
+                "TidalCache: initialized %d layers, topk=%d, blocks=%d, "
+                "kv_dim=%d, block_size=%d",
                 num_layers_allocated, index_topk,
-                kv_cache_config.num_blocks,
+                kv_cache_config.num_blocks, kv_dim, block_size,
             )
 
 '''
