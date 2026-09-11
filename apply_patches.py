@@ -86,9 +86,10 @@ PATCH2_GATHER_CODE = '''
                 if layer_name not in self._tidalcache_mgr.layers:
                     self._tidalcache_mgr.alloc_layer(layer_name)
                 B = hidden_states.shape[0]
+                _local_topk = compress_topk_idxs.numel() // B
                 sel_kv, sel_rope, sel_actual_seq = self._tidalcache_mgr.gather(
                     layer_name=layer_name,
-                    topk_indices=compress_topk_idxs.view(B, 1, 1, self.index_topk),
+                    topk_indices=compress_topk_idxs.view(B, 1, 1, _local_topk),
                     full_block_table=compressor_decode_metadata.block_table,
                     full_actual_seq=actual_seq_lengths_key,
                     full_q_actual_seq=actual_seq_lengths_query,
@@ -429,9 +430,10 @@ def main():
                 if layer_name not in self._tidalcache_mgr.layers:
                     self._tidalcache_mgr.alloc_layer(layer_name)
                 _B = hidden_states.shape[0]
+                _local_topk = compress_topk_idxs.numel() // _B
                 sel_kv, sel_rope, sel_actual_seq = self._tidalcache_mgr.gather(
                     layer_name=layer_name,
-                    topk_indices=compress_topk_idxs.view(_B, 1, 1, self.index_topk),
+                    topk_indices=compress_topk_idxs.view(_B, 1, 1, _local_topk),
                     full_block_table=compressor_attn_metadata.req_metadata.block_table,
                     full_actual_seq=local_seq_lengths_key,
                     full_q_actual_seq=local_seq_lengths_query,
