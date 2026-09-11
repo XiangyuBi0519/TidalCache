@@ -84,6 +84,8 @@ PATCH2_GATHER_CODE = '''
                 self._tidalcache_mgr = _tc._GLOBAL_MANAGER
             if self._tidalcache_mgr is not None:
                 import torch as _torch
+                import logging as _logging
+                _tclog = _logging.getLogger("tidalcache")
                 B = hidden_states.shape[0]
                 _local_topk = compress_topk_idxs.numel() // B
                 if layer_name not in self._tidalcache_mgr.layers:
@@ -96,7 +98,6 @@ PATCH2_GATHER_CODE = '''
                     full_q_actual_seq=_torch.ones(B, dtype=_torch.int32, device=hidden_states.device),
                 )
                 # Copy gathered groups into compress_kv_cache at original positions.
-                # This preserves the 4D shape and block_size=128 that attn_op expects.
                 _cbs = self._tidalcache_mgr.compress_block_size  # 64
                 _gpb = compress_kv_cache.shape[1] // _cbs  # groups per block (128/64=2)
                 _bt_full = compressor_decode_metadata.block_table
@@ -114,6 +115,7 @@ PATCH2_GATHER_CODE = '''
                 if _src.shape[2:] != _trail:
                     _src = _src.view(_n, _cbs, *_trail)
                 _cmp64[_dst] = _src
+                _tclog.debug("[COPYBACK] %s B=%d aB=%d topk=%d dst_blocks=%d", layer_name, B, _aB, _local_topk, _n)
 '''
 
 # PATCH3: scatter redirect — replace dsa_kv_compress_scatter target
@@ -321,6 +323,7 @@ def main():
             f"{indent}if self.kv_offload_enabled and self._tidalcache_mgr is not None:\n"
             f"{indent}    host_kv = self._tidalcache_mgr.layers[layer_name].npu_kv_cache\n"
             f"{indent}    {scatter}(host_kv, {args_inner})\n"
+            f"{indent}    import logging as _logging; _logging.getLogger('tidalcache').debug('[SCATTER] %s → host_kv', layer_name)\n"
             f"{indent}else:\n"
             f"{indent}    {scatter}(compress_kv_cache, {args_inner})"
         )
@@ -423,6 +426,8 @@ def main():
                 self._tidalcache_mgr = _tc._GLOBAL_MANAGER
             if self._tidalcache_mgr is not None:
                 import torch as _torch
+                import logging as _logging
+                _tclog = _logging.getLogger("tidalcache")
                 _B = hidden_states.shape[0]
                 _local_topk = compress_topk_idxs.numel() // _B
                 if layer_name not in self._tidalcache_mgr.layers:
@@ -452,6 +457,7 @@ def main():
                 if _src.shape[2:] != _trail:
                     _src = _src.view(_n, _cbs, *_trail)
                 _cmp64[_dst] = _src
+                _tclog.debug("[COPYBACK-CP] %s B=%d aB=%d topk=%d dst_blocks=%d", layer_name, _B, _aB, _local_topk, _n)
 
 '''
             cp_content = (
@@ -480,6 +486,7 @@ def main():
                 f"{cp3_indent}if getattr(self, 'kv_offload_enabled', False) and self._tidalcache_mgr is not None:\n"
                 f"{cp3_indent}    host_kv = self._tidalcache_mgr.layers[layer_name].npu_kv_cache\n"
                 f"{cp3_indent}    {scatter}(host_kv, {cp3_args})\n"
+                f"{cp3_indent}    import logging as _logging; _logging.getLogger('tidalcache').debug('[SCATTER-CP] %s → host_kv', layer_name)\n"
                 f"{cp3_indent}else:\n"
                 f"{cp3_indent}    {scatter}(compress_kv_cache, {cp3_args})"
             )

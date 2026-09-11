@@ -289,6 +289,11 @@ class TidalCacheManager:
         topk = state.local_topk
         n_splits = len(state.sel_block_status_list)
 
+        logger.debug(
+            "[GATHER] %s batch=%d topk=%d splits=%d",
+            layer_name, batch_size, topk, n_splits,
+        )
+
         sel_actual_seq = None
         for s in range(n_splits):
             k_start = s * TOPK_SPLIT_NUM
@@ -313,6 +318,7 @@ class TidalCacheManager:
                 self.compress_block_size,
             )
 
+        logger.debug("[GATHER] %s done", layer_name)
         return state.sel_kv_cache, state.sel_k_rope, sel_actual_seq
 
     # ── Batch Lifecycle ──
