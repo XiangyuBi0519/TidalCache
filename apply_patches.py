@@ -168,14 +168,13 @@ MR_PATCH2_CODE = '''
             if kv_dim is None:
                 kv_dim = getattr(hf_config, 'head_dim', 512)
             qk_rope_head_dim = getattr(hf_config, 'qk_rope_head_dim', 64)
-            block_size = getattr(hf_config, 'compress_block_size', None)
-            if block_size is None:
-                try:
-                    _grp = kv_cache_config.kv_cache_groups[0]
-                    _spec = list(_grp.kv_cache_spec.values())[0]
-                    block_size = _spec.block_size
-                except (AttributeError, IndexError, KeyError):
-                    block_size = self.cache_config.block_size
+            compress_block_size = getattr(hf_config, 'compress_block_size', 64)
+            try:
+                _grp = kv_cache_config.kv_cache_groups[0]
+                _spec = list(_grp.kv_cache_spec.values())[0]
+                kv_block_size = _spec.block_size
+            except (AttributeError, IndexError, KeyError):
+                kv_block_size = self.cache_config.block_size
 
             kv_dtype = self.model_config.dtype
             rope_dtype = self.model_config.dtype
@@ -185,7 +184,7 @@ MR_PATCH2_CODE = '''
 
             self._tidalcache_mgr = TidalCacheManager(
                 num_blocks=kv_cache_config.num_blocks,
-                block_size=block_size,
+                block_size=kv_block_size,
                 kv_dim=kv_dim,
                 rope_dim=qk_rope_head_dim,
                 index_topk=index_topk,
@@ -193,13 +192,15 @@ MR_PATCH2_CODE = '''
                 dtype=kv_dtype,
                 device=self.device,
                 rope_dtype=rope_dtype,
+                compress_block_size=compress_block_size,
             )
             tidalcache._GLOBAL_MANAGER = self._tidalcache_mgr
 
             logger.info(
                 "TidalCache: manager created, topk=%d, blocks=%d, "
-                "kv_dim=%d, block_size=%d (layers allocated lazily)",
-                index_topk, kv_cache_config.num_blocks, kv_dim, block_size,
+                "kv_dim=%d, kv_block_size=%d, compress_block_size=%d",
+                index_topk, kv_cache_config.num_blocks, kv_dim,
+                kv_block_size, compress_block_size,
             )
 
 '''

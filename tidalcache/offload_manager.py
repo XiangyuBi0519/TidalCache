@@ -72,9 +72,11 @@ class TidalCacheManager:
         dtype: torch.dtype,
         device: torch.device,
         rope_dtype: torch.dtype | None = None,
+        compress_block_size: int = 64,
     ):
         self.num_blocks = num_blocks
         self.block_size = block_size
+        self.compress_block_size = compress_block_size
         self.kv_dim = kv_dim
         self.rope_dim = rope_dim
         self.index_topk = index_topk
@@ -87,9 +89,9 @@ class TidalCacheManager:
         self._zero_copy_npu = None
 
         logger.info(
-            "TidalCache init: blocks=%d, block_size=%d, kv_dim=%d, "
-            "rope_dim=%d, topk=%d, max_batch=%d, kv_dtype=%s, rope_dtype=%s",
-            num_blocks, block_size, kv_dim, rope_dim,
+            "TidalCache init: blocks=%d, block_size=%d, compress_block_size=%d, "
+            "kv_dim=%d, rope_dim=%d, topk=%d, max_batch=%d, kv_dtype=%s, rope_dtype=%s",
+            num_blocks, block_size, compress_block_size, kv_dim, rope_dim,
             index_topk, max_batch_size, dtype, self.rope_dtype,
         )
 
@@ -209,14 +211,14 @@ class TidalCacheManager:
             layer_name, host_kv.data_ptr(), npu_kv.data_ptr(), topk,
         )
 
-        # Device Selection Cache — sized by actual per-rank topk
+        # Device Selection Cache — uses compress_block_size (not KV block_size)
         sel_blocks = self.max_batch_size * topk
         sel_kv = torch.zeros(
-            sel_blocks, self.block_size, self.kv_dim,
+            sel_blocks, self.compress_block_size, self.kv_dim,
             dtype=self.dtype, device=self.device,
         )
         sel_rope = torch.zeros(
-            sel_blocks, self.block_size, self.rope_dim,
+            sel_blocks, self.compress_block_size, self.rope_dim,
             dtype=self.rope_dtype, device=self.device,
         )
         sel_block_table = torch.arange(
@@ -294,7 +296,7 @@ class TidalCacheManager:
             full_block_table,
             full_actual_seq,
             full_q_actual_seq,
-            self.block_size,
+            self.compress_block_size,
         )
 
         return state.sel_kv_cache, state.sel_k_rope, sel_actual_seq
