@@ -274,26 +274,14 @@ class TidalCacheManager:
         state = self.layers[layer_name]
         gw = self._get_gather_wrapper()
 
-        batch_size = topk_indices.shape[0]
+        # Use full_block_table B as canonical batch size — topk_indices may
+        # be padded (e.g. during graph capture warmup).
+        batch_size = full_block_table.shape[0]
+        topk_indices = topk_indices[:batch_size]
+        full_actual_seq = full_actual_seq[:batch_size]
+        full_q_actual_seq = full_q_actual_seq[:batch_size]
         sel_block_table = state.sel_block_table[:batch_size]
         sel_block_status = state.sel_block_status[:batch_size]
-
-        import sys
-        print(
-            f"[TidalCache gather] layer={layer_name} batch={batch_size}\n"
-            f"  sel_k_rope:       {state.sel_k_rope.shape} {state.sel_k_rope.dtype} {state.sel_k_rope.device}\n"
-            f"  sel_kv_cache:     {state.sel_kv_cache.shape} {state.sel_kv_cache.dtype} {state.sel_kv_cache.device}\n"
-            f"  sel_block_table:  {sel_block_table.shape} {sel_block_table.dtype} {sel_block_table.device}\n"
-            f"  sel_block_status: {sel_block_status.shape} {sel_block_status.dtype} {sel_block_status.device}\n"
-            f"  topk_indices:     {topk_indices.shape} {topk_indices.dtype} {topk_indices.device}\n"
-            f"  npu_k_rope:       {state.npu_k_rope.shape} {state.npu_k_rope.dtype} {state.npu_k_rope.device}\n"
-            f"  npu_kv_cache:     {state.npu_kv_cache.shape} {state.npu_kv_cache.dtype} {state.npu_kv_cache.device}\n"
-            f"  full_block_table: {full_block_table.shape} {full_block_table.dtype} {full_block_table.device}\n"
-            f"  full_actual_seq:  {full_actual_seq.shape} {full_actual_seq.dtype} {full_actual_seq.device}\n"
-            f"  full_q_actual:    {full_q_actual_seq.shape} {full_q_actual_seq.dtype} {full_q_actual_seq.device}\n"
-            f"  block_size:       {self.block_size}",
-            file=sys.stderr, flush=True,
-        )
 
         sel_actual_seq = gw.npu_gather_selection_kv_cache(
             state.sel_k_rope,
@@ -306,7 +294,7 @@ class TidalCacheManager:
             full_block_table,
             full_actual_seq,
             full_q_actual_seq,
-            self.block_size,  # topk_block_size = block_size = 64
+            self.block_size,
         )
 
         return state.sel_kv_cache, state.sel_k_rope, sel_actual_seq
