@@ -100,8 +100,19 @@ class TidalCacheManager:
         return self._zero_copy_npu
 
     def _get_gather_wrapper(self):
-        import gather_wrapper
-        return gather_wrapper
+        if not hasattr(self, '_gather_wrapper'):
+            import ctypes
+            cann = os.environ.get(
+                "ASCEND_TOOLKIT_HOME",
+                os.environ.get("ASCEND_HOME_PATH",
+                               "/usr/local/Ascend/cann-9.0.1"))
+            lib_path = os.path.join(
+                cann, "opp/vendors/customize/op_api/lib/libcust_opapi.so")
+            if os.path.exists(lib_path):
+                ctypes.CDLL(lib_path, mode=ctypes.RTLD_GLOBAL)
+            import gather_wrapper
+            self._gather_wrapper = gather_wrapper
+        return self._gather_wrapper
 
     # ── Host Hugepage Allocation ──
 
