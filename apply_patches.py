@@ -93,7 +93,7 @@ PATCH2_GATHER_CODE = '''
                     topk_indices=compress_topk_idxs.view(B, 1, 1, _local_topk),
                     full_block_table=compressor_decode_metadata.block_table,
                     full_actual_seq=actual_seq_lengths_key,
-                    full_q_actual_seq=actual_seq_lengths_query,
+                    full_q_actual_seq=_torch.ones(B, dtype=_torch.int32, device=hidden_states.device),
                 )
                 # Copy gathered groups into compress_kv_cache at original positions.
                 # This preserves the 4D shape and block_size=128 that attn_op expects.
@@ -432,7 +432,7 @@ def main():
                     topk_indices=compress_topk_idxs.view(_B, 1, 1, _local_topk),
                     full_block_table=compressor_attn_metadata.req_metadata.block_table,
                     full_actual_seq=local_seq_lengths_key,
-                    full_q_actual_seq=local_seq_lengths_query,
+                    full_q_actual_seq=_torch.ones(_B, dtype=_torch.int32, device=hidden_states.device),
                 )
                 # Copy gathered groups into compress_kv_cache at original positions.
                 _cbs = self._tidalcache_mgr.compress_block_size
