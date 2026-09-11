@@ -7,7 +7,7 @@ HUGEPAGE_PATH = os.environ.get("VLLM_DSA_OFFLOAD_HUGEPAGE_PATH", "/dev/hugepages
 _GLOBAL_MANAGER = None
 
 logger = logging.getLogger("tidalcache")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 logger.propagate = False
 _log_path = os.environ.get("TIDALCACHE_LOG", "tidalcache.log")
 _fh = logging.FileHandler(_log_path, mode="a")
