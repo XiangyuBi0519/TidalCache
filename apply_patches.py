@@ -83,51 +83,43 @@ PATCH2_GATHER_CODE = '''
                 import tidalcache as _tc
                 self._tidalcache_mgr = _tc._GLOBAL_MANAGER
             if self._tidalcache_mgr is not None:
+                import torch as _torch
                 B = hidden_states.shape[0]
                 _local_topk = compress_topk_idxs.numel() // B
                 if layer_name not in self._tidalcache_mgr.layers:
                     self._tidalcache_mgr.alloc_layer(layer_name, local_topk=_local_topk)
-                sel_kv, sel_rope, sel_actual_seq = self._tidalcache_mgr.gather(
+                _sel_kv, _sel_rope, _sel_actual_seq = self._tidalcache_mgr.gather(
                     layer_name=layer_name,
                     topk_indices=compress_topk_idxs.view(B, 1, 1, _local_topk),
                     full_block_table=compressor_decode_metadata.block_table,
                     full_actual_seq=actual_seq_lengths_key,
                     full_q_actual_seq=actual_seq_lengths_query,
                 )
-                compress_kv_cache = sel_kv
+                # Copy gathered groups into compress_kv_cache at original positions.
+                # This preserves the 4D shape and block_size=128 that attn_op expects.
+                _cbs = self._tidalcache_mgr.compress_block_size  # 64
+                _gpb = compress_kv_cache.shape[1] // _cbs  # groups per block (128/64=2)
+                _tidx = compress_topk_idxs.view(B, _local_topk)
+                _bseq = (_tidx // _gpb).long()
+                _goff = (_tidx % _gpb).long()
+                _cbt = compressor_decode_metadata.block_table[:B].long()
+                _pblk = _torch.gather(_cbt, 1, _bseq)
+                _dst = (_pblk * _gpb + _goff).view(-1)
+                _n = B * _local_topk
+                _trail = compress_kv_cache.shape[2:]
+                _cmp64 = compress_kv_cache.view(-1, _cbs, *_trail)
+                _src = _sel_kv[:_n]
+                if _src.shape[2:] != _trail:
+                    _src = _src.view(_n, _cbs, *_trail)
+                _cmp64[_dst] = _src
 '''
 
 # PATCH3: scatter redirect — replace dsa_kv_compress_scatter target
 # Use regex: find the scatter call with compress_kv_cache as first arg (decode path)
 # Capture the remaining args so the replacement preserves them exactly.
 
-# PATCH4: attn_op block_table replacement
-# Match the unique decode-path attn_op call
-DSA_PATCH4_ANCHOR = '''        elif self.compress_ratio == 4:
-            attn_output = attn_op(
-                q,
-                ori_kv=swa_kv_cache,
-                cmp_kv=compress_kv_cache,
-                cmp_sparse_indices=compress_topk_idxs,
-                ori_block_table=swa_decode_metadata.block_table,
-                cmp_block_table=compressor_decode_metadata.block_table,'''
-
-DSA_PATCH4_REPLACE = '''        elif self.compress_ratio == 4:
-            # ── TidalCache: use selection block_table ──
-            if self.kv_offload_enabled and self._tidalcache_mgr is not None:
-                _cmp_block_table = self._tidalcache_mgr.layers[
-                    layer_name].sel_block_table[:hidden_states.shape[0]]
-            else:
-                _cmp_block_table = compressor_decode_metadata.block_table
-            attn_output = attn_op(
-                q,
-                ori_kv=swa_kv_cache,
-                cmp_kv=compress_kv_cache,
-                cmp_sparse_indices=compress_topk_idxs,
-                ori_block_table=swa_decode_metadata.block_table,
-                cmp_block_table=_cmp_block_table,'''
-
-DSA_PATCHES["PATCH4_attn_op"] = (DSA_PATCH4_ANCHOR, DSA_PATCH4_REPLACE, "replace")
+# PATCH4: removed — with the copy-back approach, attn_op uses original
+# compress_kv_cache and block_table unchanged.
 
 
 # ═══════════════════════════════════════════
@@ -428,18 +420,34 @@ def main():
                 import tidalcache as _tc
                 self._tidalcache_mgr = _tc._GLOBAL_MANAGER
             if self._tidalcache_mgr is not None:
+                import torch as _torch
                 _B = hidden_states.shape[0]
                 _local_topk = compress_topk_idxs.numel() // _B
                 if layer_name not in self._tidalcache_mgr.layers:
                     self._tidalcache_mgr.alloc_layer(layer_name, local_topk=_local_topk)
-                sel_kv, sel_rope, sel_actual_seq = self._tidalcache_mgr.gather(
+                _sel_kv, _sel_rope, _sel_actual_seq = self._tidalcache_mgr.gather(
                     layer_name=layer_name,
                     topk_indices=compress_topk_idxs.view(_B, 1, 1, _local_topk),
                     full_block_table=compressor_attn_metadata.req_metadata.block_table,
                     full_actual_seq=local_seq_lengths_key,
                     full_q_actual_seq=local_seq_lengths_query,
                 )
-                compress_kv_cache = sel_kv
+                # Copy gathered groups into compress_kv_cache at original positions.
+                _cbs = self._tidalcache_mgr.compress_block_size
+                _gpb = compress_kv_cache.shape[1] // _cbs
+                _tidx = compress_topk_idxs.view(_B, _local_topk)
+                _bseq = (_tidx // _gpb).long()
+                _goff = (_tidx % _gpb).long()
+                _cbt = compressor_attn_metadata.req_metadata.block_table[:_B].long()
+                _pblk = _torch.gather(_cbt, 1, _bseq)
+                _dst = (_pblk * _gpb + _goff).view(-1)
+                _n = _B * _local_topk
+                _trail = compress_kv_cache.shape[2:]
+                _cmp64 = compress_kv_cache.view(-1, _cbs, *_trail)
+                _src = _sel_kv[:_n]
+                if _src.shape[2:] != _trail:
+                    _src = _src.view(_n, _cbs, *_trail)
+                _cmp64[_dst] = _src
 
 '''
             cp_content = (
@@ -478,24 +486,9 @@ def main():
             )
             print("  CP_PATCH3_scatter: OK")
 
-            # CP_PATCH4: attn_op block_table replacement
-            cp4_anchor = "cmp_block_table=compressor_attn_metadata.req_metadata.block_table,"
-            if cp4_anchor not in cp_content:
-                print("  ERROR: CP_PATCH4 anchor not found")
-                sys.exit(1)
-            # Find the first occurrence (in compress_ratio == 4 branch)
-            cp4_pos = cp_content.index(cp4_anchor)
-            cp4_indent = "            "
-            cp4_replace = (
-                f"# ── TidalCache: use selection block_table ──\n"
-                f"{cp4_indent}cmp_block_table=(\n"
-                f"{cp4_indent}    self._tidalcache_mgr.layers[layer_name].sel_block_table[:hidden_states.shape[0]]\n"
-                f"{cp4_indent}    if getattr(self, 'kv_offload_enabled', False) and self._tidalcache_mgr is not None\n"
-                f"{cp4_indent}    else compressor_attn_metadata.req_metadata.block_table\n"
-                f"{cp4_indent}),"
-            )
-            cp_content = cp_content[:cp4_pos] + cp4_replace + cp_content[cp4_pos + len(cp4_anchor):]
-            print("  CP_PATCH4_attn_op: OK")
+            # CP_PATCH4: removed — with copy-back approach, attn_op uses original
+            # compress_kv_cache and block_table unchanged.
+            print("  CP_PATCH4: SKIPPED (copy-back approach)")
 
             if not dry_run:
                 bak = dsa_cp_path + ".bak"
