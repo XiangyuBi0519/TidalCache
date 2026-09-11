@@ -107,10 +107,10 @@ class TidalCacheManager:
 
     def _alloc_hugepage_tensor(
         self, shape: list[int], dtype: torch.dtype, name: str
-    ) -> tuple[torch.Tensor, mmap.mmap, int, str]:
-        """Allocate a tensor on hugepage via mmap.
+    ) -> tuple[torch.Tensor, mmap.mmap | None, int, str]:
+        """Allocate a tensor on hugepage via mmap, fallback to pinned memory.
 
-        Returns (cpu_tensor, mmap_obj, fd, path).
+        Returns (cpu_tensor, mmap_obj_or_None, fd_or_-1, path_or_empty).
         """
         numel = 1
         for s in shape:
@@ -120,24 +120,35 @@ class TidalCacheManager:
         aligned_size = ((data_bytes + HUGEPAGE_SIZE - 1)
                         // HUGEPAGE_SIZE) * HUGEPAGE_SIZE
 
-        path = os.path.join(HUGEPAGE_PATH, f"tidalcache_{name}_{id(self)}")
-        fd = os.open(path, os.O_CREAT | os.O_RDWR, 0o600)
-        os.ftruncate(fd, aligned_size)
-        mmap_obj = mmap.mmap(
-            fd, aligned_size,
-            flags=mmap.MAP_SHARED,
-            prot=mmap.PROT_READ | mmap.PROT_WRITE,
-        )
-        tensor = torch.frombuffer(
-            mmap_obj, dtype=dtype, count=numel
-        ).view(shape)
-        tensor.zero_()
-
-        logger.info(
-            "Hugepage alloc: %s shape=%s bytes=%d aligned=%d path=%s",
-            name, shape, data_bytes, aligned_size, path,
-        )
-        return tensor, mmap_obj, fd, path
+        try:
+            path = os.path.join(HUGEPAGE_PATH, f"tidalcache_{name}_{id(self)}")
+            fd = os.open(path, os.O_CREAT | os.O_RDWR, 0o600)
+            os.ftruncate(fd, aligned_size)
+            mmap_obj = mmap.mmap(
+                fd, aligned_size,
+                flags=mmap.MAP_SHARED,
+                prot=mmap.PROT_READ | mmap.PROT_WRITE,
+            )
+            tensor = torch.frombuffer(
+                mmap_obj, dtype=dtype, count=numel
+            ).view(shape)
+            tensor.zero_()
+            logger.info(
+                "Hugepage alloc: %s shape=%s bytes=%d path=%s",
+                name, shape, data_bytes, path,
+            )
+            return tensor, mmap_obj, fd, path
+        except OSError as e:
+            logger.warning(
+                "Hugepage alloc failed for %s (%s), falling back to pinned memory",
+                name, e,
+            )
+            tensor = torch.zeros(shape, dtype=dtype, pin_memory=True)
+            logger.info(
+                "Pinned memory alloc: %s shape=%s bytes=%d",
+                name, shape, data_bytes,
+            )
+            return tensor, None, -1, ""
 
     def _register_npu(self, host_tensor: torch.Tensor) -> torch.Tensor:
         """Register host tensor to NPU MMU, return NPU view tensor."""
