@@ -190,14 +190,18 @@ class TidalCacheManager:
         topk = local_topk if local_topk is not None else self.index_topk
         safe_name = layer_name.replace(".", "_")
 
-        # Host Full KV Cache (hugepage)
+        # Host Full KV Cache (hugepage) — use compress_block_size so
+        # f_blk_size == s_blk_size as required by the CANN operator.
+        # Scale num_blocks to keep total token capacity identical.
+        host_num_blocks = self.num_blocks * (
+            self.block_size // self.compress_block_size)
         host_kv, mmap_kv, fd_kv, path_kv = self._alloc_hugepage_tensor(
-            [self.num_blocks, self.block_size, self.kv_dim],
+            [host_num_blocks, self.compress_block_size, self.kv_dim],
             self.dtype,
             f"{safe_name}_kv",
         )
         host_rope, mmap_rope, fd_rope, path_rope = self._alloc_hugepage_tensor(
-            [self.num_blocks, self.block_size, self.rope_dim],
+            [host_num_blocks, self.compress_block_size, self.rope_dim],
             self.rope_dtype,
             f"{safe_name}_rope",
         )
@@ -284,6 +288,23 @@ class TidalCacheManager:
         full_q_actual_seq = full_q_actual_seq[:batch_size]
         sel_block_table = state.sel_block_table[:batch_size]
         sel_block_status = state.sel_block_status[:batch_size]
+
+        import sys
+        print(
+            f"[TidalCache gather] layer={layer_name} B={batch_size}\n"
+            f"  sel_k_rope:       {state.sel_k_rope.shape} {state.sel_k_rope.dtype}\n"
+            f"  sel_kv_cache:     {state.sel_kv_cache.shape} {state.sel_kv_cache.dtype}\n"
+            f"  sel_block_table:  {sel_block_table.shape} {sel_block_table.dtype}\n"
+            f"  sel_block_status: {sel_block_status.shape} {sel_block_status.dtype}\n"
+            f"  topk_indices:     {topk_indices.shape} {topk_indices.dtype}\n"
+            f"  npu_k_rope:       {state.npu_k_rope.shape} {state.npu_k_rope.dtype}\n"
+            f"  npu_kv_cache:     {state.npu_kv_cache.shape} {state.npu_kv_cache.dtype}\n"
+            f"  full_block_table: {full_block_table.shape} {full_block_table.dtype}\n"
+            f"  full_actual_seq:  {full_actual_seq.shape} {full_actual_seq.dtype}\n"
+            f"  full_q_actual:    {full_q_actual_seq.shape} {full_q_actual_seq.dtype}\n"
+            f"  compress_blk_sz:  {self.compress_block_size}",
+            file=sys.stderr, flush=True,
+        )
 
         sel_actual_seq = gw.npu_gather_selection_kv_cache(
             state.sel_k_rope,
