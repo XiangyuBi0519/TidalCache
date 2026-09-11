@@ -171,15 +171,21 @@ class TidalCacheManager:
 
     # ── Per-Layer Allocation ──
 
-    def alloc_layer(self, layer_name: str) -> LayerOffloadState:
+    def alloc_layer(self, layer_name: str,
+                    local_topk: int | None = None) -> LayerOffloadState:
         """Allocate Host + Device buffers for one sparse attention layer.
 
         Call this during _allocate_kv_cache_tensors() for each DSA/CSA layer.
         HCA layers should NOT call this — they use dense attention.
+
+        Args:
+            local_topk: Actual per-rank topk (= index_topk // cp_size in CP
+                        mode). Defaults to self.index_topk for non-CP.
         """
         if layer_name in self.layers:
             return self.layers[layer_name]
 
+        topk = local_topk if local_topk is not None else self.index_topk
         safe_name = layer_name.replace(".", "_")
 
         # Host Full KV Cache (hugepage)
@@ -199,12 +205,12 @@ class TidalCacheManager:
         npu_rope = self._register_npu(host_rope)
 
         logger.info(
-            "Layer %s: host_kv ptr=0x%x → npu ptr=0x%x",
-            layer_name, host_kv.data_ptr(), npu_kv.data_ptr(),
+            "Layer %s: host_kv ptr=0x%x → npu ptr=0x%x (local_topk=%d)",
+            layer_name, host_kv.data_ptr(), npu_kv.data_ptr(), topk,
         )
 
-        # Device Selection Cache
-        sel_blocks = self.max_batch_size * self.index_topk
+        # Device Selection Cache — sized by actual per-rank topk
+        sel_blocks = self.max_batch_size * topk
         sel_kv = torch.zeros(
             sel_blocks, self.block_size, self.kv_dim,
             dtype=self.dtype, device=self.device,
@@ -215,9 +221,9 @@ class TidalCacheManager:
         )
         sel_block_table = torch.arange(
             sel_blocks, dtype=torch.int32, device=self.device,
-        ).view(self.max_batch_size, self.index_topk)
+        ).view(self.max_batch_size, topk)
         sel_block_status = torch.full(
-            (self.max_batch_size, 1, 1, self.index_topk + 1),
+            (self.max_batch_size, 1, 1, topk + 1),
             -1, dtype=torch.int32, device=self.device,
         )
 

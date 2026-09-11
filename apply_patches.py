@@ -83,10 +83,10 @@ PATCH2_GATHER_CODE = '''
                 import tidalcache as _tc
                 self._tidalcache_mgr = _tc._GLOBAL_MANAGER
             if self._tidalcache_mgr is not None:
-                if layer_name not in self._tidalcache_mgr.layers:
-                    self._tidalcache_mgr.alloc_layer(layer_name)
                 B = hidden_states.shape[0]
                 _local_topk = compress_topk_idxs.numel() // B
+                if layer_name not in self._tidalcache_mgr.layers:
+                    self._tidalcache_mgr.alloc_layer(layer_name, local_topk=_local_topk)
                 sel_kv, sel_rope, sel_actual_seq = self._tidalcache_mgr.gather(
                     layer_name=layer_name,
                     topk_indices=compress_topk_idxs.view(B, 1, 1, _local_topk),
@@ -427,10 +427,10 @@ def main():
                 import tidalcache as _tc
                 self._tidalcache_mgr = _tc._GLOBAL_MANAGER
             if self._tidalcache_mgr is not None:
-                if layer_name not in self._tidalcache_mgr.layers:
-                    self._tidalcache_mgr.alloc_layer(layer_name)
                 _B = hidden_states.shape[0]
                 _local_topk = compress_topk_idxs.numel() // _B
+                if layer_name not in self._tidalcache_mgr.layers:
+                    self._tidalcache_mgr.alloc_layer(layer_name, local_topk=_local_topk)
                 sel_kv, sel_rope, sel_actual_seq = self._tidalcache_mgr.gather(
                     layer_name=layer_name,
                     topk_indices=compress_topk_idxs.view(_B, 1, 1, _local_topk),
