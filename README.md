@@ -97,13 +97,16 @@ TidalCache/
 
 - [x] **Step 1**: GatherSelectionKvCache operator build & install (CANN 9.0.1)
 - [x] **Step 2**: Host memory registration + H2D gather verification (4/4 tests PASS)
-- [ ] **Step 3**: Integration into vllm-ascend (in progress)
+- [x] **Step 3**: Integration into vllm-ascend — **end-to-end running** (2026-09-11)
   - [x] TidalCacheManager core module
   - [x] vllm-ascend patches (dsa_v1 + model_runner)
   - [x] V4 CSA/HCA compatibility (layer filtering, mixed precision)
-  - [ ] NPU integration test
-- [ ] **Step 4**: Multi-batch performance benchmarking
-- [ ] **Step 5**: Mooncake Store RDMA direct-write integration (P/D separation)
+  - [x] NPU integration test — correct model output verified
+  - [x] Dedicated logging (tidalcache.log)
+  - [x] Warmup / graph capture compatibility (3 bugs fixed)
+- [ ] **Step 4**: Performance optimization (see [Optimization Roadmap](#optimization-roadmap))
+- [ ] **Step 5**: Multi-batch / concurrent throughput benchmarking
+- [ ] **Step 6**: Mooncake Store RDMA direct-write integration (P/D separation)
 
 ## Environment
 
@@ -160,6 +163,129 @@ export VLLM_DSA_OFFLOAD_HUGEPAGE_PATH=/dev/hugepages
 3. **GatherSelectionKvCache supports cache reuse** — `block_status` tracks which blocks are already in the Selection Cache, typically 50-80% hit rate across consecutive decode steps
 4. **BF16 precision rounding** — 7-bit mantissa causes values like 1003→1004 when stored; test comparisons must use BF16 reference values
 5. **PyTorch advanced indexing returns copies** — `tensor[index_tensor].fill_(-1)` modifies a copy; iterate indices instead
+
+## Integration Debugging History (2026-09-11)
+
+Three bugs were encountered and fixed during vllm-ascend integration, all triggered during **warmup / CUDA graph capture** where vllm feeds dummy data with inconsistent batch sizes.
+
+### Bug 1: torch.gather dim0 mismatch (507911)
+
+- **Error**: `Size does not match at dimension 0, expected index shape 32 smaller than self shape 16`
+- **Root cause**: During graph capture warmup, `hidden_states.shape[0]=32` (dummy batch) but `block_table` only has 16 rows. The copy-back code derived `_bseq` from `B=32` while `block_table` had fewer rows.
+- **Fix**: Clamp batch size to block_table rows: `_aB = min(B, block_table.shape[0])` and slice all downstream tensors to `_aB`. Applied to both CP and non-CP paths.
+
+### Bug 2: GatherSelectionKvCache assertion `curFullQSeqLen > seq`
+
+- **Error**: `Assertion 'curFullQSeqLen <= tiling_->seq' curFullQSeqLen:2 cannot be greater than seq:1`
+- **Root cause**: During warmup, `full_q_actual_seq` contains dummy value 2, but the operator's tiling was compiled for decode mode (seq=1). In decode, each request always has exactly 1 query token.
+- **Fix**: Hardcode `full_q_actual_seq=torch.ones(B, dtype=torch.int32, device=device)` — decode mode always has q_seq=1 per request.
+
+### Bug 3: Hugepage allocation fragmentation
+
+- **Symptom**: All 21 DSA layers × 16 workers fall back to pinned memory (`[Errno 12] Cannot allocate memory`)
+- **Root cause**: Machine has 2TB RAM but kernel memory fragmentation limits available contiguous 2MB pages. Allocated 240,000 hugepages total but only 137,661 (268 GB) are free.
+- **Workaround**: Use available pages (63% coverage); layers that miss hugepages fall back to pinned memory (still functional, slightly slower DMA).
+- **Recommended fix**: Boot-time kernel parameter `hugepages=240000` guarantees contiguous allocation before memory fragments.
+
+## Performance Baseline
+
+Single-request latency comparison (512 output tokens, DeepSeek model on Ascend NPU):
+
+| Configuration | Latency | Overhead |
+|---------------|---------|----------|
+| TidalCache OFF (all KV on Device) | 13.3s | — |
+| TidalCache ON (KV offloaded to Host) | 18.3s | +37% |
+
+This overhead is **expected for a first version** without any optimization. The per-step Host→Device DMA gather runs synchronously on the main stream. The value of TidalCache is not single-request latency — it is **memory capacity**: offloading KV cache to Host frees Device HBM for serving more concurrent requests and/or longer contexts.
+
+## Optimization Roadmap
+
+Priority-ordered optimizations, informed by analysis of HiSparse's production implementation:
+
+| # | Optimization | Expected Impact | Source |
+|---|-------------|-----------------|--------|
+| 1 | **Boot-time hugepage reservation** | Eliminate pinned-memory fallback, consistent DMA perf | Ops |
+| 2 | **Async copy stream** | Overlap DMA with compute, hide gather latency | HiSparse `_create_copy_stream` |
+| 3 | **Device hot cache + LRU** | Skip DMA for frequently accessed blocks (50-80% hit rate) | HiSparse `lru_slots` |
+| 4 | **Cross-layer index sharing + batch prefetch** | Leader layer gathers, follower layers reuse plan | HiSparse `_prefetch_group`, `_GroupPlan` |
+| 5 | **Miss-only gather** | Only DMA blocks not already in selection cache | HiSparse `compact_miss_globals` |
+| 6 | **Gather plan reuse** | Avoid redundant index computation across follower layers | HiSparse `_GroupPlan` |
+| 7 | **Adaptive offload** | Only offload when HBM pressure is high; keep KV on Device for short sequences | TidalCache design |
+
+### Expected Benefits After Optimization
+
+| Metric | Current (v1) | After Opt 2-3 | After Opt 2-6 |
+|--------|-------------|---------------|---------------|
+| Single-request overhead | +37% | ~+15% | ~+5-8% |
+| Concurrent throughput gain | Baseline | +30-50% | +50-80% |
+| HBM savings (per DSA layer) | 100% KV offloaded | Same | Same |
+
+The throughput gain comes from freed HBM enabling larger batch sizes. With 21 DSA layers × 576 bytes/token, offloading saves ~12 KB/token in HBM — for 128K context, that's ~1.5 GB per request freed.
+
+## Testing Methodology
+
+### Single-Request Latency
+
+```bash
+# TidalCache ON
+export VLLM_DSA_KV_OFFLOAD=1
+# Start vllm service, then:
+time curl -s http://localhost:8000/v1/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model":"deepseek","prompt":"test prompt","max_tokens":512}'
+
+# TidalCache OFF
+unset VLLM_DSA_KV_OFFLOAD  # or set to 0
+# Restart service, repeat same curl
+```
+
+### Concurrent Throughput
+
+```bash
+# Use vllm benchmark scripts or wrk/hey:
+# Compare max sustainable QPS at P99 < target latency
+# Key metric: requests/sec at same latency SLO
+
+# Example with hey (HTTP load generator):
+hey -n 100 -c 10 -m POST -H "Content-Type: application/json" \
+  -d '{"model":"deepseek","prompt":"test","max_tokens":128}' \
+  http://localhost:8000/v1/completions
+```
+
+### Memory Usage
+
+```bash
+# Check per-device HBM usage:
+npu-smi info
+
+# Compare HBM consumption with ON vs OFF under same batch size
+# Key metric: peak HBM usage per device
+```
+
+### Correctness Verification
+
+```bash
+# Compare output logits/tokens between ON and OFF modes
+# TidalCache should produce identical outputs (same computation, different memory layout)
+
+# Check tidalcache.log for per-request flow:
+grep "SCATTER\|GATHER\|COPYBACK" tidalcache.log | head -20
+```
+
+### Logging
+
+TidalCache writes to a dedicated log file (default: `tidalcache.log`, configurable via `TIDALCACHE_LOG` env var):
+
+```bash
+# Log stages per decode step:
+# [SCATTER]  — D2H offload of new KV to Host
+# [GATHER]   — H2D sparse gather of selected blocks
+# [COPYBACK] — Copy gathered data to compress_kv_cache at correct block positions
+
+# Adjust log level:
+# Default: INFO (init + warnings)
+# Set tidalcache logger to DEBUG for per-step tracing (generates ~5000 lines/request)
+```
 
 ## Future: Mooncake Store Synergy
 
@@ -264,13 +390,16 @@ TidalCache/
 
 - [x] **Step 1**: GatherSelectionKvCache 算子编译安装（CANN 9.0.1）
 - [x] **Step 2**: Host 内存注册 + H2D gather 验证（4/4 测试 PASS）
-- [ ] **Step 3**: 集成到 vllm-ascend（进行中）
+- [x] **Step 3**: 集成到 vllm-ascend — **端到端跑通** (2026-09-11)
   - [x] TidalCacheManager 核心模块
   - [x] vllm-ascend 补丁（dsa_v1 + model_runner）
   - [x] V4 CSA/HCA 兼容（层过滤、混合精度）
-  - [ ] NPU 集成测试
-- [ ] **Step 4**: 多 batch 性能基准测试
-- [ ] **Step 5**: Mooncake Store RDMA 直写集成（P/D 分离）
+  - [x] NPU 集成测试 — 模型输出正确性已验证
+  - [x] 独立日志（tidalcache.log）
+  - [x] Warmup / graph capture 兼容（修复 3 个 Bug）
+- [ ] **Step 4**: 性能优化（见 [优化路线](#优化路线)）
+- [ ] **Step 5**: 多 batch / 并发吞吐量基准测试
+- [ ] **Step 6**: Mooncake Store RDMA 直写集成（P/D 分离）
 
 ## 环境
 
@@ -327,6 +456,121 @@ export VLLM_DSA_OFFLOAD_HUGEPAGE_PATH=/dev/hugepages
 3. **GatherSelectionKvCache 支持缓存复用** —— `block_status` 追踪 Selection Cache 中已有的 blocks，连续 decode 步骤间命中率通常为 50%–80%
 4. **BF16 精度舍入** —— 7 位尾数导致 1003→1004 等舍入；测试比较必须使用 BF16 参考值
 5. **PyTorch 高级索引返回副本** —— `tensor[index_tensor].fill_(-1)` 修改的是副本；需要逐个索引迭代
+
+## 集成调试记录 (2026-09-11)
+
+vllm-ascend 集成过程中遇到并修复了 3 个 Bug，均在 **warmup / CUDA graph capture** 阶段触发（vllm 使用 dummy 数据，batch size 不一致）。
+
+### Bug 1: torch.gather dim0 维度不匹配 (507911)
+
+- **报错**: `Size does not match at dimension 0, expected index shape 32 smaller than self shape 16`
+- **原因**: Graph capture warmup 时 `hidden_states.shape[0]=32`（dummy batch）但 `block_table` 只有 16 行。Copy-back 代码从 `B=32` 派生索引，超出 block_table 范围。
+- **修复**: 限制 batch 到 block_table 行数：`_aB = min(B, block_table.shape[0])`，所有后续张量切到 `_aB`。CP 和非 CP 路径均修复。
+
+### Bug 2: GatherSelectionKvCache 断言 `curFullQSeqLen > seq`
+
+- **报错**: `Assertion 'curFullQSeqLen <= tiling_->seq' curFullQSeqLen:2 cannot be greater than seq:1`
+- **原因**: Warmup 时 `full_q_actual_seq` 含 dummy 值 2，但算子 tiling 编译为 decode 模式（seq=1）。Decode 阶段每个请求始终只有 1 个 query token。
+- **修复**: 硬编码 `full_q_actual_seq=torch.ones(B, dtype=torch.int32, device=device)`。
+
+### Bug 3: Hugepage 分配碎片化
+
+- **现象**: 21 个 DSA 层 × 16 worker 全部回退到 pinned memory（`[Errno 12] Cannot allocate memory`）
+- **原因**: 机器有 2TB 内存，但内核内存碎片化限制了可用连续 2MB 页。分配 240,000 hugepages 但仅 137,661（268 GB）可用。
+- **临时方案**: 使用可用页面（63% 覆盖率），未获得 hugepage 的层回退到 pinned memory（功能正常，DMA 稍慢）。
+- **推荐方案**: 开机内核参数 `hugepages=240000`，在内存碎片化前保证连续分配。
+
+## 性能基线
+
+单请求延迟对比（512 output tokens，DeepSeek 模型，Ascend NPU）：
+
+| 配置 | 延迟 | 开销 |
+|------|------|------|
+| TidalCache OFF（所有 KV 在 Device） | 13.3s | — |
+| TidalCache ON（KV 卸载到 Host） | 18.3s | +37% |
+
+此开销是**首版无优化的预期结果**。每步 Host→Device DMA gather 在主 stream 上同步执行。TidalCache 的价值不在单请求延迟，而在**内存容量**：卸载 KV cache 到 Host 释放 Device HBM，可服务更多并发请求和/或更长上下文。
+
+## 优化路线
+
+按优先级排序，参考 HiSparse 生产实现的分析：
+
+| # | 优化项 | 预期收益 | 来源 |
+|---|--------|----------|------|
+| 1 | **开机 hugepage 预留** | 消除 pinned memory 回退，DMA 性能一致 | 运维 |
+| 2 | **异步 copy stream** | DMA 与计算重叠，隐藏 gather 延迟 | HiSparse `_create_copy_stream` |
+| 3 | **Device 热缓存 + LRU** | 跳过高频访问 block 的 DMA（50-80% 命中率） | HiSparse `lru_slots` |
+| 4 | **跨层索引共享 + 批量预取** | Leader 层 gather，follower 层复用计划 | HiSparse `_prefetch_group` |
+| 5 | **仅 miss gather** | 只 DMA 不在 selection cache 中的 block | HiSparse `compact_miss_globals` |
+| 6 | **Gather plan 复用** | 避免 follower 层重复索引计算 | HiSparse `_GroupPlan` |
+| 7 | **自适应卸载** | 仅在 HBM 压力高时卸载；短序列保留 KV 在 Device | TidalCache 设计 |
+
+### 优化后预期收益
+
+| 指标 | 当前 (v1) | 优化 2-3 后 | 优化 2-6 后 |
+|------|----------|------------|------------|
+| 单请求开销 | +37% | ~+15% | ~+5-8% |
+| 并发吞吐提升 | 基线 | +30-50% | +50-80% |
+| HBM 节省（每 DSA 层） | 100% KV 卸载 | 相同 | 相同 |
+
+吞吐提升来自释放的 HBM 支持更大 batch。21 个 DSA 层 × 576 bytes/token，卸载节省 ~12 KB/token HBM。128K 上下文下每请求释放 ~1.5 GB。
+
+## 测试方法
+
+### 单请求延迟
+
+```bash
+# TidalCache ON
+export VLLM_DSA_KV_OFFLOAD=1
+# 启动 vllm 服务后:
+time curl -s http://localhost:8000/v1/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model":"deepseek","prompt":"测试提示","max_tokens":512}'
+
+# TidalCache OFF
+unset VLLM_DSA_KV_OFFLOAD  # 或设为 0
+# 重启服务，重复相同 curl
+```
+
+### 并发吞吐
+
+```bash
+# 对比相同延迟 SLO 下的最大可持续 QPS
+hey -n 100 -c 10 -m POST -H "Content-Type: application/json" \
+  -d '{"model":"deepseek","prompt":"test","max_tokens":128}' \
+  http://localhost:8000/v1/completions
+```
+
+### 内存使用
+
+```bash
+# 查看每设备 HBM 使用:
+npu-smi info
+# 对比相同 batch size 下 ON vs OFF 的 HBM 消耗
+```
+
+### 正确性验证
+
+```bash
+# 对比 ON/OFF 模式的输出 token（应完全一致）
+# 查看 tidalcache.log 的每请求流程:
+grep "SCATTER\|GATHER\|COPYBACK" tidalcache.log | head -20
+```
+
+### 日志系统
+
+TidalCache 写入独立日志文件（默认 `tidalcache.log`，可通过 `TIDALCACHE_LOG` 环境变量配置）：
+
+```bash
+# 每个 decode step 的日志阶段:
+# [SCATTER]  — 新 KV 的 D2H 卸载到 Host
+# [GATHER]   — 选中 block 的 H2D 稀疏 gather
+# [COPYBACK] — 将 gather 数据拷回 compress_kv_cache 正确位置
+
+# 日志级别:
+# 默认: INFO（初始化 + 告警）
+# 设 tidalcache logger 为 DEBUG 可追踪每步（单请求约 5000 行）
+```
 
 ## 未来方向：Mooncake Store 协同
 

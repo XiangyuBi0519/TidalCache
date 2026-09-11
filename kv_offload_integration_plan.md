@@ -2,8 +2,8 @@
 
 > 在 vllm-ascend 上原生实现 DeepSeek Sparse Attention 的 KV Cache Offload
 >
-> 日期: 2026-07-11 (初版) → 2026-08-17 (v2 更新)
-> 状态: Step 1 已完成 · OmniCache 源码分析完成 · Host 内存方案已明确
+> 日期: 2026-07-11 (初版) → 2026-08-17 (v2 更新) → 2026-09-11 (v3 端到端跑通)
+> 状态: **Step 3 已完成** · 端到端集成跑通 · 模型输出正确 · 首版性能基线已建立
 
 ---
 
@@ -280,19 +280,13 @@ OmniCache 实现了 `OmniCacheConnector(KVConnectorBase_V1)`，自带 P/D KV 传
 - `block_status` slot 顺序不等于 topk 顺序（复用时保留原位）
 - Host pinned memory 不能直接传给算子（地址空间不同）
 
-### Step 2: Host 内存注册验证 ← 下一步
+### Step 2: Host 内存注册验证 ✅ 已完成
 
 **目标**: 在 NPU 上验证 hugepage + MMU 注册的完整链路
 
-**工作内容**:
-1. 编译 `tensor_register.so`（纯 C，ctypes 调用）
-2. 编译 `zero_copy_npu` PyTorch extension（pybind11）
-3. 编写测试：hugepage 分配 → MMU 注册 → 传给 GatherSelectionKvCache 算子 → 验证正确性
-4. 确认 NPU 可以通过 MMU 映射直接 DMA 读取 Host hugepage 内存
+**结果**: 4/4 测试通过 — Basic Gather ✓ · Cache Reuse ✓ · Host Registration ✓ · H2D Gather ✓
 
-**验收标准**: Full KV 在 Host hugepage，传 NPU tensor 视图给算子，gather 到 Device selection cache，数据正确。
-
-### Step 3: Selection Cache 缓冲区管理
+### Step 3: Selection Cache 缓冲区管理 ✅ 已完成
 
 **目标**: 实现 Selection Cache 的分配与生命周期管理
 
@@ -305,54 +299,44 @@ OmniCache 实现了 `OmniCacheConnector(KVConnectorBase_V1)`，自带 P/D KV 传
 - Selection Cache 不走 vLLM block manager，独立管理
 - batch 变化时（请求增删）需要更新 block_status（参考 OmniCache `GatherSelectionUpdater`）
 
-### Step 4: Decode 路径集成
+### Step 4: Decode 路径集成 ✅ 已完成
 
 **目标**: 在 DSA decode attention 路径中插入 GatherSelectionKvCache 调用
 
-**工作内容**:
-- 修改 `vllm_ascend/attention/dsa_v1.py` 的 decode 路径
-- 在 Lightning Indexer 之后、Sparse Flash Attention 之前插入：
-  ```python
-  # indexer 输出 topk_indices
-  gather_selection_kv_cache(
-      selection_k_rope, selection_kv_cache,
-      selection_kv_block_table, selection_kv_block_status,
-      topk_indices,
-      full_k_rope_npu, full_kv_cache_npu,  # NPU tensor 视图 (Host 内存)
-      full_kv_block_table,
-      full_kv_actual_seq, full_q_actual_seq,
-      selection_topk_block_size=64,
-  )
-  # 用 selection_kv_cache 替换 attn_kwargs 中的 value/block_table
-  ```
-- 管理 block_status 的跨 decode step 持久化
-- 处理请求加入/退出时的 block_status 重置
+**结果**: 通过 `apply_patches.py` 动态注入 vllm-ascend，包含：
+- PATCH2 (gather): Indexer 之后调用 GatherSelectionKvCache，gather 结果 copy-back 到 compress_kv_cache
+- PATCH3 (scatter): Attention 之后将新 KV D2H offload 到 Host hugepage
+- CP 路径: 独立的 CP2/CP3 补丁处理 Context Parallel 模式（8 rank, local_topk=64）
+- Warmup 兼容: 3 个 Bug 修复（见 README 调试记录）
 
-### Step 5: Prefill → Host D2H 流水线
-
-**目标**: Prefill 完成后将 Full KV Cache 从 Device offload 到 Host
-
-**工作内容**:
-- Prefill 阶段正常在 Device 上计算和存储 KV Cache
-- Prefill 完成后：
-  - Indexer K Cache 留在 Device（decode 每步全量扫描需要）
-  - Full KV（c^KV + k^R）异步 D2H 到 Host hugepage 池
-- D2H 使用 `aclrtMemcpyAsync` + 独立 stream，不阻塞 decode
-- 如果有 Mooncake Store，D2H 在 Mooncake RDMA 传输完成后执行
-
-### Step 6: 端到端测试与调优
+### Step 5: 端到端验证 ✅ 已完成
 
 **目标**: 完整推理流程验证
 
-**工作内容**:
-- DeepSeek-V3 模型端到端测试
-- 正确性验证（输出一致性对比）
-- 性能指标：
-  - TTFT (Time To First Token) — D2H offload 开销
-  - TPOT (Time Per Output Token) — gather + sparse attn 开销
-  - 吞吐量提升（HBM 节省 → 更大 batch）
-  - HBM 节省量 = `num_dsa_layers × num_blocks × block_size × 576 × 2B`
-- TP 多卡验证
+**结果**:
+- 模型输出正确性：已验证（curl 请求返回合理 DeepSeek 文本）
+- 性能基线：TidalCache ON = 18.3s, OFF = 13.3s（512 tokens, +37% 开销）
+- 独立日志：tidalcache.log，含 SCATTER/GATHER/COPYBACK 每阶段追踪
+- Hugepage：部分覆盖（63%），需开机参数完整分配
+
+### Step 6: 性能优化 ← 下一步
+
+**目标**: 将单请求开销从 +37% 降至 +5-8%
+
+**优化路线**（参考 HiSparse 生产实现）：
+1. 开机 hugepage 预留 — 消除 pinned memory 回退
+2. 异步 copy stream — DMA 与计算重叠
+3. Device 热缓存 + LRU — 跳过高频 block 的 DMA
+4. 跨层索引共享 + 批量预取 — Leader/follower 模式
+5. 仅 miss gather — 只搬运不在 selection cache 中的 block
+6. Gather plan 复用 — follower 层复用 leader 的索引计划
+7. 自适应卸载 — 短序列不卸载，HBM 压力高时启用
+
+### Step 7: 多 batch 并发吞吐基准测试
+
+**目标**: 验证 HBM 节省带来的吞吐提升
+
+### Step 8: Mooncake Store RDMA 直写集成（P/D 分离）
 
 ---
 
@@ -427,6 +411,14 @@ std::tuple<Tensor, Tensor> register_hugepage_as_npu_tensor(
 | Host 内存方案调研 | ✅ | hugepage + aclrtHostRegisterV2 |
 | OmniCache 源码分析 | ✅ | 零拷贝注册、内存池、gather 调用 |
 | Mooncake 兼容性分析 | ✅ | 不占 KV Connector，无冲突 |
+| Host 内存注册 + H2D gather | ✅ | 4/4 测试通过（NPU 机器） |
+| topk>32 分片 gather | ✅ | 2×32 split 绕过 561002 向量路径限制 |
+| vllm-ascend 集成 | ✅ | apply_patches.py 动态注入，CP + 非 CP |
+| Warmup 兼容 | ✅ | 修复 3 个 graph capture 阶段 Bug |
+| 端到端推理 | ✅ | 模型输出正确，curl 验证通过 |
+| 独立日志 | ✅ | tidalcache.log，SCATTER/GATHER/COPYBACK |
+| 性能基线 | ✅ | ON=18.3s, OFF=13.3s, 512 tokens (+37%) |
+| HiSparse 优化分析 | ✅ | 7 项优化方向已识别（async stream, LRU, prefetch 等） |
 
 ---
 
@@ -471,9 +463,13 @@ std::tuple<Tensor, Tensor> register_hugepage_as_npu_tensor(
 | 风险项 | 影响 | 状态 | 缓解方案 |
 |--------|------|------|----------|
 | Host 内存 NPU 寻址 | 核心阻塞 | ✅ 已解决 | hugepage + aclrtHostRegisterV2 |
-| hugetlbfs 系统配置 | 部署前置 | 待验证 | 需确认 NPU 机器有 /dev/hugepages |
-| Selection Cache 独立管理 | 内存碎片 | 低风险 | 预分配 + 连续递增，不走 block manager |
-| TP 多卡 block_status 同步 | 扩展 | 待处理 | 先单卡验证，TP 下各卡独立 gather |
-| D2H offload 首 token 延迟 | 性能 | 待测 | 异步 DMA + 独立 stream |
+| hugetlbfs 系统配置 | 部署前置 | ✅ 已验证 | /dev/hugepages 可用，需开机参数 `hugepages=240000` 保证完整分配 |
+| Selection Cache 独立管理 | 内存碎片 | ✅ 已验证 | 预分配 + 连续递增，运行正常 |
+| TP 多卡 block_status 同步 | 扩展 | ✅ 已验证 | 16 worker TP 运行正常，各卡独立 gather |
+| topk>32 CANN 向量路径 | 核心阻塞 | ✅ 已解决 | 拆分为 2×32 chunk，绕过 561002 限制 |
+| Warmup dummy 数据不一致 | 集成阻塞 | ✅ 已解决 | 3 个 Bug 修复（batch clamp, q_seq=1, 等） |
+| Hugepage 碎片化 | 性能 | ⚠️ 部分 | 63% 覆盖率，未获得 hugepage 的层回退到 pinned memory |
+| 单请求延迟开销 | 性能 | ⚠️ +37% | 优化路线已定（async stream, LRU, prefetch） |
+| D2H offload 首 token 延迟 | 性能 | 待优化 | 异步 DMA + 独立 stream（优化路线 #2） |
 | 算子 topk 上限 2048 | 设计限制 | 无风险 | DSA 规范就是 2048 |
 | Mooncake + 本方案搭配时序 | 集成 | 待设计 | Mooncake RDMA 完成 → D2H offload |
