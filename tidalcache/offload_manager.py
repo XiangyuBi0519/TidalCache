@@ -28,6 +28,7 @@ from tidalcache import HUGEPAGE_PATH
 logger = logging.getLogger("tidalcache")
 
 HUGEPAGE_SIZE = 2 * 1024 * 1024  # 2MB
+TOPK_SPLIT_NUM = 32  # CANN operator requires block_size=1 when topk>32; split to stay on scalar path
 
 
 @dataclass
@@ -228,10 +229,17 @@ class TidalCacheManager:
         sel_block_table = torch.arange(
             sel_blocks, dtype=torch.int32, device=self.device,
         ).view(self.max_batch_size, topk)
-        sel_block_status = torch.full(
-            (self.max_batch_size, 1, 1, topk + 1),
-            -1, dtype=torch.int32, device=self.device,
-        )
+
+        # When topk > TOPK_SPLIT_NUM, gather() splits into chunks of ≤32.
+        # Each chunk needs its own block_status for cache-reuse tracking.
+        n_splits = (topk + TOPK_SPLIT_NUM - 1) // TOPK_SPLIT_NUM
+        sel_block_status_list = []
+        for s in range(n_splits):
+            chunk = min(TOPK_SPLIT_NUM, topk - s * TOPK_SPLIT_NUM)
+            sel_block_status_list.append(torch.full(
+                (self.max_batch_size, 1, 1, chunk + 1),
+                -1, dtype=torch.int32, device=self.device,
+            ))
 
         state = LayerOffloadState(
             host_kv_cache=host_kv,
@@ -241,7 +249,7 @@ class TidalCacheManager:
             sel_kv_cache=sel_kv,
             sel_k_rope=sel_rope,
             sel_block_table=sel_block_table,
-            sel_block_status=sel_block_status,
+            sel_block_status=sel_block_status_list[0],
             mmap_kv=mmap_kv,
             mmap_rope=mmap_rope,
             fd_kv=fd_kv,
@@ -249,6 +257,8 @@ class TidalCacheManager:
             hugepage_path_kv=path_kv,
             hugepage_path_rope=path_rope,
         )
+        state.sel_block_status_list = sel_block_status_list
+        state.local_topk = topk
         self.layers[layer_name] = state
         return state
 
@@ -264,80 +274,61 @@ class TidalCacheManager:
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Execute GatherSelectionKvCache for one layer.
 
-        Args:
-            layer_name: layer identifier (e.g. "model.layers.3.self_attn")
-            topk_indices: [B, 1, 1, topk] INT32 from Lightning Indexer
-            full_block_table: [B, max_blocks] INT32 compressor block table
-            full_actual_seq: [B] INT32 actual sequence lengths
-            full_q_actual_seq: [B] INT32 query lengths (1 for decode)
-
-        Returns:
-            (sel_kv_cache, sel_k_rope, sel_actual_seq)
-            - sel_kv_cache: Device tensor with gathered KV data
-            - sel_k_rope: Device tensor with gathered RoPE data
-            - sel_actual_seq: [B] actual sequence lengths for selection
+        When topk > 32, the CANN operator's vector path requires
+        selection_topk_block_size=1 which conflicts with group-level
+        indices. We split into chunks of ≤32 to stay on the scalar path.
         """
         state = self.layers[layer_name]
         gw = self._get_gather_wrapper()
 
-        # Use full_block_table B as canonical batch size — topk_indices may
-        # be padded (e.g. during graph capture warmup).
         batch_size = full_block_table.shape[0]
         topk_indices = topk_indices[:batch_size]
         full_actual_seq = full_actual_seq[:batch_size]
         full_q_actual_seq = full_q_actual_seq[:batch_size]
-        sel_block_table = state.sel_block_table[:batch_size]
-        sel_block_status = state.sel_block_status[:batch_size]
 
-        import sys
-        print(
-            f"[TidalCache gather] layer={layer_name} B={batch_size}\n"
-            f"  sel_k_rope:       {state.sel_k_rope.shape} {state.sel_k_rope.dtype}\n"
-            f"  sel_kv_cache:     {state.sel_kv_cache.shape} {state.sel_kv_cache.dtype}\n"
-            f"  sel_block_table:  {sel_block_table.shape} {sel_block_table.dtype}\n"
-            f"  sel_block_status: {sel_block_status.shape} {sel_block_status.dtype}\n"
-            f"  topk_indices:     {topk_indices.shape} {topk_indices.dtype}\n"
-            f"  npu_k_rope:       {state.npu_k_rope.shape} {state.npu_k_rope.dtype}\n"
-            f"  npu_kv_cache:     {state.npu_kv_cache.shape} {state.npu_kv_cache.dtype}\n"
-            f"  full_block_table: {full_block_table.shape} {full_block_table.dtype}\n"
-            f"  full_actual_seq:  {full_actual_seq.shape} {full_actual_seq.dtype}\n"
-            f"  full_q_actual:    {full_q_actual_seq.shape} {full_q_actual_seq.dtype}\n"
-            f"  compress_blk_sz:  {self.compress_block_size}",
-            file=sys.stderr, flush=True,
-        )
+        topk = state.local_topk
+        n_splits = len(state.sel_block_status_list)
 
-        sel_actual_seq = gw.npu_gather_selection_kv_cache(
-            state.sel_k_rope,
-            state.sel_kv_cache,
-            sel_block_table,
-            sel_block_status,
-            topk_indices,
-            state.npu_k_rope,
-            state.npu_kv_cache,
-            full_block_table,
-            full_actual_seq,
-            full_q_actual_seq,
-            self.compress_block_size,
-        )
+        sel_actual_seq = None
+        for s in range(n_splits):
+            k_start = s * TOPK_SPLIT_NUM
+            k_end = min(k_start + TOPK_SPLIT_NUM, topk)
+            chunk_k = k_end - k_start
+
+            chunk_indices = topk_indices[:, :, :, k_start:k_end].contiguous()
+            chunk_bt = state.sel_block_table[:batch_size, k_start:k_end].contiguous()
+            chunk_bs = state.sel_block_status_list[s][:batch_size]
+
+            sel_actual_seq = gw.npu_gather_selection_kv_cache(
+                state.sel_k_rope,
+                state.sel_kv_cache,
+                chunk_bt,
+                chunk_bs,
+                chunk_indices,
+                state.npu_k_rope,
+                state.npu_kv_cache,
+                full_block_table,
+                full_actual_seq,
+                full_q_actual_seq,
+                self.compress_block_size,
+            )
 
         return state.sel_kv_cache, state.sel_k_rope, sel_actual_seq
 
     # ── Batch Lifecycle ──
 
     def reset_requests(self, layer_name: str, batch_indices: torch.Tensor):
-        """Reset block_status for finished/new requests.
-
-        Call when requests enter or leave a batch slot, so GatherSelectionKvCache
-        knows those slots have no valid cached blocks.
-        """
+        """Reset block_status for finished/new requests."""
         state = self.layers[layer_name]
-        for idx in batch_indices.tolist():
-            state.sel_block_status[idx].fill_(-1)
+        for bs in state.sel_block_status_list:
+            for idx in batch_indices.tolist():
+                bs[idx].fill_(-1)
 
     def reset_all(self, layer_name: str):
         """Reset all batch slots for a layer."""
         state = self.layers[layer_name]
-        state.sel_block_status.fill_(-1)
+        for bs in state.sel_block_status_list:
+            bs.fill_(-1)
 
     # ── Cleanup ──
 
