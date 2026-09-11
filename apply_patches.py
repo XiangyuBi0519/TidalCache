@@ -99,13 +99,15 @@ PATCH2_GATHER_CODE = '''
                 # This preserves the 4D shape and block_size=128 that attn_op expects.
                 _cbs = self._tidalcache_mgr.compress_block_size  # 64
                 _gpb = compress_kv_cache.shape[1] // _cbs  # groups per block (128/64=2)
-                _tidx = compress_topk_idxs.view(B, _local_topk)
+                _bt_full = compressor_decode_metadata.block_table
+                _aB = min(B, _bt_full.shape[0])
+                _tidx = compress_topk_idxs.view(B, _local_topk)[:_aB]
                 _bseq = (_tidx // _gpb).long()
                 _goff = (_tidx % _gpb).long()
-                _cbt = compressor_decode_metadata.block_table[:B].long()
+                _cbt = _bt_full[:_aB].long()
                 _pblk = _torch.gather(_cbt, 1, _bseq)
                 _dst = (_pblk * _gpb + _goff).view(-1)
-                _n = B * _local_topk
+                _n = _aB * _local_topk
                 _trail = compress_kv_cache.shape[2:]
                 _cmp64 = compress_kv_cache.view(-1, _cbs, *_trail)
                 _src = _sel_kv[:_n]
@@ -435,13 +437,15 @@ def main():
                 # Copy gathered groups into compress_kv_cache at original positions.
                 _cbs = self._tidalcache_mgr.compress_block_size
                 _gpb = compress_kv_cache.shape[1] // _cbs
-                _tidx = compress_topk_idxs.view(_B, _local_topk)
+                _bt_full = compressor_attn_metadata.req_metadata.block_table
+                _aB = min(_B, _bt_full.shape[0])
+                _tidx = compress_topk_idxs.view(_B, _local_topk)[:_aB]
                 _bseq = (_tidx // _gpb).long()
                 _goff = (_tidx % _gpb).long()
-                _cbt = compressor_attn_metadata.req_metadata.block_table[:_B].long()
+                _cbt = _bt_full[:_aB].long()
                 _pblk = _torch.gather(_cbt, 1, _bseq)
                 _dst = (_pblk * _gpb + _goff).view(-1)
-                _n = _B * _local_topk
+                _n = _aB * _local_topk
                 _trail = compress_kv_cache.shape[2:]
                 _cmp64 = compress_kv_cache.view(-1, _cbs, *_trail)
                 _src = _sel_kv[:_n]
