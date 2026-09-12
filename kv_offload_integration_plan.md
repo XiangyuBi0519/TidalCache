@@ -319,17 +319,101 @@ OmniCache 实现了 `OmniCacheConnector(KVConnectorBase_V1)`，自带 P/D KV 传
 - 独立日志：tidalcache.log，含 SCATTER/GATHER/COPYBACK 每阶段追踪
 - Hugepage：部分覆盖（63%），需开机参数完整分配
 
+### Step 5.5: 数据通路验证 ✅ 已完成 (2026-09-12)
+
+**目的**: 在改架构前先验证当前 gather 通路真的被 attention 使用
+
+**方法**: `TIDALCACHE_POISON=1` 环境变量在 gather 后、copy-back 前把 sel_kv 填成 -1000，看输出是否变异
+
+**结果**:
+- 基线（POISON=0）: `"你好！我是DeepSeek..."` （正常）
+- Poison（POISON=1）: `"וניב［ Septy学一做ahimut..."` （完全乱码）
+- **结论**: gather 的数据确实进入了 attention，数据通路正常工作 ✓
+
 ### Step 6: 减少 Device KV 分配 + 直接 Selection Cache Attention ← 下一步（核心）
 
 **目标**: 实现真正的 HBM 节省
 
 **当前问题**: v1 验证了数据通路正确性，但 vllm 仍为 DSA 层分配全量 Device KV cache，TidalCache 实际增加了内存占用（Device 全量 KV + Host 副本 + Selection Cache）。
 
-**工作内容**:
-1. 修改 model_runner KV cache 分配 — DSA 层只分配 Selection Cache 大小的 Device blocks（topk × max_batch），不再分配全量
-2. Decode attention 直接读 Selection Cache — 去掉 copy-back 到 compress_kv_cache 的步骤，SparseAttnSharedkv 直接用 sel_kv_cache + sel_block_table
-3. 修改 block manager 可用 block 计算 — 让 vllm 知道 DSA 层释放了多少 HBM，从而允许更大 batch
-4. Prefill 路径适配 — prefill 阶段仍在 Device 计算，完成后 D2H offload 到 Host
+#### 6.1 三种 KV Cache 的定位
+
+DeepSeek V4 DSA 的 attention 是混合的：dense（滑动窗口）+ sparse（压缩+topk）。存在三个 KV cache：
+
+| 名字 | 类型 | 覆盖范围 | 大小 | Offload 策略 |
+|------|------|---------|------|-------------|
+| **swa_kv_cache** | Dense | 最近 W 个 token（如 4K） | 小 | 留 Device，不 offload |
+| **compress_kv_cache** | Sparse（压缩） | 全部历史（m:1 压缩） | **大** | **主要 offload 目标** |
+| **indexer_k_cache** | Dense (FP8, 64d) | 全部历史 | 中 | 每步全扫，必须 Device |
+
+**只有 compress_kv_cache 值得 offload**。省的就是它。
+
+#### 6.2 Prefill 和 Decode 的 KV 流程
+
+**Prefill（一次处理整个 prompt）**:
+```
+Prompt → 计算 KV → scatter 到 compress/swa/indexer 三份 cache
+       → Attention（每个 prompt token）:
+          Indexer 打分 → topk
+          SparseAttn = swa_dense(recent) + sparse(topk from compress)
+```
+**关键**: prefill 也做 topk 稀疏 attention（不只是 decode），也会**读** compress_kv_cache。
+
+**Decode（每步一个新 token）**:
+```
+新 token → 计算 KV → scatter 到三份 cache
+        → Attention（当前 token）:
+           Indexer 在全量 indexer_cache 上打分 → topk
+           SparseAttn = swa_dense + sparse(topk from compress)
+```
+
+#### 6.3 设计方案（三种候选，实现方案 A + B 带开关切换）
+
+**方案 A**: Prefill 在 Device，Prefill 后 D2H sweep
+- Prefill: scatter/attn 走原样（Device compress_kv_cache）
+- Prefill 结束: 触发一次性 D2H 拷贝 → Host hugepage
+- 释放 Device compress blocks
+- Decode: gather from Host → sel_kv → attn 直接读 sel_kv
+
+**方案 B**: Prefill 双写（Device + Host）
+- Prefill: scatter 同时写 Device 和 Host（dual write）
+- Prefill: attn 读 Device（原样）
+- Prefill 结束: 直接释放 Device blocks（Host 已有数据）
+- Decode: 同 A
+
+**方案 C**（未来）: Prefill 也走 Host
+- Scatter 只写 Host，prefill attention 也走 gather 通路
+- 完全省掉 Device 全量 compress（激进方案）
+- 需要 gather 算子支持 prefill 的多 query token 场景
+
+#### 6.4 A/B 切换开关
+
+```bash
+TIDALCACHE_PREFILL_MODE=A     # 方案 A（默认）：post-prefill D2H sweep
+TIDALCACHE_PREFILL_MODE=B     # 方案 B：dual write during prefill
+TIDALCACHE_PREFILL_MODE=OFF   # 对照组：不做 offload，保留 Device 全量
+```
+
+**预期性能差异**（需要实测确认）:
+- 短 prompt：B 的 dual write 累积开销 < A 的 sweep 开销 → B 可能更优
+- 长 prompt：A 的 sweep 可异步（跟 decode 计算重叠） → A 可能更优
+
+#### 6.5 共同基础设施（A、B 都要做）
+
+1. **Prefill/Decode 边界检测** — 找到 vllm 里 prefill 完成的 hook 点（进行中）
+2. **Post-prefill Device blocks 释放** — resize_(0) 或 pool 缩容
+3. **Decode 路径改造**:
+   - Gather from Host → sel_kv（已有）
+   - attn_op 参数切换：`cmp_kv=sel_kv_cache`, `cmp_block_table=sel_block_table`, `cmp_sparse_indices=[0..topk-1]`（新增 PATCH4）
+   - 去掉 copy-back（decode 不再写 compress_kv_cache）
+4. **Device compress pool 缩容** — 初始化时只分配 max_concurrent × topk × few multiplier
+
+#### 6.6 待确认的技术点
+
+- [ ] vllm 里 Prefill → Decode 切换的 hook 点（进行中）
+- [ ] compress_kv_cache 是跨请求共享 pool，如何按请求粒度释放
+- [ ] Device pool 应缩到多大（Selection Cache + hot cache buffer）
+- [ ] SparseAttnSharedkv 算子对 block_size 的约束（sel_kv 用 compress_block_size=64，vllm block_size=128，能否直接兼容）
 
 **验收标准**: `npu-smi info` 显示 ON 模式比 OFF 模式 HBM 占用明显更低（预期减少 ~1.5 GB/请求 × 并发数）。
 
