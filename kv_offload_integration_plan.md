@@ -410,10 +410,36 @@ TIDALCACHE_PREFILL_MODE=OFF   # 对照组：不做 offload，保留 Device 全�
 
 #### 6.6 待确认的技术点
 
-- [ ] vllm 里 Prefill → Decode 切换的 hook 点（进行中）
+- [x] vllm 里 Prefill → Decode 切换的 hook 点 ✅ **已定位**（见 6.7）
 - [ ] compress_kv_cache 是跨请求共享 pool，如何按请求粒度释放
 - [ ] Device pool 应缩到多大（Selection Cache + hot cache buffer）
 - [ ] SparseAttnSharedkv 算子对 block_size 的约束（sel_kv 用 compress_block_size=64，vllm block_size=128，能否直接兼容）
+
+#### 6.7 Prefill→Decode 边界检测（Hook 点）
+
+**关键信号**（`model_runner_v1.py:3266`）:
+```python
+is_prefilling = num_computed_tokens_cpu < num_prompt_tokens_cpu
+```
+Per-request 布尔数组，`True` 表示该请求还在 prefill 阶段。
+
+**"本步刚完成 prefill"的判定**:
+```python
+was_prefilling = num_computed[R] < num_prompt[R]                            # 步前
+will_be_done  = num_computed[R] + num_scheduled[R] >= num_prompt[R]         # 步后
+just_finished_prefill[R] = was_prefilling and will_be_done
+```
+
+**推荐 hook 位置：dsa_v1.py `forward` 方法**（选项 2）
+- 每层 `_forward_prefill` 完成后，检测本步有没有 request 完成 prefill
+- 有的话，本层立刻 D2H copy 该 request 占用的 blocks → Host
+- 天然 per-layer 触发，21 层各自执行一次
+- 从 `attn_metadata[0].prefill.block_table` 就能拿到 request-to-block 映射
+- 改动集中在 dsa_v1.py（跟现有 PATCH2/PATCH3 一个文件）
+
+**方案 B 的 hook 更简单**:
+- Dual write 不需要边界检测（scatter 时就写两处）
+- 完成 prefill 只触发**释放 Device 存储**，可以延迟到下一步 decode 懒释放
 
 **验收标准**: `npu-smi info` 显示 ON 模式比 OFF 模式 HBM 占用明显更低（预期减少 ~1.5 GB/请求 × 并发数）。
 
