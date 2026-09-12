@@ -78,9 +78,12 @@ DSA_PATCHES = {
 # Use regex to find attn_op line in the decode path
 PATCH2_GATHER_CODE = '''
         # ── TidalCache: lazy init + Sparse Host→Device Gather ──
-        # Always define _tc_cmp_block_table so PATCH4 can reference it safely.
-        _tc_cmp_block_table = compressor_decode_metadata.block_table
-        if self.kv_offload_enabled:
+        # Define _tc_cmp_block_table for PATCH4 safely: compressor_decode_metadata
+        # is only assigned in the compress_ratio==4/128 branches, so use
+        # locals().get() to avoid UnboundLocalError when neither branch ran.
+        _cdm = locals().get('compressor_decode_metadata')
+        _tc_cmp_block_table = _cdm.block_table if _cdm is not None else None
+        if self.kv_offload_enabled and _cdm is not None:
             if self._tidalcache_mgr is None:
                 import tidalcache as _tc
                 self._tidalcache_mgr = _tc._GLOBAL_MANAGER
@@ -510,8 +513,11 @@ def main():
                 sys.exit(1)
             cp2_gather = '''
         # ── TidalCache: lazy init + Sparse Host→Device Gather (CP) ──
-        _tc_cmp_block_table = compressor_attn_metadata.req_metadata.block_table
-        if getattr(self, 'kv_offload_enabled', False):
+        # compressor_attn_metadata only assigned in compress_ratio==4/128 branch;
+        # use locals().get() so this code is a no-op for other compress_ratios.
+        _cam = locals().get('compressor_attn_metadata')
+        _tc_cmp_block_table = _cam.req_metadata.block_table if _cam is not None else None
+        if getattr(self, 'kv_offload_enabled', False) and _cam is not None:
             if self._tidalcache_mgr is None:
                 import tidalcache as _tc
                 self._tidalcache_mgr = _tc._GLOBAL_MANAGER
