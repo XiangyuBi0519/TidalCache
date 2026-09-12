@@ -280,18 +280,21 @@ class TidalCacheManager:
         sel_blocks = self.max_batch_size * topk         # 64-group units
         mini_num_blocks = sel_blocks // gpb              # 128-block units
 
-        # Backing storage — attn_op reads via this view
-        mini_compress_kv = torch.zeros(
-            mini_num_blocks, self.block_size, self.kv_dim,
-            dtype=self.dtype, device=self.device,
-        )
-        mini_compress_rope = torch.zeros(
-            mini_num_blocks, self.block_size, self.rope_dim,
-            dtype=self.rope_dtype, device=self.device,
-        )
-        # sel_kv is a view of the SAME storage — gather writes here
-        sel_kv = mini_compress_kv.view(sel_blocks, self.compress_block_size, self.kv_dim)
-        sel_rope = mini_compress_rope.view(sel_blocks, self.compress_block_size, self.rope_dim)
+        # Allocate flat storage and create two views:
+        #   - mini_compress_kv 4D PA_ND {Bn, Bs, N=1, D} — attn_op reads this
+        #   - sel_kv           3D {sel_blocks, compress_block_size, D} — gather writes here
+        # Views share storage so gather → attn is zero-copy.
+        # MLA's num_heads for KV is 1 (single latent head), matching vllm's
+        # compress_kv_cache layout so SparseAttnSharedkv layout parser reads
+        # N2=1 (matches ori_kv's N2=1).
+        _kv_numel = mini_num_blocks * self.block_size * self.kv_dim
+        _rope_numel = mini_num_blocks * self.block_size * self.rope_dim
+        _kv_storage = torch.zeros(_kv_numel, dtype=self.dtype, device=self.device)
+        _rope_storage = torch.zeros(_rope_numel, dtype=self.rope_dtype, device=self.device)
+        mini_compress_kv = _kv_storage.view(mini_num_blocks, self.block_size, 1, self.kv_dim)
+        mini_compress_rope = _rope_storage.view(mini_num_blocks, self.block_size, 1, self.rope_dim)
+        sel_kv = _kv_storage.view(sel_blocks, self.compress_block_size, self.kv_dim)
+        sel_rope = _rope_storage.view(sel_blocks, self.compress_block_size, self.rope_dim)
 
         # gather-side: rows in the 64-group view (flat batch*topk+k)
         sel_block_table = torch.arange(
