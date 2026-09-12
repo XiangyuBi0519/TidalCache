@@ -313,12 +313,21 @@ class TidalCacheManager:
         full_actual_seq = full_actual_seq[:batch_size]
         full_q_actual_seq = full_q_actual_seq[:batch_size]
 
-        topk = state.local_topk
-        n_splits = len(state.sel_block_status_list)
+        # Derive topk from the actual topk_indices shape rather than
+        # state.local_topk. When the layer was lazily allocated at scatter time
+        # without knowing CP-local topk, state.local_topk may be larger than
+        # the real topk (index_topk vs index_topk // cp_size). Slicing beyond
+        # actual topk yields empty tensors and triggers CANN error 561002.
+        topk = topk_indices.shape[-1]
+        n_splits = (topk + TOPK_SPLIT_NUM - 1) // TOPK_SPLIT_NUM
+        assert n_splits <= len(state.sel_block_status_list), (
+            f"gather n_splits={n_splits} exceeds alloc'd block_status_list "
+            f"of size {len(state.sel_block_status_list)} for {layer_name}"
+        )
 
         logger.debug(
-            "[GATHER] %s batch=%d topk=%d splits=%d",
-            layer_name, batch_size, topk, n_splits,
+            "[GATHER] %s batch=%d topk=%d splits=%d state.local_topk=%d",
+            layer_name, batch_size, topk, n_splits, state.local_topk,
         )
 
         sel_actual_seq = None
