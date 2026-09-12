@@ -333,41 +333,55 @@ def main():
         )
         print("  PATCH2_gather: OK")
 
-        # PATCH3: regex — replace scatter target with offload-aware branch
-        # Match scatter call where first arg is compress_kv_cache (decode path).
-        # Capture indent and remaining args (may be single-line or multi-line).
+        # PATCH3: regex — patch ALL scatter calls (prefill + decode) with
+        # mode-aware branches. Iterates all matches from end to start so that
+        # position offsets stay valid during replacement.
+        #   TIDALCACHE_PREFILL_MODE=B: dual write to Device compress_kv_cache
+        #                              AND Host hugepage (npu view). Host gets
+        #                              full KV data for both prefill and decode.
+        #   TIDALCACHE_PREFILL_MODE=A (or unset): single write to Device only.
+        #                              Post-prefill D2H sweep (TBD) will move
+        #                              data to Host after prefill completes.
+        #   TIDALCACHE_PREFILL_MODE=OFF: bypass all offload writes (compat).
         p3_pattern = re.compile(
             r'( +)(DeviceOperator\.dsa_kv_compress_scatter\()'
             r'\s*compress_kv_cache,\s*(.*?\))',
             re.DOTALL,
         )
-        m3 = p3_pattern.search(dsa_content)
-        if m3 is None:
+        matches = list(p3_pattern.finditer(dsa_content))
+        if not matches:
             print("  ERROR: PATCH3_scatter regex not matched")
             sys.exit(1)
-        indent = m3.group(1)
-        # Normalize rest_args: collapse whitespace, extract just the args
-        rest_args_raw = m3.group(3)
-        # rest_args_raw is like "compressed_kv, compress_slot_mapping)" (with possible whitespace/newlines)
-        # Strip the trailing ) and normalize whitespace
-        args_inner = rest_args_raw.rstrip(")").strip()
-        # args_inner is now like "compressed_kv, compress_slot_mapping"
         scatter = "DeviceOperator.dsa_kv_compress_scatter"
-        replacement = (
-            f"{indent}# ── TidalCache: scatter to Host NPU view ──\n"
-            f"{indent}if self.kv_offload_enabled and self._tidalcache_mgr is not None:\n"
-            f"{indent}    host_kv = self._tidalcache_mgr.layers[layer_name].npu_kv_cache\n"
-            f"{indent}    {scatter}(host_kv, {args_inner})\n"
-            f"{indent}    import logging as _logging; _logging.getLogger('tidalcache').debug('[SCATTER] %s → host_kv', layer_name)\n"
-            f"{indent}else:\n"
-            f"{indent}    {scatter}(compress_kv_cache, {args_inner})"
-        )
-        dsa_content = (
-            dsa_content[:m3.start()]
-            + replacement
-            + dsa_content[m3.end():]
-        )
-        print("  PATCH3_scatter: OK")
+        for m3 in reversed(matches):  # reversed to keep earlier positions stable
+            indent = m3.group(1)
+            args_inner = m3.group(3).rstrip(")").strip()
+            replacement = (
+                f"{indent}# ── TidalCache: mode-aware scatter (A=Device only, B=dual) ──\n"
+                f"{indent}import os as _tc_os_s\n"
+                f"{indent}_tc_mode_s = _tc_os_s.environ.get('TIDALCACHE_PREFILL_MODE', 'A')\n"
+                f"{indent}if self.kv_offload_enabled and _tc_mode_s != 'OFF':\n"
+                f"{indent}    if self._tidalcache_mgr is None:\n"
+                f"{indent}        import tidalcache as _tc_s\n"
+                f"{indent}        self._tidalcache_mgr = _tc_s._GLOBAL_MANAGER\n"
+                f"{indent}    if self._tidalcache_mgr is not None and layer_name not in self._tidalcache_mgr.layers:\n"
+                f"{indent}        self._tidalcache_mgr.alloc_layer(layer_name)\n"
+                f"{indent}    {scatter}(compress_kv_cache, {args_inner})\n"
+                f"{indent}    if _tc_mode_s == 'B' and self._tidalcache_mgr is not None and layer_name in self._tidalcache_mgr.layers:\n"
+                f"{indent}        _host_kv = self._tidalcache_mgr.layers[layer_name].npu_kv_cache\n"
+                f"{indent}        {scatter}(_host_kv, {args_inner})\n"
+                f"{indent}        import logging as _lg_s; _lg_s.getLogger('tidalcache').debug('[SCATTER-B] %s → device+host', layer_name)\n"
+                f"{indent}    else:\n"
+                f"{indent}        import logging as _lg_s; _lg_s.getLogger('tidalcache').debug('[SCATTER-A] %s → device only', layer_name)\n"
+                f"{indent}else:\n"
+                f"{indent}    {scatter}(compress_kv_cache, {args_inner})"
+            )
+            dsa_content = (
+                dsa_content[:m3.start()]
+                + replacement
+                + dsa_content[m3.end():]
+            )
+        print(f"  PATCH3_scatter: OK ({len(matches)} call sites patched)")
 
         if not dry_run:
             bak = dsa_path + ".bak"
@@ -509,34 +523,49 @@ def main():
             )
             print("  CP_PATCH2_gather: OK")
 
-            # CP_PATCH3: scatter — replace scatter target
+            # CP_PATCH3: patch ALL scatter calls with mode-aware branches
+            #   TIDALCACHE_PREFILL_MODE=B: dual write (Device + Host)
+            #   TIDALCACHE_PREFILL_MODE=A/unset: Device only (sweep TBD)
+            #   TIDALCACHE_PREFILL_MODE=OFF: bypass
             cp3_pattern = re.compile(
                 r'( +)(DeviceOperator\.dsa_kv_compress_scatter\()'
                 r'\s*compress_kv_cache,\s*(.*?\))',
                 re.DOTALL,
             )
-            m_cp3 = cp3_pattern.search(cp_content)
-            if m_cp3 is None:
+            cp3_matches = list(cp3_pattern.finditer(cp_content))
+            if not cp3_matches:
                 print("  ERROR: CP_PATCH3 scatter not found")
                 sys.exit(1)
-            cp3_indent = m_cp3.group(1)
-            cp3_args = m_cp3.group(3).rstrip(")").strip()
             scatter = "DeviceOperator.dsa_kv_compress_scatter"
-            cp3_replace = (
-                f"{cp3_indent}# ── TidalCache: scatter to Host NPU view ──\n"
-                f"{cp3_indent}if getattr(self, 'kv_offload_enabled', False) and self._tidalcache_mgr is not None:\n"
-                f"{cp3_indent}    host_kv = self._tidalcache_mgr.layers[layer_name].npu_kv_cache\n"
-                f"{cp3_indent}    {scatter}(host_kv, {cp3_args})\n"
-                f"{cp3_indent}    import logging as _logging; _logging.getLogger('tidalcache').debug('[SCATTER-CP] %s → host_kv', layer_name)\n"
-                f"{cp3_indent}else:\n"
-                f"{cp3_indent}    {scatter}(compress_kv_cache, {cp3_args})"
-            )
-            cp_content = (
-                cp_content[:m_cp3.start()]
-                + cp3_replace
-                + cp_content[m_cp3.end():]
-            )
-            print("  CP_PATCH3_scatter: OK")
+            for m_cp3 in reversed(cp3_matches):
+                cp3_indent = m_cp3.group(1)
+                cp3_args = m_cp3.group(3).rstrip(")").strip()
+                cp3_replace = (
+                    f"{cp3_indent}# ── TidalCache: mode-aware scatter (CP) ──\n"
+                    f"{cp3_indent}import os as _tc_os_cp\n"
+                    f"{cp3_indent}_tc_mode_cp = _tc_os_cp.environ.get('TIDALCACHE_PREFILL_MODE', 'A')\n"
+                    f"{cp3_indent}if getattr(self, 'kv_offload_enabled', False) and _tc_mode_cp != 'OFF':\n"
+                    f"{cp3_indent}    if self._tidalcache_mgr is None:\n"
+                    f"{cp3_indent}        import tidalcache as _tc_cp\n"
+                    f"{cp3_indent}        self._tidalcache_mgr = _tc_cp._GLOBAL_MANAGER\n"
+                    f"{cp3_indent}    if self._tidalcache_mgr is not None and layer_name not in self._tidalcache_mgr.layers:\n"
+                    f"{cp3_indent}        self._tidalcache_mgr.alloc_layer(layer_name)\n"
+                    f"{cp3_indent}    {scatter}(compress_kv_cache, {cp3_args})\n"
+                    f"{cp3_indent}    if _tc_mode_cp == 'B' and self._tidalcache_mgr is not None and layer_name in self._tidalcache_mgr.layers:\n"
+                    f"{cp3_indent}        _host_kv_cp = self._tidalcache_mgr.layers[layer_name].npu_kv_cache\n"
+                    f"{cp3_indent}        {scatter}(_host_kv_cp, {cp3_args})\n"
+                    f"{cp3_indent}        import logging as _lg_cp; _lg_cp.getLogger('tidalcache').debug('[SCATTER-B-CP] %s → device+host', layer_name)\n"
+                    f"{cp3_indent}    else:\n"
+                    f"{cp3_indent}        import logging as _lg_cp; _lg_cp.getLogger('tidalcache').debug('[SCATTER-A-CP] %s → device only', layer_name)\n"
+                    f"{cp3_indent}else:\n"
+                    f"{cp3_indent}    {scatter}(compress_kv_cache, {cp3_args})"
+                )
+                cp_content = (
+                    cp_content[:m_cp3.start()]
+                    + cp3_replace
+                    + cp_content[m_cp3.end():]
+                )
+            print(f"  CP_PATCH3_scatter: OK ({len(cp3_matches)} call sites patched)")
 
             # CP_PATCH4: removed — with copy-back approach, attn_op uses original
             # compress_kv_cache and block_table unchanged.
