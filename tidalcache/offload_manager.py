@@ -260,22 +260,57 @@ class TidalCacheManager:
         return state
 
     def _alloc_sel_side(self, state: LayerOffloadState, local_topk: int):
-        """Allocate Device Selection Cache side with correct local_topk."""
-        topk = local_topk
+        """Allocate Device Selection Cache side with correct local_topk.
 
-        # Device Selection Cache — uses compress_block_size (not KV block_size)
-        sel_blocks = self.max_batch_size * topk
-        sel_kv = torch.zeros(
-            sel_blocks, self.compress_block_size, self.kv_dim,
+        Allocates mini_compress_kv as a [mini_num_blocks, block_size=128, kv_dim]
+        tensor (matches attn_op's expected PA_ND layout). sel_kv is a VIEW of
+        the same storage in the [max_batch*topk, compress_block_size=64, kv_dim]
+        layout that CANN gather wants (f_blk_size == s_blk_size).
+
+        Layout mapping:
+            gpb = block_size / compress_block_size  (usually 2)
+            sel_kv[b*topk + k] ↔ mini_compress_kv[b*(topk/gpb) + k/gpb][k%gpb*64:(k%gpb+1)*64]
+        This alias means gather writes → attention reads. No copy-back needed.
+        """
+        topk = local_topk
+        gpb = self.block_size // self.compress_block_size
+        assert topk % gpb == 0, (
+            f"topk ({topk}) must be divisible by groups_per_block ({gpb})"
+        )
+        sel_blocks = self.max_batch_size * topk         # 64-group units
+        mini_num_blocks = sel_blocks // gpb              # 128-block units
+
+        # Backing storage — attn_op reads via this view
+        mini_compress_kv = torch.zeros(
+            mini_num_blocks, self.block_size, self.kv_dim,
             dtype=self.dtype, device=self.device,
         )
-        sel_rope = torch.zeros(
-            sel_blocks, self.compress_block_size, self.rope_dim,
+        mini_compress_rope = torch.zeros(
+            mini_num_blocks, self.block_size, self.rope_dim,
             dtype=self.rope_dtype, device=self.device,
         )
+        # sel_kv is a view of the SAME storage — gather writes here
+        sel_kv = mini_compress_kv.view(sel_blocks, self.compress_block_size, self.kv_dim)
+        sel_rope = mini_compress_rope.view(sel_blocks, self.compress_block_size, self.rope_dim)
+
+        # gather-side: rows in the 64-group view (flat batch*topk+k)
         sel_block_table = torch.arange(
             sel_blocks, dtype=torch.int32, device=self.device,
         ).view(self.max_batch_size, topk)
+
+        # attn_op-side (Phase B2): batch b owns blocks [b*(topk/gpb), b*(topk/gpb)+topk/gpb)
+        # in mini_compress_kv's 128-block layout.
+        mini_cmp_block_table = torch.arange(
+            mini_num_blocks, dtype=torch.int32, device=self.device,
+        ).view(self.max_batch_size, topk // gpb)
+
+        # attn_op-side sparse_indices: each batch attends to local groups [0..topk-1]
+        mini_sparse_indices = (
+            torch.arange(topk, dtype=torch.int32, device=self.device)
+            .view(1, 1, 1, topk)
+            .expand(self.max_batch_size, 1, 1, topk)
+            .contiguous()
+        )
 
         # When topk > TOPK_SPLIT_NUM, gather() splits into chunks of ≤32.
         n_splits = (topk + TOPK_SPLIT_NUM - 1) // TOPK_SPLIT_NUM
@@ -293,6 +328,11 @@ class TidalCacheManager:
         state.sel_block_status = sel_block_status_list[0]
         state.sel_block_status_list = sel_block_status_list
         state.local_topk = topk
+        # B2-specific attributes (attn_op reads these when TIDALCACHE_ATTN_ON_SEL=1)
+        state.mini_compress_kv = mini_compress_kv
+        state.mini_compress_rope = mini_compress_rope
+        state.mini_cmp_block_table = mini_cmp_block_table
+        state.mini_sparse_indices = mini_sparse_indices
 
     def alloc_layer(self, layer_name: str,
                     local_topk: int | None = None) -> LayerOffloadState:

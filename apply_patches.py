@@ -78,6 +78,8 @@ DSA_PATCHES = {
 # Use regex to find attn_op line in the decode path
 PATCH2_GATHER_CODE = '''
         # ── TidalCache: lazy init + Sparse Host→Device Gather ──
+        # Always define _tc_cmp_block_table so PATCH4 can reference it safely.
+        _tc_cmp_block_table = compressor_decode_metadata.block_table
         if self.kv_offload_enabled:
             if self._tidalcache_mgr is None:
                 import tidalcache as _tc
@@ -85,6 +87,7 @@ PATCH2_GATHER_CODE = '''
             if self._tidalcache_mgr is not None:
                 import torch as _torch
                 import logging as _logging
+                import os as _tcos_b2
                 _tclog = _logging.getLogger("tidalcache")
                 B = hidden_states.shape[0]
                 _local_topk = compress_topk_idxs.numel() // B
@@ -98,35 +101,45 @@ PATCH2_GATHER_CODE = '''
                     full_q_actual_seq=_torch.ones(B, dtype=_torch.int32, device=hidden_states.device),
                 )
                 # ── TidalCache validation switch: poison gather output ──
-                # TIDALCACHE_POISON=1 corrupts _sel_kv/_sel_rope BEFORE copy-back.
-                # If attention actually uses the gather-populated positions in
-                # compress_kv_cache, model output will be garbled. If output stays
-                # correct, gather data is not reaching attention.
-                import os as _tcos_poison
-                _poison_mode = _tcos_poison.environ.get("TIDALCACHE_POISON", "0")
+                _poison_mode = _tcos_b2.environ.get("TIDALCACHE_POISON", "0")
                 if _poison_mode == "1":
                     _sel_kv.fill_(-1000.0)
                     _sel_rope.fill_(-1000.0)
                     _tclog.info("[POISON] %s gather output filled with -1000", layer_name)
-                # Copy gathered groups into compress_kv_cache at original positions.
-                _cbs = self._tidalcache_mgr.compress_block_size  # 64
-                _gpb = compress_kv_cache.shape[1] // _cbs  # groups per block (128/64=2)
-                _bt_full = compressor_decode_metadata.block_table
-                _aB = min(B, _bt_full.shape[0])
-                _tidx = compress_topk_idxs.view(B, _local_topk)[:_aB]
-                _bseq = (_tidx // _gpb).long()
-                _goff = (_tidx % _gpb).long()
-                _cbt = _bt_full[:_aB].long()
-                _pblk = _torch.gather(_cbt, 1, _bseq)
-                _dst = (_pblk * _gpb + _goff).view(-1)
-                _n = _aB * _local_topk
-                _trail = compress_kv_cache.shape[2:]
-                _cmp64 = compress_kv_cache.view(-1, _cbs, *_trail)
-                _src = _sel_kv[:_n]
-                if _src.shape[2:] != _trail:
-                    _src = _src.view(_n, _cbs, *_trail)
-                _cmp64[_dst] = _src
-                _tclog.debug("[COPYBACK] %s B=%d aB=%d topk=%d dst_blocks=%d", layer_name, B, _aB, _local_topk, _n)
+
+                _state = self._tidalcache_mgr.layers[layer_name]
+                _attn_on_sel = _tcos_b2.environ.get("TIDALCACHE_ATTN_ON_SEL", "0") == "1"
+                if _attn_on_sel and _state.sel_kv_cache is not None:
+                    # Phase B2: attn_op reads sel-side directly, no copy-back.
+                    # Rebind local vars flowing into attn_op.
+                    _B = min(B, _state.mini_cmp_block_table.shape[0])
+                    compress_kv_cache = _state.mini_compress_kv
+                    compress_topk_idxs = _state.mini_sparse_indices[:_B]
+                    _tc_cmp_block_table = _state.mini_cmp_block_table[:_B]
+                    if not getattr(self, '_tc_logged_b2_' + layer_name.replace('.','_'), False):
+                        _tclog.info('[ATTN-ON-SEL first] %s → attn reads sel_kv (Phase B2)', layer_name)
+                        setattr(self, '_tc_logged_b2_' + layer_name.replace('.','_'), True)
+                    _tclog.debug("[ATTN-ON-SEL] %s B=%d _B=%d", layer_name, B, _B)
+                else:
+                    # Phase B1: copy-back into compress_kv_cache, attn reads original.
+                    _cbs = self._tidalcache_mgr.compress_block_size  # 64
+                    _gpb = compress_kv_cache.shape[1] // _cbs
+                    _bt_full = compressor_decode_metadata.block_table
+                    _aB = min(B, _bt_full.shape[0])
+                    _tidx = compress_topk_idxs.view(B, _local_topk)[:_aB]
+                    _bseq = (_tidx // _gpb).long()
+                    _goff = (_tidx % _gpb).long()
+                    _cbt = _bt_full[:_aB].long()
+                    _pblk = _torch.gather(_cbt, 1, _bseq)
+                    _dst = (_pblk * _gpb + _goff).view(-1)
+                    _n = _aB * _local_topk
+                    _trail = compress_kv_cache.shape[2:]
+                    _cmp64 = compress_kv_cache.view(-1, _cbs, *_trail)
+                    _src = _sel_kv[:_n]
+                    if _src.shape[2:] != _trail:
+                        _src = _src.view(_n, _cbs, *_trail)
+                    _cmp64[_dst] = _src
+                    _tclog.debug("[COPYBACK] %s B=%d aB=%d topk=%d dst_blocks=%d", layer_name, B, _aB, _local_topk, _n)
 '''
 
 # PATCH3: scatter redirect — replace dsa_kv_compress_scatter target
@@ -393,6 +406,24 @@ def main():
             )
         print(f"  PATCH3_scatter: OK ({len(matches)} call sites patched)")
 
+        # PATCH4: rewrite attn_op cmp_block_table arg to use _tc_cmp_block_table.
+        # PATCH2 sets _tc_cmp_block_table on every decode entry (fallback to the
+        # original block_table when TidalCache is off). When Phase B2 is active
+        # (TIDALCACHE_ATTN_ON_SEL=1) it points at the small mini_cmp_block_table
+        # so attn_op reads from sel_kv directly. Only rewrite in the decode path.
+        p4_pattern = re.compile(
+            r'cmp_block_table=compressor_decode_metadata\.block_table,'
+        )
+        p4_matches = list(p4_pattern.finditer(dsa_content))
+        if not p4_matches:
+            print("  WARNING: PATCH4_attn_arg no matches (decode attn_op cmp_block_table)")
+        else:
+            dsa_content = p4_pattern.sub(
+                'cmp_block_table=_tc_cmp_block_table,',
+                dsa_content,
+            )
+            print(f"  PATCH4_attn_arg: OK ({len(p4_matches)} call sites rewritten)")
+
         if not dry_run:
             bak = dsa_path + ".bak"
             if not os.path.exists(bak):
@@ -478,7 +509,8 @@ def main():
                 print("  ERROR: CP_PATCH2 gather anchor not found")
                 sys.exit(1)
             cp2_gather = '''
-        # ── TidalCache: lazy init + Sparse Host→Device Gather ──
+        # ── TidalCache: lazy init + Sparse Host→Device Gather (CP) ──
+        _tc_cmp_block_table = compressor_attn_metadata.req_metadata.block_table
         if getattr(self, 'kv_offload_enabled', False):
             if self._tidalcache_mgr is None:
                 import tidalcache as _tc
@@ -486,6 +518,7 @@ def main():
             if self._tidalcache_mgr is not None:
                 import torch as _torch
                 import logging as _logging
+                import os as _tcos_b2cp
                 _tclog = _logging.getLogger("tidalcache")
                 _B = hidden_states.shape[0]
                 _local_topk = compress_topk_idxs.numel() // _B
@@ -498,31 +531,43 @@ def main():
                     full_actual_seq=local_seq_lengths_key,
                     full_q_actual_seq=_torch.ones(_B, dtype=_torch.int32, device=hidden_states.device),
                 )
-                # ── TidalCache validation switch (CP path) ──
-                import os as _tcos_poison
-                if _tcos_poison.environ.get("TIDALCACHE_POISON", "0") == "1":
+                if _tcos_b2cp.environ.get("TIDALCACHE_POISON", "0") == "1":
                     _sel_kv.fill_(-1000.0)
                     _sel_rope.fill_(-1000.0)
                     _tclog.info("[POISON-CP] %s gather output filled with -1000", layer_name)
-                # Copy gathered groups into compress_kv_cache at original positions.
-                _cbs = self._tidalcache_mgr.compress_block_size
-                _gpb = compress_kv_cache.shape[1] // _cbs
-                _bt_full = compressor_attn_metadata.req_metadata.block_table
-                _aB = min(_B, _bt_full.shape[0])
-                _tidx = compress_topk_idxs.view(_B, _local_topk)[:_aB]
-                _bseq = (_tidx // _gpb).long()
-                _goff = (_tidx % _gpb).long()
-                _cbt = _bt_full[:_aB].long()
-                _pblk = _torch.gather(_cbt, 1, _bseq)
-                _dst = (_pblk * _gpb + _goff).view(-1)
-                _n = _aB * _local_topk
-                _trail = compress_kv_cache.shape[2:]
-                _cmp64 = compress_kv_cache.view(-1, _cbs, *_trail)
-                _src = _sel_kv[:_n]
-                if _src.shape[2:] != _trail:
-                    _src = _src.view(_n, _cbs, *_trail)
-                _cmp64[_dst] = _src
-                _tclog.debug("[COPYBACK-CP] %s B=%d aB=%d topk=%d dst_blocks=%d", layer_name, _B, _aB, _local_topk, _n)
+
+                _state = self._tidalcache_mgr.layers[layer_name]
+                _attn_on_sel = _tcos_b2cp.environ.get("TIDALCACHE_ATTN_ON_SEL", "0") == "1"
+                if _attn_on_sel and _state.sel_kv_cache is not None:
+                    # Phase B2 (CP): attn_op reads sel-side directly, no copy-back.
+                    _Bcap = min(_B, _state.mini_cmp_block_table.shape[0])
+                    compress_kv_cache = _state.mini_compress_kv
+                    compress_topk_idxs = _state.mini_sparse_indices[:_Bcap]
+                    _tc_cmp_block_table = _state.mini_cmp_block_table[:_Bcap]
+                    if not getattr(self, '_tc_logged_b2cp_' + layer_name.replace('.','_'), False):
+                        _tclog.info('[ATTN-ON-SEL-CP first] %s → attn reads sel_kv (Phase B2 CP)', layer_name)
+                        setattr(self, '_tc_logged_b2cp_' + layer_name.replace('.','_'), True)
+                    _tclog.debug("[ATTN-ON-SEL-CP] %s B=%d _B=%d", layer_name, _B, _Bcap)
+                else:
+                    # Phase B1: copy-back to compress_kv_cache.
+                    _cbs = self._tidalcache_mgr.compress_block_size
+                    _gpb = compress_kv_cache.shape[1] // _cbs
+                    _bt_full = compressor_attn_metadata.req_metadata.block_table
+                    _aB = min(_B, _bt_full.shape[0])
+                    _tidx = compress_topk_idxs.view(_B, _local_topk)[:_aB]
+                    _bseq = (_tidx // _gpb).long()
+                    _goff = (_tidx % _gpb).long()
+                    _cbt = _bt_full[:_aB].long()
+                    _pblk = _torch.gather(_cbt, 1, _bseq)
+                    _dst = (_pblk * _gpb + _goff).view(-1)
+                    _n = _aB * _local_topk
+                    _trail = compress_kv_cache.shape[2:]
+                    _cmp64 = compress_kv_cache.view(-1, _cbs, *_trail)
+                    _src = _sel_kv[:_n]
+                    if _src.shape[2:] != _trail:
+                        _src = _src.view(_n, _cbs, *_trail)
+                    _cmp64[_dst] = _src
+                    _tclog.debug("[COPYBACK-CP] %s B=%d aB=%d topk=%d dst_blocks=%d", layer_name, _B, _aB, _local_topk, _n)
 
 '''
             cp_content = (
@@ -587,9 +632,23 @@ def main():
                 )
             print(f"  CP_PATCH3_scatter: OK ({len(cp3_matches)} call sites patched)")
 
-            # CP_PATCH4: removed — with copy-back approach, attn_op uses original
-            # compress_kv_cache and block_table unchanged.
-            print("  CP_PATCH4: SKIPPED (copy-back approach)")
+            # CP_PATCH4: rewrite attn_op cmp_block_table to _tc_cmp_block_table
+            # CP_PATCH2 sets _tc_cmp_block_table on every decode entry (fallback
+            # to compressor_attn_metadata.req_metadata.block_table when TidalCache
+            # is off). Phase B2 (TIDALCACHE_ATTN_ON_SEL=1) points it at the small
+            # mini_cmp_block_table so attn_op reads from sel_kv directly.
+            cp4_pattern = re.compile(
+                r'cmp_block_table=compressor_attn_metadata\.req_metadata\.block_table,'
+            )
+            cp4_matches = list(cp4_pattern.finditer(cp_content))
+            if not cp4_matches:
+                print("  WARNING: CP_PATCH4 no matches")
+            else:
+                cp_content = cp4_pattern.sub(
+                    'cmp_block_table=_tc_cmp_block_table,',
+                    cp_content,
+                )
+                print(f"  CP_PATCH4_attn_arg: OK ({len(cp4_matches)} call sites rewritten)")
 
             if not dry_run:
                 bak = dsa_cp_path + ".bak"
