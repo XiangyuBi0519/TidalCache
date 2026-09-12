@@ -112,17 +112,32 @@ PATCH2_GATHER_CODE = '''
 
                 _state = self._tidalcache_mgr.layers[layer_name]
                 _attn_on_sel = _tcos_b2.environ.get("TIDALCACHE_ATTN_ON_SEL", "0") == "1"
-                if _attn_on_sel and _state.sel_kv_cache is not None:
-                    # Phase B2: attn_op reads sel-side directly, no copy-back.
-                    # Rebind local vars flowing into attn_op.
-                    _B = min(B, _state.mini_cmp_block_table.shape[0])
+                _max_batch = _state.mini_cmp_block_table.shape[0]
+                # Only take B2 path when the runtime batch fits our sel-cache
+                # size. Warmup dummy_run may use B > max_batch_size — for that
+                # we fall back to B1 copy-back below.
+                if _attn_on_sel and _state.sel_kv_cache is not None and B <= _max_batch:
+                    # Rebind local vars flowing into attn_op. Match the shape/
+                    # rank of the ORIGINAL compress_topk_idxs so SparseAttnSharedkv's
+                    # TND layout parser identifies the N axis correctly.
                     compress_kv_cache = _state.mini_compress_kv
-                    compress_topk_idxs = _state.mini_sparse_indices[:_B]
-                    _tc_cmp_block_table = _state.mini_cmp_block_table[:_B]
+                    _orig_shape = tuple(compress_topk_idxs.shape)
+                    _topk_actual = _orig_shape[-1]
+                    _flat_idx = _torch.arange(
+                        _topk_actual,
+                        dtype=compress_topk_idxs.dtype,
+                        device=hidden_states.device,
+                    )
+                    _bcast_shape = [1] * (len(_orig_shape) - 1) + [_topk_actual]
+                    compress_topk_idxs = _flat_idx.view(*_bcast_shape).expand(*_orig_shape).contiguous()
+                    _tc_cmp_block_table = _state.mini_cmp_block_table[:B]
                     if not getattr(self, '_tc_logged_b2_' + layer_name.replace('.','_'), False):
-                        _tclog.info('[ATTN-ON-SEL first] %s → attn reads sel_kv (Phase B2)', layer_name)
+                        _tclog.info(
+                            '[ATTN-ON-SEL first] %s → attn reads sel_kv (Phase B2), orig_shape=%s',
+                            layer_name, _orig_shape,
+                        )
                         setattr(self, '_tc_logged_b2_' + layer_name.replace('.','_'), True)
-                    _tclog.debug("[ATTN-ON-SEL] %s B=%d _B=%d", layer_name, B, _B)
+                    _tclog.debug("[ATTN-ON-SEL] %s B=%d", layer_name, B)
                 else:
                     # Phase B1: copy-back into compress_kv_cache, attn reads original.
                     _cbs = self._tidalcache_mgr.compress_block_size  # 64
@@ -544,16 +559,28 @@ def main():
 
                 _state = self._tidalcache_mgr.layers[layer_name]
                 _attn_on_sel = _tcos_b2cp.environ.get("TIDALCACHE_ATTN_ON_SEL", "0") == "1"
-                if _attn_on_sel and _state.sel_kv_cache is not None:
+                _max_batch = _state.mini_cmp_block_table.shape[0]
+                if _attn_on_sel and _state.sel_kv_cache is not None and _B <= _max_batch:
                     # Phase B2 (CP): attn_op reads sel-side directly, no copy-back.
-                    _Bcap = min(_B, _state.mini_cmp_block_table.shape[0])
+                    # Preserve original compress_topk_idxs shape for the layout parser.
                     compress_kv_cache = _state.mini_compress_kv
-                    compress_topk_idxs = _state.mini_sparse_indices[:_Bcap]
-                    _tc_cmp_block_table = _state.mini_cmp_block_table[:_Bcap]
+                    _orig_shape = tuple(compress_topk_idxs.shape)
+                    _topk_actual = _orig_shape[-1]
+                    _flat_idx = _torch.arange(
+                        _topk_actual,
+                        dtype=compress_topk_idxs.dtype,
+                        device=hidden_states.device,
+                    )
+                    _bcast_shape = [1] * (len(_orig_shape) - 1) + [_topk_actual]
+                    compress_topk_idxs = _flat_idx.view(*_bcast_shape).expand(*_orig_shape).contiguous()
+                    _tc_cmp_block_table = _state.mini_cmp_block_table[:_B]
                     if not getattr(self, '_tc_logged_b2cp_' + layer_name.replace('.','_'), False):
-                        _tclog.info('[ATTN-ON-SEL-CP first] %s → attn reads sel_kv (Phase B2 CP)', layer_name)
+                        _tclog.info(
+                            '[ATTN-ON-SEL-CP first] %s → attn reads sel_kv (Phase B2 CP), orig_shape=%s',
+                            layer_name, _orig_shape,
+                        )
                         setattr(self, '_tc_logged_b2cp_' + layer_name.replace('.','_'), True)
-                    _tclog.debug("[ATTN-ON-SEL-CP] %s B=%d _B=%d", layer_name, _B, _Bcap)
+                    _tclog.debug("[ATTN-ON-SEL-CP] %s B=%d", layer_name, _B)
                 else:
                     # Phase B1: copy-back to compress_kv_cache.
                     _cbs = self._tidalcache_mgr.compress_block_size
