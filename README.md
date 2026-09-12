@@ -204,21 +204,24 @@ Priority-ordered optimizations, informed by analysis of HiSparse's production im
 
 | # | Optimization | Expected Impact | Source |
 |---|-------------|-----------------|--------|
-| 1 | **Boot-time hugepage reservation** | Eliminate pinned-memory fallback, consistent DMA perf | Ops |
-| 2 | **Async copy stream** | Overlap DMA with compute, hide gather latency | HiSparse `_create_copy_stream` |
-| 3 | **Device hot cache + LRU** | Skip DMA for frequently accessed blocks (50-80% hit rate) | HiSparse `lru_slots` |
-| 4 | **Cross-layer index sharing + batch prefetch** | Leader layer gathers, follower layers reuse plan | HiSparse `_prefetch_group`, `_GroupPlan` |
-| 5 | **Miss-only gather** | Only DMA blocks not already in selection cache | HiSparse `compact_miss_globals` |
-| 6 | **Gather plan reuse** | Avoid redundant index computation across follower layers | HiSparse `_GroupPlan` |
-| 7 | **Adaptive offload** | Only offload when HBM pressure is high; keep KV on Device for short sequences | TidalCache design |
+| 1 | **Reduce Device KV allocation + direct Selection Cache attention** | **Actual HBM savings** — the core value of TidalCache. Currently Device still allocates full KV; must reduce DSA layer blocks to Selection Cache size only, and run attention directly on Selection Cache without copy-back | TidalCache architecture |
+| 2 | **Boot-time hugepage reservation** | Eliminate pinned-memory fallback, consistent DMA perf | Ops |
+| 3 | **Async copy stream** | Overlap DMA with compute, hide gather latency | HiSparse `_create_copy_stream` |
+| 4 | **Device hot cache + LRU** | Skip DMA for frequently accessed blocks (50-80% hit rate) | HiSparse `lru_slots` |
+| 5 | **Cross-layer index sharing + batch prefetch** | Leader layer gathers, follower layers reuse plan | HiSparse `_prefetch_group`, `_GroupPlan` |
+| 6 | **Miss-only gather** | Only DMA blocks not already in selection cache | HiSparse `compact_miss_globals` |
+| 7 | **Gather plan reuse** | Avoid redundant index computation across follower layers | HiSparse `_GroupPlan` |
+| 8 | **Adaptive offload** | Only offload when HBM pressure is high; keep KV on Device for short sequences | TidalCache design |
+
+> **Note**: Opt #1 is a prerequisite for HBM savings. The current v1 implementation validates the data path (gather/scatter/copy-back correctness) but does NOT reduce Device memory — vllm still allocates full KV cache on Device for all layers. Without Opt #1, TidalCache actually uses MORE total memory (Device full KV + Host copy + Selection Cache).
 
 ### Expected Benefits After Optimization
 
-| Metric | Current (v1) | After Opt 2-3 | After Opt 2-6 |
-|--------|-------------|---------------|---------------|
-| Single-request overhead | +37% | ~+15% | ~+5-8% |
-| Concurrent throughput gain | Baseline | +30-50% | +50-80% |
-| HBM savings (per DSA layer) | 100% KV offloaded | Same | Same |
+| Metric | Current (v1) | After Opt 1 | After Opt 1+3-7 |
+|--------|-------------|-------------|-----------------|
+| HBM savings (per DSA layer) | **None** (full KV still on Device) | **100% Full KV offloaded** | Same |
+| Single-request overhead | +37% | ~+30% | ~+5-8% |
+| Concurrent throughput gain | None | +20-30% | +50-80% |
 
 The throughput gain comes from freed HBM enabling larger batch sizes. With 21 DSA layers × 576 bytes/token, offloading saves ~12 KB/token in HBM — for 128K context, that's ~1.5 GB per request freed.
 
@@ -497,21 +500,24 @@ vllm-ascend 集成过程中遇到并修复了 3 个 Bug，均在 **warmup / CUDA
 
 | # | 优化项 | 预期收益 | 来源 |
 |---|--------|----------|------|
-| 1 | **开机 hugepage 预留** | 消除 pinned memory 回退，DMA 性能一致 | 运维 |
-| 2 | **异步 copy stream** | DMA 与计算重叠，隐藏 gather 延迟 | HiSparse `_create_copy_stream` |
-| 3 | **Device 热缓存 + LRU** | 跳过高频访问 block 的 DMA（50-80% 命中率） | HiSparse `lru_slots` |
-| 4 | **跨层索引共享 + 批量预取** | Leader 层 gather，follower 层复用计划 | HiSparse `_prefetch_group` |
-| 5 | **仅 miss gather** | 只 DMA 不在 selection cache 中的 block | HiSparse `compact_miss_globals` |
-| 6 | **Gather plan 复用** | 避免 follower 层重复索引计算 | HiSparse `_GroupPlan` |
-| 7 | **自适应卸载** | 仅在 HBM 压力高时卸载；短序列保留 KV 在 Device | TidalCache 设计 |
+| 1 | **减少 Device KV 分配 + 直接用 Selection Cache 做 attention** | **真正的 HBM 节省** — TidalCache 的核心价值。当前 Device 仍分配全量 KV；需将 DSA 层的 Device blocks 缩减为 Selection Cache 大小，attention 直接读 Selection Cache 不再 copy-back | TidalCache 架构 |
+| 2 | **开机 hugepage 预留** | 消除 pinned memory 回退，DMA 性能一致 | 运维 |
+| 3 | **异步 copy stream** | DMA 与计算重叠，隐藏 gather 延迟 | HiSparse `_create_copy_stream` |
+| 4 | **Device 热缓存 + LRU** | 跳过高频访问 block 的 DMA（50-80% 命中率） | HiSparse `lru_slots` |
+| 5 | **跨层索引共享 + 批量预取** | Leader 层 gather，follower 层复用计划 | HiSparse `_prefetch_group` |
+| 6 | **仅 miss gather** | 只 DMA 不在 selection cache 中的 block | HiSparse `compact_miss_globals` |
+| 7 | **Gather plan 复用** | 避免 follower 层重复索引计算 | HiSparse `_GroupPlan` |
+| 8 | **自适应卸载** | 仅在 HBM 压力高时卸载；短序列保留 KV 在 Device | TidalCache 设计 |
+
+> **注意**：优化 #1 是 HBM 节省的前提。当前 v1 验证了数据通路（gather/scatter/copy-back 正确性），但**并未减少 Device 内存** — vllm 仍为所有层分配全量 KV cache。没有优化 #1，TidalCache 实际上**增加**了总内存占用（Device 全量 KV + Host 副本 + Selection Cache）。
 
 ### 优化后预期收益
 
-| 指标 | 当前 (v1) | 优化 2-3 后 | 优化 2-6 后 |
-|------|----------|------------|------------|
-| 单请求开销 | +37% | ~+15% | ~+5-8% |
-| 并发吞吐提升 | 基线 | +30-50% | +50-80% |
-| HBM 节省（每 DSA 层） | 100% KV 卸载 | 相同 | 相同 |
+| 指标 | 当前 (v1) | 优化 1 后 | 优化 1+3-7 后 |
+|------|----------|----------|--------------|
+| HBM 节省（每 DSA 层） | **无**（全量 KV 仍在 Device） | **100% Full KV 卸载** | 相同 |
+| 单请求开销 | +37% | ~+30% | ~+5-8% |
+| 并发吞吐提升 | 无 | +20-30% | +50-80% |
 
 吞吐提升来自释放的 HBM 支持更大 batch。21 个 DSA 层 × 576 bytes/token，卸载节省 ~12 KB/token HBM。128K 上下文下每请求释放 ~1.5 GB。
 

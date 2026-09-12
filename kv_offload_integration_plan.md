@@ -319,9 +319,23 @@ OmniCache 实现了 `OmniCacheConnector(KVConnectorBase_V1)`，自带 P/D KV 传
 - 独立日志：tidalcache.log，含 SCATTER/GATHER/COPYBACK 每阶段追踪
 - Hugepage：部分覆盖（63%），需开机参数完整分配
 
-### Step 6: 性能优化 ← 下一步
+### Step 6: 减少 Device KV 分配 + 直接 Selection Cache Attention ← 下一步（核心）
 
-**目标**: 将单请求开销从 +37% 降至 +5-8%
+**目标**: 实现真正的 HBM 节省
+
+**当前问题**: v1 验证了数据通路正确性，但 vllm 仍为 DSA 层分配全量 Device KV cache，TidalCache 实际增加了内存占用（Device 全量 KV + Host 副本 + Selection Cache）。
+
+**工作内容**:
+1. 修改 model_runner KV cache 分配 — DSA 层只分配 Selection Cache 大小的 Device blocks（topk × max_batch），不再分配全量
+2. Decode attention 直接读 Selection Cache — 去掉 copy-back 到 compress_kv_cache 的步骤，SparseAttnSharedkv 直接用 sel_kv_cache + sel_block_table
+3. 修改 block manager 可用 block 计算 — 让 vllm 知道 DSA 层释放了多少 HBM，从而允许更大 batch
+4. Prefill 路径适配 — prefill 阶段仍在 Device 计算，完成后 D2H offload 到 Host
+
+**验收标准**: `npu-smi info` 显示 ON 模式比 OFF 模式 HBM 占用明显更低（预期减少 ~1.5 GB/请求 × 并发数）。
+
+### Step 7: 性能优化
+
+**目标**: 将单请求开销从 ~+30% 降至 +5-8%
 
 **优化路线**（参考 HiSparse 生产实现）：
 1. 开机 hugepage 预留 — 消除 pinned memory 回退
@@ -332,11 +346,11 @@ OmniCache 实现了 `OmniCacheConnector(KVConnectorBase_V1)`，自带 P/D KV 传
 6. Gather plan 复用 — follower 层复用 leader 的索引计划
 7. 自适应卸载 — 短序列不卸载，HBM 压力高时启用
 
-### Step 7: 多 batch 并发吞吐基准测试
+### Step 8: 多 batch 并发吞吐基准测试
 
 **目标**: 验证 HBM 节省带来的吞吐提升
 
-### Step 8: Mooncake Store RDMA 直写集成（P/D 分离）
+### Step 9: Mooncake Store RDMA 直写集成（P/D 分离）
 
 ---
 
