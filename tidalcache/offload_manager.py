@@ -88,6 +88,10 @@ class TidalCacheManager:
 
         self.layers: dict[str, LayerOffloadState] = {}
         self._zero_copy_npu = None
+        self._alloc_count = 0
+
+        # Read TAG for HBM logging (single-line HBM summary uses this)
+        self.tag = os.environ.get("TIDALCACHE_TAG", "ON")
 
         logger.info(
             "TidalCache init: blocks=%d, block_size=%d, compress_block_size=%d, "
@@ -95,6 +99,25 @@ class TidalCacheManager:
             num_blocks, block_size, compress_block_size, kv_dim, rope_dim,
             index_topk, max_batch_size, dtype, self.rope_dtype,
         )
+
+    def _log_hbm_rank0(self, stage: str):
+        """Emit one HBM summary line. rank 0 only."""
+        try:
+            import torch_npu  # noqa
+            import torch.distributed as dist
+            rank = dist.get_rank() if dist.is_initialized() else 0
+            if rank != 0:
+                return
+            free, total = torch.npu.mem_get_info()
+            GB = 1024 ** 3
+            logger.info(
+                "[HBM] %s [MODE=%s] | used=%.2f/%.2fGB | free=%.2fGB | tc_layers=%d",
+                stage, self.tag,
+                (total - free) / GB, total / GB, free / GB,
+                self._alloc_count,
+            )
+        except Exception as e:
+            logger.warning("HBM log failed: %s", e)
 
     def _get_zero_copy(self):
         if self._zero_copy_npu is None:
@@ -260,6 +283,10 @@ class TidalCacheManager:
         state.sel_block_status_list = sel_block_status_list
         state.local_topk = topk
         self.layers[layer_name] = state
+        self._alloc_count += 1
+        # Emit rolling HBM summary — the last line in the log after warmup
+        # will show the final post-allocation state (rank 0 only).
+        self._log_hbm_rank0(f"after_alloc_layer[{self._alloc_count}]")
         return state
 
     # ── GatherSelectionKvCache ──

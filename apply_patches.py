@@ -97,6 +97,17 @@ PATCH2_GATHER_CODE = '''
                     full_actual_seq=actual_seq_lengths_key,
                     full_q_actual_seq=_torch.ones(B, dtype=_torch.int32, device=hidden_states.device),
                 )
+                # ── TidalCache validation switch: poison gather output ──
+                # TIDALCACHE_POISON=1 corrupts _sel_kv/_sel_rope BEFORE copy-back.
+                # If attention actually uses the gather-populated positions in
+                # compress_kv_cache, model output will be garbled. If output stays
+                # correct, gather data is not reaching attention.
+                import os as _tcos_poison
+                _poison_mode = _tcos_poison.environ.get("TIDALCACHE_POISON", "0")
+                if _poison_mode == "1":
+                    _sel_kv.fill_(-1000.0)
+                    _sel_rope.fill_(-1000.0)
+                    _tclog.info("[POISON] %s gather output filled with -1000", layer_name)
                 # Copy gathered groups into compress_kv_cache at original positions.
                 _cbs = self._tidalcache_mgr.compress_block_size  # 64
                 _gpb = compress_kv_cache.shape[1] // _cbs  # groups per block (128/64=2)
@@ -151,10 +162,11 @@ MR_PATCHES["PATCH1_init"] = (MR_PATCH1_ANCHOR, MR_PATCH1_INSERT + MR_PATCH1_ANCH
 # We need a unique anchor — use the function's return + its next method def
 MR_PATCH2_CODE = '''
         # ── TidalCache: create manager, layers allocated lazily in dsa_v1 ──
+        import os as _tcos
+        import torch as _torch
         _hf_cfg = getattr(self.model_config, 'hf_text_config', None)
         _has_topk = _hf_cfg is not None and hasattr(_hf_cfg, 'index_topk')
         if self.kv_offload_enabled and _has_topk:
-            import torch as _torch
             import tidalcache
             from tidalcache.offload_manager import TidalCacheManager
 
@@ -198,6 +210,29 @@ MR_PATCH2_CODE = '''
                 index_topk, kv_cache_config.num_blocks, kv_dim,
                 kv_block_size, compress_block_size,
             )
+
+        # ── TidalCache: single-line HBM summary after vllm KV allocation ──
+        # (per-layer TidalCache Device allocation is lazy; a second summary
+        #  line will be emitted after all layers are allocated on first forward.)
+        _tc_rank = getattr(self, 'rank', 0)
+        if _tc_rank == 0:
+            try:
+                _tc_free, _tc_total = _torch.npu.mem_get_info()
+                _GB = 1024 ** 3
+                _tc_tag = _tcos.environ.get(
+                    'TIDALCACHE_TAG',
+                    'ON' if getattr(self, 'kv_offload_enabled', False) else 'OFF',
+                )
+                import logging as _tc_logging
+                _tc_logging.getLogger('tidalcache').info(
+                    "[HBM] after_vllm_kv_init [MODE=%s] | used=%.2f/%.2fGB | free=%.2fGB",
+                    _tc_tag,
+                    (_tc_total - _tc_free) / _GB,
+                    _tc_total / _GB,
+                    _tc_free / _GB,
+                )
+            except Exception as _e:
+                logger.warning("TidalCache HBM logging failed: %s", _e)
 
 '''
 
@@ -439,6 +474,12 @@ def main():
                     full_actual_seq=local_seq_lengths_key,
                     full_q_actual_seq=_torch.ones(_B, dtype=_torch.int32, device=hidden_states.device),
                 )
+                # ── TidalCache validation switch (CP path) ──
+                import os as _tcos_poison
+                if _tcos_poison.environ.get("TIDALCACHE_POISON", "0") == "1":
+                    _sel_kv.fill_(-1000.0)
+                    _sel_rope.fill_(-1000.0)
+                    _tclog.info("[POISON-CP] %s gather output filled with -1000", layer_name)
                 # Copy gathered groups into compress_kv_cache at original positions.
                 _cbs = self._tidalcache_mgr.compress_block_size
                 _gpb = compress_kv_cache.shape[1] // _cbs
