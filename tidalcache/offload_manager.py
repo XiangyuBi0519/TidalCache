@@ -33,18 +33,20 @@ TOPK_SPLIT_NUM = 32  # CANN operator requires block_size=1 when topk>32; split t
 
 @dataclass
 class LayerOffloadState:
-    """Per-layer offload state."""
+    """Per-layer offload state.
+
+    Host side (host_*, npu_*) is allocated eagerly (e.g. at first scatter,
+    when the manager doesn't know the actual per-rank topk).
+
+    Device Selection side (sel_*) is allocated lazily at first gather with
+    the correct local_topk (index_topk // cp_size in CP mode). Fields default
+    to None until upgraded.
+    """
     # Host Full KV (hugepage, CPU tensor + NPU view)
     host_kv_cache: torch.Tensor       # CPU tensor on hugepage
     host_k_rope: torch.Tensor         # CPU tensor on hugepage
     npu_kv_cache: torch.Tensor        # NPU view of host_kv_cache
     npu_k_rope: torch.Tensor          # NPU view of host_k_rope
-
-    # Device Selection Cache
-    sel_kv_cache: torch.Tensor        # [sel_blocks, block_size, kv_dim]
-    sel_k_rope: torch.Tensor          # [sel_blocks, block_size, rope_dim]
-    sel_block_table: torch.Tensor     # [max_batch, topk]
-    sel_block_status: torch.Tensor    # [max_batch, 1, 1, topk+1]
 
     # Hugepage cleanup handles
     mmap_kv: mmap.mmap
@@ -53,6 +55,12 @@ class LayerOffloadState:
     fd_rope: int
     hugepage_path_kv: str
     hugepage_path_rope: str
+
+    # Device Selection Cache — filled by _alloc_sel_side once local_topk known
+    sel_kv_cache: "torch.Tensor | None" = None    # [sel_blocks, block_size, kv_dim]
+    sel_k_rope: "torch.Tensor | None" = None      # [sel_blocks, block_size, rope_dim]
+    sel_block_table: "torch.Tensor | None" = None # [max_batch, topk]
+    sel_block_status: "torch.Tensor | None" = None
 
 
 class TidalCacheManager:
@@ -197,26 +205,21 @@ class TidalCacheManager:
 
     # ── Per-Layer Allocation ──
 
-    def alloc_layer(self, layer_name: str,
-                    local_topk: int | None = None) -> LayerOffloadState:
-        """Allocate Host + Device buffers for one sparse attention layer.
+    def ensure_host_allocated(self, layer_name: str) -> LayerOffloadState:
+        """Allocate ONLY the Host side (hugepage + NPU MMU registration).
 
-        Call this during _allocate_kv_cache_tensors() for each DSA/CSA layer.
-        HCA layers should NOT call this — they use dense attention.
-
-        Args:
-            local_topk: Actual per-rank topk (= index_topk // cp_size in CP
-                        mode). Defaults to self.index_topk for non-CP.
+        Used by scatter (PATCH3) which needs the NPU view of Host to redirect
+        writes there. sel_* fields stay None until first gather (alloc_layer)
+        provides the correct local_topk — avoids over-allocating sel_kv by
+        cp_size× in CP mode.
         """
         if layer_name in self.layers:
             return self.layers[layer_name]
 
-        topk = local_topk if local_topk is not None else self.index_topk
         safe_name = layer_name.replace(".", "_")
 
         # Host Full KV Cache (hugepage) — use compress_block_size so
         # f_blk_size == s_blk_size as required by the CANN operator.
-        # Scale num_blocks to keep total token capacity identical.
         host_num_blocks = self.num_blocks * (
             self.block_size // self.compress_block_size)
         host_kv, mmap_kv, fd_kv, path_kv = self._alloc_hugepage_tensor(
@@ -235,9 +238,30 @@ class TidalCacheManager:
         npu_rope = self._register_npu(host_rope)
 
         logger.info(
-            "Layer %s: host_kv ptr=0x%x → npu ptr=0x%x (local_topk=%d)",
-            layer_name, host_kv.data_ptr(), npu_kv.data_ptr(), topk,
+            "Layer %s: host allocated (host_kv=0x%x → npu=0x%x); sel deferred",
+            layer_name, host_kv.data_ptr(), npu_kv.data_ptr(),
         )
+
+        state = LayerOffloadState(
+            host_kv_cache=host_kv,
+            host_k_rope=host_rope,
+            npu_kv_cache=npu_kv,
+            npu_k_rope=npu_rope,
+            mmap_kv=mmap_kv,
+            mmap_rope=mmap_rope,
+            fd_kv=fd_kv,
+            fd_rope=fd_rope,
+            hugepage_path_kv=path_kv,
+            hugepage_path_rope=path_rope,
+        )
+        state.sel_block_status_list = None
+        state.local_topk = None
+        self.layers[layer_name] = state
+        return state
+
+    def _alloc_sel_side(self, state: LayerOffloadState, local_topk: int):
+        """Allocate Device Selection Cache side with correct local_topk."""
+        topk = local_topk
 
         # Device Selection Cache — uses compress_block_size (not KV block_size)
         sel_blocks = self.max_batch_size * topk
@@ -254,7 +278,6 @@ class TidalCacheManager:
         ).view(self.max_batch_size, topk)
 
         # When topk > TOPK_SPLIT_NUM, gather() splits into chunks of ≤32.
-        # Each chunk needs its own block_status for cache-reuse tracking.
         n_splits = (topk + TOPK_SPLIT_NUM - 1) // TOPK_SPLIT_NUM
         sel_block_status_list = []
         for s in range(n_splits):
@@ -264,28 +287,37 @@ class TidalCacheManager:
                 -1, dtype=torch.int32, device=self.device,
             ))
 
-        state = LayerOffloadState(
-            host_kv_cache=host_kv,
-            host_k_rope=host_rope,
-            npu_kv_cache=npu_kv,
-            npu_k_rope=npu_rope,
-            sel_kv_cache=sel_kv,
-            sel_k_rope=sel_rope,
-            sel_block_table=sel_block_table,
-            sel_block_status=sel_block_status_list[0],
-            mmap_kv=mmap_kv,
-            mmap_rope=mmap_rope,
-            fd_kv=fd_kv,
-            fd_rope=fd_rope,
-            hugepage_path_kv=path_kv,
-            hugepage_path_rope=path_rope,
-        )
+        state.sel_kv_cache = sel_kv
+        state.sel_k_rope = sel_rope
+        state.sel_block_table = sel_block_table
+        state.sel_block_status = sel_block_status_list[0]
         state.sel_block_status_list = sel_block_status_list
         state.local_topk = topk
-        self.layers[layer_name] = state
+
+    def alloc_layer(self, layer_name: str,
+                    local_topk: int | None = None) -> LayerOffloadState:
+        """Ensure both Host and Device Selection sides are allocated.
+
+        If layer's Host side already exists (from an earlier scatter call),
+        just fills in the sel_* side using local_topk. This ordering keeps
+        sel_kv sized correctly for CP mode (topk = index_topk // cp_size).
+
+        Args:
+            local_topk: Actual per-rank topk. Defaults to self.index_topk.
+        """
+        state = self.ensure_host_allocated(layer_name)
+        if state.sel_kv_cache is not None:
+            return state
+
+        topk = local_topk if local_topk is not None else self.index_topk
+        self._alloc_sel_side(state, topk)
+
+        logger.info(
+            "Layer %s: sel side allocated (local_topk=%d)",
+            layer_name, topk,
+        )
         self._alloc_count += 1
-        # Emit rolling HBM summary — the last line in the log after warmup
-        # will show the final post-allocation state (rank 0 only).
+        # Emit rolling HBM summary — grep the last one for post-alloc state.
         self._log_hbm_rank0(f"after_alloc_layer[{self._alloc_count}]")
         return state
 
@@ -306,6 +338,18 @@ class TidalCacheManager:
         indices. We split into chunks of ≤32 to stay on the scalar path.
         """
         state = self.layers[layer_name]
+        # Auto-upgrade: if scatter (PATCH3) alloc'd host only, allocate sel
+        # side now that we know the real local_topk from topk_indices shape.
+        if state.sel_kv_cache is None:
+            actual_topk = topk_indices.shape[-1]
+            self._alloc_sel_side(state, actual_topk)
+            logger.info(
+                "Layer %s: sel side auto-upgraded at gather (local_topk=%d)",
+                layer_name, actual_topk,
+            )
+            self._alloc_count += 1
+            self._log_hbm_rank0(f"after_alloc_layer[{self._alloc_count}]")
+
         gw = self._get_gather_wrapper()
 
         batch_size = full_block_table.shape[0]
@@ -313,11 +357,9 @@ class TidalCacheManager:
         full_actual_seq = full_actual_seq[:batch_size]
         full_q_actual_seq = full_q_actual_seq[:batch_size]
 
-        # Derive topk from the actual topk_indices shape rather than
-        # state.local_topk. When the layer was lazily allocated at scatter time
-        # without knowing CP-local topk, state.local_topk may be larger than
-        # the real topk (index_topk vs index_topk // cp_size). Slicing beyond
-        # actual topk yields empty tensors and triggers CANN error 561002.
+        # Derive topk from the actual topk_indices shape. state.local_topk is
+        # the alloc'd max — may differ if the layer was scatter-alloc'd with
+        # a different topk assumption.
         topk = topk_indices.shape[-1]
         n_splits = (topk + TOPK_SPLIT_NUM - 1) // TOPK_SPLIT_NUM
         assert n_splits <= len(state.sel_block_status_list), (
@@ -326,7 +368,7 @@ class TidalCacheManager:
         )
 
         logger.debug(
-            "[GATHER] %s batch=%d topk=%d splits=%d state.local_topk=%d",
+            "[GATHER] %s batch=%d topk=%d splits=%d state.local_topk=%s",
             layer_name, batch_size, topk, n_splits, state.local_topk,
         )
 
