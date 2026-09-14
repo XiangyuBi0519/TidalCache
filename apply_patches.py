@@ -273,6 +273,45 @@ MR_PATCH2_CODE = '''
         # NEW tensor to prove nothing reads it; B3.3 shrink) build on this.
         #
         # Gated by TIDALCACHE_REPLACE_KV=1. Requires kv_offload_enabled.
+        # ── Phase B3 planning: dump kv_cache_groups structure (rank 0 only) ──
+        # Decides whether compress (self_attn.attn) and indexer (self_attn.indexer.k_cache)
+        # are in the SAME group (bad: they share raw_tensor → can't shrink independently)
+        # or DIFFERENT groups (good: can modify compress group's num_blocks in isolation).
+        if getattr(self, 'rank', 0) == 0:
+            import logging as _tc_lg_g
+            _glog = _tc_lg_g.getLogger('tidalcache')
+            try:
+                _grps = kv_cache_config.kv_cache_groups
+                _glog.info('[KV-GROUPS] total=%d, num_blocks=%d', len(_grps), kv_cache_config.num_blocks)
+                for _gi, _grp in enumerate(_grps):
+                    # group has kv_cache_spec (usually single spec) and layer_names
+                    _spec = _grp.kv_cache_spec
+                    if hasattr(_spec, 'values'):
+                        _spec_vals = list(_spec.values())
+                        _spec_str = f'{type(_spec_vals[0]).__name__}xN' if _spec_vals else 'empty'
+                    else:
+                        _spec_str = type(_spec).__name__
+                    _layer_names = getattr(_grp, 'layer_names', [])
+                    _sample = _layer_names[0] if _layer_names else '?'
+                    _sample_suffix = _sample
+                    _sp = _sample.split('.')
+                    if len(_sp) >= 3 and _sp[0] == 'model' and _sp[1] == 'layers':
+                        _sample_suffix = '.'.join(_sp[3:])
+                    _glog.info(
+                        '[KV-GROUPS] group[%d] spec=%s, num_layers=%d, sample_suffix=%s',
+                        _gi, _spec_str, len(_layer_names), _sample_suffix,
+                    )
+                    # Also log the first few layers of this group to see prefixes
+                    if len(_layer_names) <= 5:
+                        for _ln in _layer_names:
+                            _glog.info('  member: %s', _ln)
+                    else:
+                        for _ln in _layer_names[:3]:
+                            _glog.info('  member: %s', _ln)
+                        _glog.info('  ... (%d more)', len(_layer_names) - 3)
+            except Exception as _e:
+                _glog.warning('[KV-GROUPS] failed: %s', _e)
+
         # TIDALCACHE_REPLACE_KV modes:
         #   0 / unset : off
         #   dry       : diagnostic only — log kv_caches structure, don't touch
