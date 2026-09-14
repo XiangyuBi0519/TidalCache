@@ -477,27 +477,125 @@ MR_PATCH2_CODE = '''
 '''
 
 
+# MR_PATCH3: Phase B3 v2 — post-process kv_cache_raw_tensors to replace
+# DSA compress group's Device allocation with a Host-hugepage-backed
+# NPU-mapped tensor. Achieves real HBM savings while keeping vllm's downstream
+# reshape/binding logic unchanged (same shape/dtype from vllm's perspective).
+# Gated by TIDALCACHE_HOST_COMPRESS=1.
+MR_PATCH3_CODE = '''
+        # ── TidalCache Phase B3 v2: replace compress raw_tensor with Host-backed ──
+        import os as _tcos_h
+        if _tcos_h.environ.get('TIDALCACHE_HOST_COMPRESS', '0') == '1':
+            import torch as _torch_h
+            import logging as _tclg_h
+            _hlog = _tclg_h.getLogger('tidalcache')
+            _rank0_h = getattr(self, 'rank', 0) == 0
+            try:
+                import tidalcache as _tc_h
+                _mgr = _tc_h._GLOBAL_MANAGER
+            except Exception as _e:
+                _mgr = None
+                _hlog.warning('[HOST-COMPRESS] TidalCache manager not available: %s', _e)
+            if _mgr is not None:
+                # Detect compress layers by name suffix: '.self_attn.attn'
+                _COMPRESS_SFX = '.self_attn.attn'
+                # Group by identity: multiple DSA layers may share ONE raw_tensor
+                # object (line 4239/4251 branches assign same tensor to all
+                # shared_by layers). Replace once per unique tensor object.
+                _seen = {}  # id(old) -> new_host_tensor
+                _replaced_layers = 0
+                _total_bytes = 0
+                for _ln, _rt in list(kv_cache_raw_tensors.items()):
+                    if not _ln.endswith(_COMPRESS_SFX):
+                        continue
+                    if _rt is None:
+                        continue
+                    # raw_tensors entries can be a single tensor OR a tuple
+                    # (k_tensor, v_tensor, dsa_k_tensor, ...). For the compress
+                    # group in DSV4, we saw single-tensor layout — but handle
+                    # both defensively. In tuple case, we replace element [0]
+                    # (k_tensor) which is the compress cache buffer.
+                    if isinstance(_rt, _torch_h.Tensor):
+                        _old_t = _rt
+                        _target_slot = 'single'
+                    elif isinstance(_rt, (tuple, list)) and len(_rt) > 0 and isinstance(_rt[0], _torch_h.Tensor):
+                        _old_t = _rt[0]
+                        _target_slot = 'tuple_0'
+                    else:
+                        continue
+                    _key = id(_old_t)
+                    if _key in _seen:
+                        _new_t = _seen[_key]
+                    else:
+                        _size = _old_t.numel() * _old_t.element_size()
+                        try:
+                            _new_t_int8 = _mgr.alloc_group_host_tensor(
+                                _size, group_name=f'compress_{_key:x}'
+                            )
+                            # Reinterpret as the original dtype/shape so
+                            # downstream reshape sees an equivalent tensor.
+                            _new_t = _new_t_int8.view(_old_t.dtype)[:_old_t.numel()].view(_old_t.shape) \
+                                if _old_t.dtype != _torch_h.int8 else _new_t_int8.view(_old_t.shape)
+                            _seen[_key] = _new_t
+                            _total_bytes += _size
+                        except Exception as _e:
+                            _hlog.error('[HOST-COMPRESS] failed to alloc for %s: %s', _ln, _e)
+                            continue
+                    if _target_slot == 'single':
+                        kv_cache_raw_tensors[_ln] = _new_t
+                    else:
+                        _new_tuple = (_new_t,) + tuple(_rt[1:])
+                        kv_cache_raw_tensors[_ln] = _new_tuple
+                    _replaced_layers += 1
+                    if _rank0_h and _replaced_layers <= 2:
+                        _hlog.info(
+                            '[HOST-COMPRESS] %s: replaced Device compress → Host-mapped NPU tensor '
+                            '(shape=%s, dtype=%s, %.1f MB)',
+                            _ln, tuple(_old_t.shape), _old_t.dtype,
+                            _old_t.numel() * _old_t.element_size() / 1024**2,
+                        )
+                # Drop references to old tensors and force NPU allocator to reclaim.
+                _seen.clear()
+                del _rt
+                try:
+                    _torch_h.npu.empty_cache()
+                except Exception:
+                    pass
+                _hlog.info(
+                    '[HOST-COMPRESS] done: replaced=%d layers, total=%.2f GB → Host '
+                    '(rank=%d)',
+                    _replaced_layers, _total_bytes / 1024**3,
+                    getattr(self, 'rank', 0),
+                )
+
+'''
+
+
 def find_and_patch_mr_init_kv(content):
-    """Find the return statement in initialize_kv_cache_tensors and insert before it."""
-    # Find the function
-    func_match = re.search(
-        r'def initialize_kv_cache_tensors\(self.*?\n',
-        content
-    )
+    """Insert MR_PATCH2 before return kv_caches AND MR_PATCH3 before
+    return kv_cache_raw_tensors."""
+    # PATCH2: initialize_kv_cache_tensors → before 'return kv_caches'
+    func_match = re.search(r'def initialize_kv_cache_tensors\(self.*?\n', content)
     if not func_match:
         return None
-
-    func_start = func_match.start()
-
-    # Find "return kv_caches" after the function start
-    # Look for "        return kv_caches\n" (8-space indent = method body)
     return_pattern = re.compile(r'^        return kv_caches\s*$', re.MULTILINE)
-    match = return_pattern.search(content, func_start)
+    match = return_pattern.search(content, func_match.start())
     if not match:
         return None
+    content = content[:match.start()] + MR_PATCH2_CODE + content[match.start():]
 
-    # Insert before the return
-    return content[:match.start()] + MR_PATCH2_CODE + content[match.start():]
+    # PATCH3: _allocate_kv_cache_tensors → before 'return kv_cache_raw_tensors'
+    func3 = re.search(r'def _allocate_kv_cache_tensors\(self.*?\n', content)
+    if not func3:
+        print("  WARNING: MR_PATCH3 anchor (_allocate_kv_cache_tensors) not found — skipping")
+        return content
+    ret3 = re.compile(r'^        return kv_cache_raw_tensors\s*$', re.MULTILINE)
+    m3 = ret3.search(content, func3.start())
+    if not m3:
+        print("  WARNING: MR_PATCH3 'return kv_cache_raw_tensors' not found — skipping")
+        return content
+    content = content[:m3.start()] + MR_PATCH3_CODE + content[m3.start():]
+    return content
 
 
 def main():

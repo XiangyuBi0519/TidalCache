@@ -195,6 +195,46 @@ class TidalCacheManager:
             )
             return tensor, None, -1, ""
 
+    def alloc_group_host_tensor(
+        self, size_bytes: int, group_name: str = "compress",
+    ) -> torch.Tensor:
+        """Allocate a byte-buffer on Host hugepage and register as NPU MMU view.
+
+        Returns an NPU-viewable tensor of shape (size_bytes,) with dtype int8.
+        Intended to replace vllm's Device raw_tensor allocation for one
+        kv_cache_group (e.g. the DSA compress group). vllm downstream will
+        reinterpret/reshape via .view() as usual.
+
+        This is the Phase B3 v2 core primitive: keep the tensor "on Device"
+        from vllm's perspective (data_ptr in NPU address space), but the
+        actual storage is on Host DDR (hugepage) so we save HBM.
+        """
+        safe = group_name.replace("/", "_").replace(".", "_")
+        # Allocate as int8 to match vllm's byte-buffer allocation contract.
+        host_tensor, mmap_obj, fd, path = self._alloc_hugepage_tensor(
+            [size_bytes], torch.int8, f"group_{safe}_{id(self)}",
+        )
+        npu_tensor = self._register_npu(host_tensor)
+        # Track for cleanup — reuse LayerOffloadState-style storage
+        if not hasattr(self, "_group_allocations"):
+            self._group_allocations = []
+        self._group_allocations.append({
+            "name": group_name,
+            "size_bytes": size_bytes,
+            "host": host_tensor,
+            "npu": npu_tensor,
+            "mmap": mmap_obj,
+            "fd": fd,
+            "path": path,
+        })
+        logger.info(
+            "[GROUP-ALLOC] %s: %.2f MB → Host hugepage + NPU MMU view "
+            "(host_ptr=0x%x, npu_ptr=0x%x)",
+            group_name, size_bytes / 1024**2,
+            host_tensor.data_ptr(), npu_tensor.data_ptr(),
+        )
+        return npu_tensor
+
     def _register_npu(self, host_tensor: torch.Tensor) -> torch.Tensor:
         """Register host tensor to NPU MMU, return NPU view tensor."""
         zcn = self._get_zero_copy()

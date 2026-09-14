@@ -443,6 +443,41 @@ just_finished_prefill[R] = was_prefilling and will_be_done
 
 **验收标准**: `npu-smi info` 显示 ON 模式比 OFF 模式 HBM 占用明显更低（预期减少 ~1.5 GB/请求 × 并发数）。
 
+#### 6.8 Phase B3 v2 — Host-backed Compress Group（2026-09-14 定案）
+
+**背景**：B3.1 尝试"物理替换 Device tensor"失败——vllm 的 kv_cache 视图共享 raw_tensor storage，`resize_(0)` 会连带干碎 state_cache。同时"分配新 Device tensor" HBM 双倍无法承受。
+
+**KV Cache Group 侦查结果**（rank 0）:
+
+| Group | Layers | 后缀 | 说明 |
+|-------|--------|------|------|
+| 0 | 42 | `self_attn.indexer.k_cache` | Indexer |
+| 1 | 20 | `self_attn.attn` | **compress_kv_cache（B3 目标）** |
+| 2 | 22 | `self_attn.swa_cache` | SWA |
+| 3 | 22 | `self_attn.swa_cache` | SWA-另一波 |
+| 4 | 42 | `self_attn.compressor.state_cache` | 压缩器状态 |
+| 5 | 20 | `self_attn.compressor.state_cache` | 压缩器状态-另一波 |
+
+**关键发现**：compress (group 1) **独立成 group**，raw_tensor 不与 indexer/state/swa 共享。改动集中在这一 group。
+
+**方案：Host-backed 替换**
+- 在 `_allocate_kv_cache_tensors` 返回前，识别属于 compress group 的 raw_tensors（layer 名 `.self_attn.attn`）
+- 分配同大小的 Host hugepage + `aclrtHostRegisterV2` NPU MMU 映射
+- 用 Host-backed NPU tensor 替换 vllm 原 Device 分配
+- `torch.npu.empty_cache()` 强制释放原 Device tensor
+- 从 vllm 的角度：tensor 的 shape/dtype/device 完全一样，reshape/binding 代码无需改动
+- 从 HBM 角度：compress group 的 ~23 GB Device 分配变成 0 GB（数据在 Host DDR）
+
+**开关**：`TIDALCACHE_HOST_COMPRESS=1`
+
+**实现位置**：`apply_patches.py` MR_PATCH3 hook `_allocate_kv_cache_tensors`
+
+**预期收益**：
+- Device HBM: ~60 GB/卡 → **~37 GB/卡**（节省 23 GB）
+- 并发能力: 2-3×
+- Prefill scatter 变慢（写 Host 经 PCIe）
+- Attention 通过 B2 读 sel_kv（Device 小缓冲），不触发慢速 Host 读
+
 ### Step 7: 性能优化
 
 **目标**: 将单请求开销从 ~+30% 降至 +5-8%
