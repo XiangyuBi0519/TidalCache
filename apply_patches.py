@@ -288,11 +288,17 @@ MR_PATCH2_CODE = '''
 
             # First pass (rank 0 only): group layer names by suffix pattern to
             # understand the kv_caches layout without dumping 168 log lines.
+            def _tc_suf(_n):
+                # Strip 'model.layers.N.' prefix without regex (avoids escape
+                # sequence warnings inside the outer triple-quoted patch string).
+                _p = _n.split('.')
+                if len(_p) >= 3 and _p[0] == 'model' and _p[1] == 'layers':
+                    return '.'.join(_p[3:])
+                return _n
             if _rank0:
-                import re as _tc_re
                 _suffix_stats = {}
                 for _lname, _entry in kv_caches.items():
-                    _suf = _tc_re.sub(r'model\.layers\.\d+\.', '', _lname)
+                    _suf = _tc_suf(_lname)
                     if _suf not in _suffix_stats:
                         _shape_desc = 'unknown'
                         if isinstance(_entry, (tuple, list)):
