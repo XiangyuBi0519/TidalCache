@@ -364,22 +364,24 @@ MR_PATCH2_CODE = '''
                     _replaced_count += 1
                     continue
 
-                # Actual replacement: free old storage FIRST, then allocate new.
-                # HBM is tight (~93% full), so we can't afford temporary doubling.
+                # WARNING: cannot free old storage — vllm allocates ONE big
+                # raw_tensor per kv_cache_group, then slices it into multiple
+                # views (compress + swa + state_cache etc). Calling
+                # storage().resize_(0) on any view frees the SHARED storage
+                # and breaks state_cache. Just allocate new independent
+                # tensor; old view becomes orphaned but its shared storage
+                # stays alive (still used by state_cache/swa/etc.).
+                #
+                # This means B3.1 same-size replacement DOUBLES memory
+                # transiently. Fails with OOM if not enough free HBM.
                 _old = _tensor_first
                 _shape = tuple(_old.shape)
                 _dtype = _old.dtype
                 _dev = _old.device
                 try:
-                    _old.untyped_storage().resize_(0)
-                except Exception as _e:
-                    _rlog.warning('[REPLACE-KV] failed to free storage for %s: %s', _lname, _e)
-                    _skipped_count += 1
-                    continue
-                try:
                     _new = _torch.zeros(_shape, dtype=_dtype, device=_dev)
                 except Exception as _e:
-                    _rlog.error('[REPLACE-KV] OOM after freeing %s: %s (state broken)', _lname, _e)
+                    _rlog.error('[REPLACE-KV] OOM allocating %s: %s', _lname, _e)
                     break
                 if isinstance(_entry, tuple):
                     _new_entry = (_new,) + tuple(_entry[1:])
