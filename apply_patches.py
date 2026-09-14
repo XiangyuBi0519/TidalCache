@@ -262,6 +262,60 @@ MR_PATCH2_CODE = '''
                 kv_block_size, compress_block_size,
             )
 
+        # ── TidalCache Phase B3.1: physical tensor replacement (same size) ──
+        # Replace kv_caches[layer_name][0] with a fresh same-shape tensor for
+        # each DSA layer, then update self.kv_caches list and forward_context
+        # binding so ALL downstream reads (including any captured CUDA graph)
+        # see the new tensor instead of vllm's original allocation.
+        #
+        # Purpose (B3.1): validate the replacement mechanism end-to-end. Same
+        # size = no HBM savings yet, but subsequent phases (B3.2 poison the
+        # NEW tensor to prove nothing reads it; B3.3 shrink) build on this.
+        #
+        # Gated by TIDALCACHE_REPLACE_KV=1. Requires kv_offload_enabled.
+        _replace_kv = _tcos.environ.get('TIDALCACHE_REPLACE_KV', '0') == '1'
+        if _replace_kv and self.kv_offload_enabled and _has_topk:
+            import logging as _tc_lg_r
+            _rlog = _tc_lg_r.getLogger('tidalcache')
+            _replaced_count = 0
+            _skipped_count = 0
+            for _lname, _entry in list(kv_caches.items()):
+                # DSA layers have tuple/list with ≥3 elements
+                # (k_cache, dsa_k_cache, dsa_k_scale_cache) minimum.
+                if not isinstance(_entry, (tuple, list)) or len(_entry) < 3:
+                    _skipped_count += 1
+                    continue
+                _old = _entry[0]
+                if not isinstance(_old, _torch.Tensor):
+                    _skipped_count += 1
+                    continue
+                # Allocate same-shape fresh tensor
+                _new = _torch.zeros_like(_old)
+                _new_entry = (_new,) + tuple(_entry[1:])
+                kv_caches[_lname] = _new_entry
+                # Update self.kv_caches list — find OLD entry by identity, replace
+                for _i, _e in enumerate(self.kv_caches):
+                    if _e is _entry:
+                        self.kv_caches[_i] = _new_entry
+                        break
+                # Update static_forward_context binding
+                try:
+                    _ctx = self.compilation_config.static_forward_context.get(_lname)
+                    if _ctx is not None:
+                        _ctx.kv_cache = [_new_entry]
+                except Exception as _e:
+                    _rlog.warning('[REPLACE-KV] forward_context update failed for %s: %s', _lname, _e)
+                _replaced_count += 1
+                if _replaced_count <= 2:
+                    _rlog.info(
+                        '[REPLACE-KV] %s: replaced compress tensor (shape=%s, dtype=%s)',
+                        _lname, tuple(_old.shape), _old.dtype,
+                    )
+            _rlog.info(
+                '[REPLACE-KV] done: replaced=%d, skipped=%d (rank=%d)',
+                _replaced_count, _skipped_count, getattr(self, 'rank', 0),
+            )
+
         # ── TidalCache: single-line HBM summary after vllm KV allocation ──
         # (per-layer TidalCache Device allocation is lazy; a second summary
         #  line will be emitted after all layers are allocated on first forward.)
