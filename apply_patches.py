@@ -171,10 +171,10 @@ PATCH2_GATHER_CODE = '''
                 # if nothing else still reads compress_kv_cache. If output stays
                 # correct → safe to release the vllm tensor storage in B3.
                 if _tcos_b2.environ.get("TIDALCACHE_POISON_COMPRESS", "0") == "1":
-                    _orig_compress_ref.fill_(float('nan'))
+                    _orig_compress_ref.zero_()
                     if not getattr(self, '_tc_poison_c_' + layer_name.replace('.','_'), False):
                         _tclog.info(
-                            '[POISON-COMPRESS first] %s → vllm compress_kv_cache filled with NaN',
+                            '[POISON-COMPRESS first] %s → vllm compress_kv_cache zeroed',
                             layer_name,
                         )
                         setattr(self, '_tc_poison_c_' + layer_name.replace('.','_'), True)
@@ -627,10 +627,10 @@ def main():
 
                 # ── Step 1 test (CP): poison vllm's compress_kv_cache ──
                 if _tcos_b2cp.environ.get("TIDALCACHE_POISON_COMPRESS", "0") == "1":
-                    _orig_compress_ref.fill_(float('nan'))
+                    _orig_compress_ref.zero_()
                     if not getattr(self, '_tc_poison_c_cp_' + layer_name.replace('.','_'), False):
                         _tclog.info(
-                            '[POISON-COMPRESS-CP first] %s → vllm compress_kv_cache filled with NaN',
+                            '[POISON-COMPRESS-CP first] %s → vllm compress_kv_cache zeroed',
                             layer_name,
                         )
                         setattr(self, '_tc_poison_c_cp_' + layer_name.replace('.','_'), True)
