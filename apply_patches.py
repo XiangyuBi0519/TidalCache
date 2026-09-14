@@ -284,8 +284,36 @@ MR_PATCH2_CODE = '''
             _rank0 = getattr(self, 'rank', 0) == 0
             _replaced_count = 0
             _skipped_count = 0
-            _inspected = 0
             _dsa_candidates = 0
+
+            # First pass (rank 0 only): group layer names by suffix pattern to
+            # understand the kv_caches layout without dumping 168 log lines.
+            if _rank0:
+                import re as _tc_re
+                _suffix_stats = {}
+                for _lname, _entry in kv_caches.items():
+                    _suf = _tc_re.sub(r'model\.layers\.\d+\.', '', _lname)
+                    if _suf not in _suffix_stats:
+                        _shape_desc = 'unknown'
+                        if isinstance(_entry, (tuple, list)):
+                            _parts = []
+                            for _v in _entry:
+                                if hasattr(_v, 'shape'):
+                                    _parts.append(f'{_v.dtype}{tuple(_v.shape)}')
+                                else:
+                                    _parts.append(type(_v).__name__)
+                            _shape_desc = f'{type(_entry).__name__}[{", ".join(_parts)}]'
+                        elif hasattr(_entry, 'shape'):
+                            _shape_desc = f'{_entry.dtype}{tuple(_entry.shape)}'
+                        _suffix_stats[_suf] = [0, _shape_desc]
+                    _suffix_stats[_suf][0] += 1
+                _rlog.info(
+                    '[REPLACE-KV suffix-stats] total_entries=%d unique_suffixes=%d',
+                    len(kv_caches), len(_suffix_stats),
+                )
+                for _suf, (_cnt, _sd) in sorted(_suffix_stats.items()):
+                    _rlog.info('[REPLACE-KV suffix] %s x%d → %s', _suf, _cnt, _sd)
+
             for _lname, _entry in list(kv_caches.items()):
                 # Detect: tuple/list of tensors, first tensor >=3D
                 _tensor_first = None
@@ -294,20 +322,6 @@ MR_PATCH2_CODE = '''
                         _tensor_first = _entry[0]
                 elif isinstance(_entry, _torch.Tensor) and _entry.dim() >= 3:
                     _tensor_first = _entry
-
-                # Diagnostic: log structure of first 5 entries (all workers -> dedup)
-                if _rank0 and _inspected < 5:
-                    _inspected += 1
-                    _tstr = type(_entry).__name__
-                    if hasattr(_entry, '__len__') and not isinstance(_entry, _torch.Tensor):
-                        _tstr += f' len={len(_entry)}'
-                        for _ix, _v in enumerate(_entry):
-                            _shape = tuple(_v.shape) if hasattr(_v, 'shape') else 'N/A'
-                            _dt = str(_v.dtype) if hasattr(_v, 'dtype') else type(_v).__name__
-                            _tstr += f' [{_ix}]:{_dt}{_shape}'
-                    elif hasattr(_entry, 'shape'):
-                        _tstr += f' shape={tuple(_entry.shape)} dtype={_entry.dtype}'
-                    _rlog.info('[REPLACE-KV inspect] %s → %s', _lname, _tstr)
 
                 if _tensor_first is None:
                     _skipped_count += 1
