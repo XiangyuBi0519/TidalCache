@@ -273,33 +273,21 @@ MR_PATCH2_CODE = '''
         # NEW tensor to prove nothing reads it; B3.3 shrink) build on this.
         #
         # Gated by TIDALCACHE_REPLACE_KV=1. Requires kv_offload_enabled.
-        _replace_kv = _tcos.environ.get('TIDALCACHE_REPLACE_KV', '0') == '1'
-        if _replace_kv and self.kv_offload_enabled and _has_topk:
+        # TIDALCACHE_REPLACE_KV modes:
+        #   0 / unset : off
+        #   dry       : diagnostic only — log kv_caches structure, don't touch
+        #   1         : ACTUAL same-size replacement (only if free HBM allows)
+        _replace_kv = _tcos.environ.get('TIDALCACHE_REPLACE_KV', '0').lower()
+        if _replace_kv in ('dry', '1') and self.kv_offload_enabled and _has_topk:
             import logging as _tc_lg_r
             _rlog = _tc_lg_r.getLogger('tidalcache')
-            # Only rank 0 logs structure to keep output manageable
             _rank0 = getattr(self, 'rank', 0) == 0
             _replaced_count = 0
             _skipped_count = 0
             _inspected = 0
+            _dsa_candidates = 0
             for _lname, _entry in list(kv_caches.items()):
-                # Diagnostic: dump structure of first 5 entries
-                if _rank0 and _inspected < 5:
-                    _inspected += 1
-                    _tstr = type(_entry).__name__
-                    if hasattr(_entry, '__len__'):
-                        _tstr += f' len={len(_entry)}'
-                        for _ix, _v in enumerate(_entry if hasattr(_entry, '__iter__') else []):
-                            _shape = tuple(_v.shape) if hasattr(_v, 'shape') else 'N/A'
-                            _dt = str(_v.dtype) if hasattr(_v, 'dtype') else type(_v).__name__
-                            _tstr += f' [{_ix}]:{_dt}{_shape}'
-                    elif hasattr(_entry, 'shape'):
-                        _tstr += f' shape={tuple(_entry.shape)} dtype={_entry.dtype}'
-                    _rlog.info('[REPLACE-KV inspect] %s → %s', _lname, _tstr)
-
-                # Detect entries with at least one 3D+ tensor at position 0.
-                # DSA compress caches are typically 4D [Bn, Bs, N, D] or
-                # 3D [num_blocks, block_size, dim].
+                # Detect: tuple/list of tensors, first tensor >=3D
                 _tensor_first = None
                 if isinstance(_entry, (tuple, list)) and len(_entry) >= 1:
                     if isinstance(_entry[0], _torch.Tensor) and _entry[0].dim() >= 3:
@@ -307,26 +295,54 @@ MR_PATCH2_CODE = '''
                 elif isinstance(_entry, _torch.Tensor) and _entry.dim() >= 3:
                     _tensor_first = _entry
 
+                # Diagnostic: log structure of first 5 entries (all workers -> dedup)
+                if _rank0 and _inspected < 5:
+                    _inspected += 1
+                    _tstr = type(_entry).__name__
+                    if hasattr(_entry, '__len__') and not isinstance(_entry, _torch.Tensor):
+                        _tstr += f' len={len(_entry)}'
+                        for _ix, _v in enumerate(_entry):
+                            _shape = tuple(_v.shape) if hasattr(_v, 'shape') else 'N/A'
+                            _dt = str(_v.dtype) if hasattr(_v, 'dtype') else type(_v).__name__
+                            _tstr += f' [{_ix}]:{_dt}{_shape}'
+                    elif hasattr(_entry, 'shape'):
+                        _tstr += f' shape={tuple(_entry.shape)} dtype={_entry.dtype}'
+                    _rlog.info('[REPLACE-KV inspect] %s → %s', _lname, _tstr)
+
                 if _tensor_first is None:
                     _skipped_count += 1
                     continue
+                _dsa_candidates += 1
 
+                # dry run: don't allocate, just log the candidate
+                if _replace_kv == 'dry':
+                    if _rank0 and _dsa_candidates <= 3:
+                        _rlog.info(
+                            '[REPLACE-KV dry] candidate %s: shape=%s dtype=%s (would alloc %.2f MB)',
+                            _lname, tuple(_tensor_first.shape), _tensor_first.dtype,
+                            _tensor_first.numel() * _tensor_first.element_size() / 1024**2,
+                        )
+                    _replaced_count += 1
+                    continue
+
+                # Actual replacement path (may OOM if free HBM < tensor size)
                 _old = _tensor_first
-                _new = _torch.zeros_like(_old)
+                try:
+                    _new = _torch.zeros_like(_old)
+                except _torch.cuda.OutOfMemoryError if hasattr(_torch, 'cuda') else Exception as _e:
+                    _rlog.warning('[REPLACE-KV] OOM allocating %s, aborting: %s', _lname, _e)
+                    break
                 if isinstance(_entry, tuple):
                     _new_entry = (_new,) + tuple(_entry[1:])
                 elif isinstance(_entry, list):
                     _new_entry = [_new] + list(_entry[1:])
                 else:
-                    # single tensor entry
                     _new_entry = _new
                 kv_caches[_lname] = _new_entry
-                # Update self.kv_caches list — find by identity
                 for _i, _e in enumerate(self.kv_caches):
                     if _e is _entry:
                         self.kv_caches[_i] = _new_entry
                         break
-                # Update static_forward_context binding
                 try:
                     _ctx = self.compilation_config.static_forward_context.get(_lname)
                     if _ctx is not None:
@@ -340,8 +356,9 @@ MR_PATCH2_CODE = '''
                         _lname, tuple(_old.shape), _old.dtype,
                     )
             _rlog.info(
-                '[REPLACE-KV] done: replaced=%d, skipped=%d (rank=%d)',
-                _replaced_count, _skipped_count, getattr(self, 'rank', 0),
+                '[REPLACE-KV %s] done: candidates=%d, replaced=%d, skipped=%d (rank=%d)',
+                _replace_kv, _dsa_candidates, _replaced_count, _skipped_count,
+                getattr(self, 'rank', 0),
             )
 
         # ── TidalCache: single-line HBM summary after vllm KV allocation ──
