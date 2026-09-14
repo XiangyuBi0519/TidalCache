@@ -320,21 +320,40 @@ MR_PATCH2_CODE = '''
                 for _suf, (_cnt, _sd) in sorted(_suffix_stats.items()):
                     _rlog.info('[REPLACE-KV suffix] %s x%d → %s', _suf, _cnt, _sd)
 
+            # DSA layer detection: a layer is DSA iff it has an indexer.k_cache
+            # entry in kv_caches. The compress_kv_cache lives at the same layer's
+            # 'self_attn.attn' suffix. Dense/HCA layers also have 'self_attn.attn'
+            # but no indexer — those we must NOT touch or attention breaks.
+            _dsa_prefixes = set()
+            _INDEXER_SFX = '.self_attn.indexer.k_cache'
+            _ATTN_SFX = '.self_attn.attn'
+            for _lname in kv_caches:
+                if _lname.endswith(_INDEXER_SFX):
+                    _dsa_prefixes.add(_lname[:-len(_INDEXER_SFX)])
+            if _rank0:
+                _rlog.info('[REPLACE-KV] identified %d DSA layers', len(_dsa_prefixes))
+
             for _lname, _entry in list(kv_caches.items()):
-                # Detect: tuple/list of tensors, first tensor >=3D
+                # Only replace DSA compress_kv_cache: '<prefix>.self_attn.attn'
+                # where <prefix> also has an indexer.k_cache entry.
+                if not _lname.endswith(_ATTN_SFX):
+                    _skipped_count += 1
+                    continue
+                _prefix = _lname[:-len(_ATTN_SFX)]
+                if _prefix not in _dsa_prefixes:
+                    _skipped_count += 1
+                    continue
                 _tensor_first = None
                 if isinstance(_entry, (tuple, list)) and len(_entry) >= 1:
                     if isinstance(_entry[0], _torch.Tensor) and _entry[0].dim() >= 3:
                         _tensor_first = _entry[0]
                 elif isinstance(_entry, _torch.Tensor) and _entry.dim() >= 3:
                     _tensor_first = _entry
-
                 if _tensor_first is None:
                     _skipped_count += 1
                     continue
                 _dsa_candidates += 1
 
-                # dry run: don't allocate, just log the candidate
                 if _replace_kv == 'dry':
                     if _rank0 and _dsa_candidates <= 3:
                         _rlog.info(
@@ -345,12 +364,22 @@ MR_PATCH2_CODE = '''
                     _replaced_count += 1
                     continue
 
-                # Actual replacement path (may OOM if free HBM < tensor size)
+                # Actual replacement: free old storage FIRST, then allocate new.
+                # HBM is tight (~93% full), so we can't afford temporary doubling.
                 _old = _tensor_first
+                _shape = tuple(_old.shape)
+                _dtype = _old.dtype
+                _dev = _old.device
                 try:
-                    _new = _torch.zeros_like(_old)
-                except _torch.cuda.OutOfMemoryError if hasattr(_torch, 'cuda') else Exception as _e:
-                    _rlog.warning('[REPLACE-KV] OOM allocating %s, aborting: %s', _lname, _e)
+                    _old.untyped_storage().resize_(0)
+                except Exception as _e:
+                    _rlog.warning('[REPLACE-KV] failed to free storage for %s: %s', _lname, _e)
+                    _skipped_count += 1
+                    continue
+                try:
+                    _new = _torch.zeros(_shape, dtype=_dtype, device=_dev)
+                except Exception as _e:
+                    _rlog.error('[REPLACE-KV] OOM after freeing %s: %s (state broken)', _lname, _e)
                     break
                 if isinstance(_entry, tuple):
                     _new_entry = (_new,) + tuple(_entry[1:])
@@ -373,12 +402,12 @@ MR_PATCH2_CODE = '''
                 if _rank0 and _replaced_count <= 2:
                     _rlog.info(
                         '[REPLACE-KV] %s: replaced (shape=%s, dtype=%s)',
-                        _lname, tuple(_old.shape), _old.dtype,
+                        _lname, _shape, _dtype,
                     )
             _rlog.info(
-                '[REPLACE-KV %s] done: candidates=%d, replaced=%d, skipped=%d (rank=%d)',
-                _replace_kv, _dsa_candidates, _replaced_count, _skipped_count,
-                getattr(self, 'rank', 0),
+                '[REPLACE-KV %s] done: dsa_layers=%d, candidates=%d, replaced=%d, skipped=%d (rank=%d)',
+                _replace_kv, len(_dsa_prefixes), _dsa_candidates, _replaced_count,
+                _skipped_count, getattr(self, 'rank', 0),
             )
 
         # ── TidalCache: single-line HBM summary after vllm KV allocation ──
