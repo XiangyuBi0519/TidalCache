@@ -83,6 +83,9 @@ PATCH2_GATHER_CODE = '''
         # locals().get() to avoid UnboundLocalError when neither branch ran.
         _cdm = locals().get('compressor_decode_metadata')
         _tc_cmp_block_table = _cdm.block_table if _cdm is not None else None
+        # Save reference to vllm's compress_kv_cache BEFORE any rebind so a
+        # later compress-poison test can target the original tensor.
+        _orig_compress_ref = compress_kv_cache
         if self.kv_offload_enabled and _cdm is not None:
             if self._tidalcache_mgr is None:
                 import tidalcache as _tc
@@ -159,6 +162,22 @@ PATCH2_GATHER_CODE = '''
                         _src = _src.view(_n, _cbs, *_trail)
                     _cmp64[_dst] = _src
                     _tclog.debug("[COPYBACK] %s B=%d aB=%d topk=%d dst_blocks=%d", layer_name, B, _aB, _local_topk, _n)
+
+                # ── Step 1 test: poison vllm's compress_kv_cache before attn ──
+                # TIDALCACHE_POISON_COMPRESS=1 fills the ORIGINAL vllm-allocated
+                # Device compress_kv_cache with NaN AFTER gather/rebind. Under
+                # Phase B2 attn reads sel_kv (aliased to mini_compress_kv), so
+                # the NaN in the vllm tensor should be invisible to attention
+                # if nothing else still reads compress_kv_cache. If output stays
+                # correct → safe to release the vllm tensor storage in B3.
+                if _tcos_b2.environ.get("TIDALCACHE_POISON_COMPRESS", "0") == "1":
+                    _orig_compress_ref.fill_(float('nan'))
+                    if not getattr(self, '_tc_poison_c_' + layer_name.replace('.','_'), False):
+                        _tclog.info(
+                            '[POISON-COMPRESS first] %s → vllm compress_kv_cache filled with NaN',
+                            layer_name,
+                        )
+                        setattr(self, '_tc_poison_c_' + layer_name.replace('.','_'), True)
 '''
 
 # PATCH3: scatter redirect — replace dsa_kv_compress_scatter target
@@ -533,6 +552,8 @@ def main():
         # use locals().get() so this code is a no-op for other compress_ratios.
         _cam = locals().get('compressor_attn_metadata')
         _tc_cmp_block_table = _cam.req_metadata.block_table if _cam is not None else None
+        # Save reference for compress-poison test (Step 1 of B3)
+        _orig_compress_ref = compress_kv_cache
         if getattr(self, 'kv_offload_enabled', False) and _cam is not None:
             if self._tidalcache_mgr is None:
                 import tidalcache as _tc
@@ -603,6 +624,16 @@ def main():
                         _src = _src.view(_n, _cbs, *_trail)
                     _cmp64[_dst] = _src
                     _tclog.debug("[COPYBACK-CP] %s B=%d aB=%d topk=%d dst_blocks=%d", layer_name, _B, _aB, _local_topk, _n)
+
+                # ── Step 1 test (CP): poison vllm's compress_kv_cache ──
+                if _tcos_b2cp.environ.get("TIDALCACHE_POISON_COMPRESS", "0") == "1":
+                    _orig_compress_ref.fill_(float('nan'))
+                    if not getattr(self, '_tc_poison_c_cp_' + layer_name.replace('.','_'), False):
+                        _tclog.info(
+                            '[POISON-COMPRESS-CP first] %s → vllm compress_kv_cache filled with NaN',
+                            layer_name,
+                        )
+                        setattr(self, '_tc_poison_c_cp_' + layer_name.replace('.','_'), True)
 
 '''
             cp_content = (
