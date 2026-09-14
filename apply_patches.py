@@ -208,16 +208,68 @@ MR_PATCH1_INSERT = '''
 '''
 MR_PATCHES["PATCH1_init"] = (MR_PATCH1_ANCHOR, MR_PATCH1_INSERT + MR_PATCH1_ANCHOR, "replace")
 
-# PATCH2: initialize TidalCache in initialize_kv_cache_tensors
+# PATCH2_INIT: create TidalCache manager EARLY — before _allocate_kv_cache_tensors
+# runs. Needed so MR_PATCH3's Host-backed compress replacement (which fires
+# inside _allocate_kv_cache_tensors) can find the manager.
+# Anchor: 'kv_cache_raw_tensors = self._allocate_kv_cache_tensors(kv_cache_config)'
+MR_PATCH2_INIT_CODE = '''
+        # ── TidalCache: create manager BEFORE vllm allocation, so MR_PATCH3
+        # (Host-backed compress replacement) has access to it.
+        import os as _tcos_i
+        import torch as _torch_i
+        _hf_cfg_i = getattr(self.model_config, 'hf_text_config', None)
+        _has_topk_i = _hf_cfg_i is not None and hasattr(_hf_cfg_i, 'index_topk')
+        if self.kv_offload_enabled and _has_topk_i:
+            import tidalcache as _tc_i
+            from tidalcache.offload_manager import TidalCacheManager as _TCM_i
+
+            _index_topk_i = getattr(_hf_cfg_i, 'index_topk', 512)
+            _kv_dim_i = getattr(_hf_cfg_i, 'kv_lora_rank', None)
+            if _kv_dim_i is None:
+                _kv_dim_i = getattr(_hf_cfg_i, 'head_dim', 512)
+            _qk_rope_i = getattr(_hf_cfg_i, 'qk_rope_head_dim', 64)
+            _cbs_i = getattr(_hf_cfg_i, 'compress_block_size', 64)
+            try:
+                _grp_i = kv_cache_config.kv_cache_groups[0]
+                _spec_i = list(_grp_i.kv_cache_spec.values())[0]
+                _blk_i = _spec_i.block_size
+            except (AttributeError, IndexError, KeyError):
+                _blk_i = self.cache_config.block_size
+            _kv_dtype_i = self.model_config.dtype
+            _rope_dtype_i = self.model_config.dtype
+            if getattr(_hf_cfg_i, 'kv_cache_fp8', False):
+                _kv_dtype_i = _torch_i.float8_e4m3fn
+                _rope_dtype_i = _torch_i.bfloat16
+            self._tidalcache_mgr = _TCM_i(
+                num_blocks=kv_cache_config.num_blocks,
+                block_size=_blk_i,
+                kv_dim=_kv_dim_i,
+                rope_dim=_qk_rope_i,
+                index_topk=_index_topk_i,
+                max_batch_size=self.scheduler_config.max_num_seqs,
+                dtype=_kv_dtype_i,
+                device=self.device,
+                rope_dtype=_rope_dtype_i,
+                compress_block_size=_cbs_i,
+            )
+            _tc_i._GLOBAL_MANAGER = self._tidalcache_mgr
+            logger.info(
+                "TidalCache: manager created EARLY (before _allocate_kv_cache_tensors) "
+                "topk=%d blocks=%d kv_dim=%d",
+                _index_topk_i, kv_cache_config.num_blocks, _kv_dim_i,
+            )
+
+        '''
+
+# PATCH2: initialize TidalCache in initialize_kv_cache_tensors — HBM log at end
 # Anchor: "return kv_caches" at the end of initialize_kv_cache_tensors
-# We need a unique anchor — use the function's return + its next method def
 MR_PATCH2_CODE = '''
-        # ── TidalCache: create manager, layers allocated lazily in dsa_v1 ──
+        # ── TidalCache: (manager already created above; skip if already done) ──
         import os as _tcos
         import torch as _torch
         _hf_cfg = getattr(self.model_config, 'hf_text_config', None)
         _has_topk = _hf_cfg is not None and hasattr(_hf_cfg, 'index_topk')
-        if self.kv_offload_enabled and _has_topk:
+        if self.kv_offload_enabled and _has_topk and self._tidalcache_mgr is None:
             import tidalcache
             from tidalcache.offload_manager import TidalCacheManager
 
@@ -572,17 +624,32 @@ MR_PATCH3_CODE = '''
 
 
 def find_and_patch_mr_init_kv(content):
-    """Insert MR_PATCH2 before return kv_caches AND MR_PATCH3 before
-    return kv_cache_raw_tensors."""
-    # PATCH2: initialize_kv_cache_tensors → before 'return kv_caches'
-    func_match = re.search(r'def initialize_kv_cache_tensors\(self.*?\n', content)
-    if not func_match:
+    """Insert:
+      - MR_PATCH2_INIT before `kv_cache_raw_tensors = self._allocate_kv_cache_tensors(...)`
+        (so manager exists when MR_PATCH3 fires inside _allocate_kv_cache_tensors)
+      - MR_PATCH2 (HBM log) before `return kv_caches`
+      - MR_PATCH3 before `return kv_cache_raw_tensors`
+    """
+    # PATCH2_INIT: before the allocate call inside initialize_kv_cache_tensors
+    init_func = re.search(r'def initialize_kv_cache_tensors\(self.*?\n', content)
+    if not init_func:
         return None
-    return_pattern = re.compile(r'^        return kv_caches\s*$', re.MULTILINE)
-    match = return_pattern.search(content, func_match.start())
-    if not match:
+    init_call_pat = re.compile(
+        r'^(        kv_cache_raw_tensors = self\._allocate_kv_cache_tensors\(kv_cache_config\))',
+        re.MULTILINE,
+    )
+    init_m = init_call_pat.search(content, init_func.start())
+    if init_m:
+        content = content[:init_m.start()] + MR_PATCH2_INIT_CODE + content[init_m.start():]
+    else:
+        print("  WARNING: MR_PATCH2_INIT anchor not found — skipping early manager init")
+
+    # PATCH2: HBM log — before 'return kv_caches'
+    ret2 = re.compile(r'^        return kv_caches\s*$', re.MULTILINE)
+    m2 = ret2.search(content, init_func.start())
+    if not m2:
         return None
-    content = content[:match.start()] + MR_PATCH2_CODE + content[match.start():]
+    content = content[:m2.start()] + MR_PATCH2_CODE + content[m2.start():]
 
     # PATCH3: _allocate_kv_cache_tensors → before 'return kv_cache_raw_tensors'
     func3 = re.search(r'def _allocate_kv_cache_tensors\(self.*?\n', content)
