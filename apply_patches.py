@@ -259,7 +259,7 @@ MR_PATCH2_INIT_CODE = '''
                 _index_topk_i, kv_cache_config.num_blocks, _kv_dim_i,
             )
 
-        '''
+'''
 
 # PATCH2: initialize TidalCache in initialize_kv_cache_tensors — HBM log at end
 # Anchor: "return kv_caches" at the end of initialize_kv_cache_tensors
