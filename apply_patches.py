@@ -277,23 +277,51 @@ MR_PATCH2_CODE = '''
         if _replace_kv and self.kv_offload_enabled and _has_topk:
             import logging as _tc_lg_r
             _rlog = _tc_lg_r.getLogger('tidalcache')
+            # Only rank 0 logs structure to keep output manageable
+            _rank0 = getattr(self, 'rank', 0) == 0
             _replaced_count = 0
             _skipped_count = 0
+            _inspected = 0
             for _lname, _entry in list(kv_caches.items()):
-                # DSA layers have tuple/list with ≥3 elements
-                # (k_cache, dsa_k_cache, dsa_k_scale_cache) minimum.
-                if not isinstance(_entry, (tuple, list)) or len(_entry) < 3:
+                # Diagnostic: dump structure of first 5 entries
+                if _rank0 and _inspected < 5:
+                    _inspected += 1
+                    _tstr = type(_entry).__name__
+                    if hasattr(_entry, '__len__'):
+                        _tstr += f' len={len(_entry)}'
+                        for _ix, _v in enumerate(_entry if hasattr(_entry, '__iter__') else []):
+                            _shape = tuple(_v.shape) if hasattr(_v, 'shape') else 'N/A'
+                            _dt = str(_v.dtype) if hasattr(_v, 'dtype') else type(_v).__name__
+                            _tstr += f' [{_ix}]:{_dt}{_shape}'
+                    elif hasattr(_entry, 'shape'):
+                        _tstr += f' shape={tuple(_entry.shape)} dtype={_entry.dtype}'
+                    _rlog.info('[REPLACE-KV inspect] %s → %s', _lname, _tstr)
+
+                # Detect entries with at least one 3D+ tensor at position 0.
+                # DSA compress caches are typically 4D [Bn, Bs, N, D] or
+                # 3D [num_blocks, block_size, dim].
+                _tensor_first = None
+                if isinstance(_entry, (tuple, list)) and len(_entry) >= 1:
+                    if isinstance(_entry[0], _torch.Tensor) and _entry[0].dim() >= 3:
+                        _tensor_first = _entry[0]
+                elif isinstance(_entry, _torch.Tensor) and _entry.dim() >= 3:
+                    _tensor_first = _entry
+
+                if _tensor_first is None:
                     _skipped_count += 1
                     continue
-                _old = _entry[0]
-                if not isinstance(_old, _torch.Tensor):
-                    _skipped_count += 1
-                    continue
-                # Allocate same-shape fresh tensor
+
+                _old = _tensor_first
                 _new = _torch.zeros_like(_old)
-                _new_entry = (_new,) + tuple(_entry[1:])
+                if isinstance(_entry, tuple):
+                    _new_entry = (_new,) + tuple(_entry[1:])
+                elif isinstance(_entry, list):
+                    _new_entry = [_new] + list(_entry[1:])
+                else:
+                    # single tensor entry
+                    _new_entry = _new
                 kv_caches[_lname] = _new_entry
-                # Update self.kv_caches list — find OLD entry by identity, replace
+                # Update self.kv_caches list — find by identity
                 for _i, _e in enumerate(self.kv_caches):
                     if _e is _entry:
                         self.kv_caches[_i] = _new_entry
@@ -306,9 +334,9 @@ MR_PATCH2_CODE = '''
                 except Exception as _e:
                     _rlog.warning('[REPLACE-KV] forward_context update failed for %s: %s', _lname, _e)
                 _replaced_count += 1
-                if _replaced_count <= 2:
+                if _rank0 and _replaced_count <= 2:
                     _rlog.info(
-                        '[REPLACE-KV] %s: replaced compress tensor (shape=%s, dtype=%s)',
+                        '[REPLACE-KV] %s: replaced (shape=%s, dtype=%s)',
                         _lname, tuple(_old.shape), _old.dtype,
                     )
             _rlog.info(
