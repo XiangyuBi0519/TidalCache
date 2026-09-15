@@ -526,6 +526,60 @@ MR_PATCH2_CODE = '''
             except Exception as _e:
                 logger.warning("TidalCache HBM logging failed: %s", _e)
 
+        # ── B3 v2: register vllm's Host-backed compress views with TidalCache ──
+        # After MR_PATCH3 swapped in Host-backed raw_tensor and vllm's reshape
+        # split it into per-layer views, populate the manager's
+        # _layer_compress_view map. TidalCache's per-layer ensure_host_allocated
+        # will then reuse these views instead of allocating fresh hugepages —
+        # solves the double-Host-alloc OOM.
+        if (self.kv_offload_enabled and self._tidalcache_mgr is not None
+                and _tcos.environ.get('TIDALCACHE_HOST_COMPRESS', '0') == '1'):
+            _CMP_SFX = '.self_attn.attn'
+            _IDX_SFX = '.self_attn.indexer.k_cache'
+            # DSA layers = compress layers whose prefix also has an indexer entry
+            _dsa_prefixes = set()
+            for _lname in kv_caches:
+                if _lname.endswith(_IDX_SFX):
+                    _dsa_prefixes.add(_lname[:-len(_IDX_SFX)])
+            _cbs_v = self._tidalcache_mgr.compress_block_size
+            _kv_dim_v = self._tidalcache_mgr.kv_dim
+            _registered = 0
+            for _lname, _entry in kv_caches.items():
+                if not _lname.endswith(_CMP_SFX):
+                    continue
+                _prefix = _lname[:-len(_CMP_SFX)]
+                if _prefix not in _dsa_prefixes:
+                    continue
+                # Extract the compress tensor from the layer's kv_cache entry
+                _cmp_t = None
+                if isinstance(_entry, (tuple, list)) and len(_entry) >= 1:
+                    if isinstance(_entry[0], _torch.Tensor):
+                        _cmp_t = _entry[0]
+                elif isinstance(_entry, _torch.Tensor):
+                    _cmp_t = _entry
+                if _cmp_t is None:
+                    continue
+                # Reshape to TidalCache's expected 3D layout
+                # [num_blocks, block_size, N=1, kv_dim] → [num_blocks * gpb, cbs, kv_dim]
+                try:
+                    _view = _cmp_t.reshape(-1, _cbs_v, _kv_dim_v)
+                except Exception as _e:
+                    import logging as _lg_v
+                    _lg_v.getLogger('tidalcache').warning(
+                        '[HOST-COMPRESS] failed to reshape %s to (-1,%d,%d) — shape=%s: %s',
+                        _lname, _cbs_v, _kv_dim_v, tuple(_cmp_t.shape), _e,
+                    )
+                    continue
+                self._tidalcache_mgr.set_layer_compress_view(_lname, _view)
+                _registered += 1
+            if getattr(self, 'rank', 0) == 0:
+                import logging as _lg_v2
+                _lg_v2.getLogger('tidalcache').info(
+                    '[HOST-COMPRESS] registered %d compress views with TidalCache '
+                    '(subsequent ensure_host_allocated will reuse them)',
+                    _registered,
+                )
+
 '''
 
 

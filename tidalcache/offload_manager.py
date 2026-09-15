@@ -98,6 +98,13 @@ class TidalCacheManager:
         self._zero_copy_npu = None
         self._alloc_count = 0
 
+        # B3 v2: Unified Host allocation — vllm's Host-backed compress_kv_cache
+        # is reused as TidalCache's per-layer host_kv_cache. When this map has
+        # an entry for a layer, `ensure_host_allocated` skips its own hugepage
+        # alloc and points state.npu_kv_cache directly at the vllm view.
+        # Populated by MR_PATCH2 after kv_caches finalization.
+        self._layer_compress_view: dict[str, torch.Tensor] = {}
+
         # Read TAG for HBM logging (single-line HBM summary uses this)
         self.tag = os.environ.get("TIDALCACHE_TAG", "ON")
 
@@ -252,9 +259,54 @@ class TidalCacheManager:
         writes there. sel_* fields stay None until first gather (alloc_layer)
         provides the correct local_topk — avoids over-allocating sel_kv by
         cp_size× in CP mode.
+
+        B3 v2: if MR_PATCH2 pre-registered a compress_view for this layer
+        (via `_layer_compress_view`), reuse it as the Host-backed source
+        instead of allocating a fresh hugepage. This avoids doubling Host
+        memory (one for vllm compress + one for TidalCache).
         """
         if layer_name in self.layers:
             return self.layers[layer_name]
+
+        # B3 v2 fast path: reuse vllm's Host-backed compress view
+        _shared_view = self._layer_compress_view.get(layer_name)
+        if _shared_view is not None:
+            # Small placeholder rope (fresh alloc for now — rope isn't shared
+            # with vllm's compress which is KV-only). Kept minimal to avoid
+            # HBM/Host pressure; can zero-fill since sparse attention rope is
+            # not fed to compress path.
+            safe_name = layer_name.replace(".", "_")
+            host_num_blocks = self.num_blocks * (
+                self.block_size // self.compress_block_size)
+            host_rope, mmap_rope, fd_rope, path_rope = self._alloc_hugepage_tensor(
+                [host_num_blocks, self.compress_block_size, self.rope_dim],
+                self.rope_dtype,
+                f"{safe_name}_rope",
+            )
+            npu_rope = self._register_npu(host_rope)
+            # host_kv_cache and npu_kv_cache both point at vllm's compress view.
+            # It's already Host-backed (via MR_PATCH3) AND NPU-viewable.
+            logger.info(
+                "Layer %s: reusing vllm's compress view as host_kv_cache "
+                "(shape=%s, dtype=%s) — no fresh alloc",
+                layer_name, tuple(_shared_view.shape), _shared_view.dtype,
+            )
+            state = LayerOffloadState(
+                host_kv_cache=_shared_view,
+                host_k_rope=host_rope,
+                npu_kv_cache=_shared_view,  # same tensor — already NPU addressable
+                npu_k_rope=npu_rope,
+                mmap_kv=None,               # storage owned by vllm's group tensor
+                mmap_rope=mmap_rope,
+                fd_kv=-1,
+                fd_rope=fd_rope,
+                hugepage_path_kv="",
+                hugepage_path_rope=path_rope,
+            )
+            state.sel_block_status_list = None
+            state.local_topk = None
+            self.layers[layer_name] = state
+            return state
 
         safe_name = layer_name.replace(".", "_")
 
@@ -298,6 +350,16 @@ class TidalCacheManager:
         state.local_topk = None
         self.layers[layer_name] = state
         return state
+
+    def set_layer_compress_view(self, layer_name: str, view: torch.Tensor):
+        """Register vllm's Host-backed compress tensor for this layer.
+
+        Called by MR_PATCH2 after kv_caches is finalized. Downstream
+        ensure_host_allocated will reuse this view instead of allocating a
+        fresh hugepage — achieves the "single Host allocation" invariant
+        for Phase B3 v2.
+        """
+        self._layer_compress_view[layer_name] = view
 
     def _alloc_sel_side(self, state: LayerOffloadState, local_topk: int):
         """Allocate Device Selection Cache side with correct local_topk.
