@@ -643,6 +643,9 @@ MR_PATCH3_CODE = '''
                 _seen = {}  # id(old) -> new_host_tensor
                 _replaced_layers = 0
                 _total_bytes = 0
+                # Save ONE probe old-tensor so we can inspect its referrers
+                # after the loop finishes and after gc.collect runs.
+                _probe_old = None
                 for _ln, _rt in list(kv_cache_raw_tensors.items()):
                     if not _ln.endswith(_COMPRESS_SFX):
                         continue
@@ -679,6 +682,10 @@ MR_PATCH3_CODE = '''
                         except Exception as _e:
                             _hlog.error('[HOST-COMPRESS] failed to alloc for %s: %s', _ln, _e)
                             continue
+                    # Stash the very first old tensor for post-loop referrer
+                    # analysis (only if we haven't stashed one yet).
+                    if _probe_old is None and _rank0_h:
+                        _probe_old = _old_t
                     if _target_slot == 'single':
                         kv_cache_raw_tensors[_ln] = _new_t
                     else:
@@ -686,14 +693,29 @@ MR_PATCH3_CODE = '''
                         kv_cache_raw_tensors[_ln] = _new_tuple
                     _replaced_layers += 1
                     if _rank0_h and _replaced_layers <= 2:
+                        # Count refs to old tensor BEFORE replacement. Expected
+                        # refs (baseline):
+                        #   - _rt (loop var)             = 1
+                        #   - list(dict.items()) tuple   = 1
+                        #   - kv_cache_raw_tensors[_ln]  = 1
+                        #   - sys.getrefcount arg        = 1
+                        # Total baseline = 4. Anything above = mystery holder.
+                        try:
+                            import sys as _tcsys
+                            _refs = _tcsys.getrefcount(_old_t)
+                            _mystery = max(0, _refs - 4)
+                        except Exception:
+                            _refs = -1
+                            _mystery = -1
                         _hlog.info(
                             '[HOST-COMPRESS] %s: replaced Device compress → Host-mapped NPU tensor '
                             '(shape=%s, dtype=%s, %.1f MB, old_dev=%s old_ptr=0x%x '
-                            'new_dev=%s new_ptr=0x%x)',
+                            'new_dev=%s new_ptr=0x%x, refcount=%d, mystery_holders≈%d)',
                             _ln, tuple(_old_t.shape), _old_t.dtype,
                             _old_t.numel() * _old_t.element_size() / 1024**2,
                             _old_t.device, _old_t.data_ptr(),
                             _new_t.device, _new_t.data_ptr(),
+                            _refs, _mystery,
                         )
                 # Drop references to old tensors and force NPU allocator to reclaim.
                 _seen.clear()
@@ -730,6 +752,39 @@ MR_PATCH3_CODE = '''
                     _hlog.info('[HOST-COMPRESS] gc.collect returned %d', _n_before_gc)
                 except Exception:
                     pass
+                # Deep probe: enumerate referrers of ONE stashed old tensor.
+                # At this point locals _rt/_old_t are deleted and gc ran.
+                # Baseline expected refs: _probe_old local var (1) + get_referrers
+                # arg (transient, doesn't show). Anything else is a MYSTERY holder.
+                try:
+                    if _rank0_h and _probe_old is not None:
+                        import sys as _tcsys
+                        import gc as _tcgc2
+                        _pr_refs = _tcsys.getrefcount(_probe_old)
+                        _pr_referrers = _tcgc2.get_referrers(_probe_old)
+                        _hlog.info(
+                            '[HOST-COMPRESS] probe refcount=%d, referrers_count=%d',
+                            _pr_refs, len(_pr_referrers),
+                        )
+                        for _i, _r in enumerate(_pr_referrers[:5]):
+                            _t = type(_r).__name__
+                            _rid = id(_r)
+                            _summary = ''
+                            if isinstance(_r, dict):
+                                _summary = f'dict len={len(_r)} sample_keys={list(_r.keys())[:3]}'
+                            elif isinstance(_r, (list, tuple)):
+                                _summary = f'{_t} len={len(_r)}'
+                            elif hasattr(_r, 'f_code'):  # frame
+                                _summary = f'frame func={_r.f_code.co_name} file={_r.f_code.co_filename}:{_r.f_lineno}'
+                            _hlog.info(
+                                '[HOST-COMPRESS] referrer[%d]: type=%s id=0x%x %s',
+                                _i, _t, _rid, _summary,
+                            )
+                        del _pr_referrers
+                except Exception as _pe:
+                    _hlog.warning('[HOST-COMPRESS] referrer probe failed: %s', _pe)
+                # Release the probe ref
+                _probe_old = None
                 # HBM AFTER dict replace + gc, BEFORE empty_cache
                 try:
                     _hbm_mid_alloc = _torch_h.npu.memory_allocated(_hbm_dev) / 1024**3
