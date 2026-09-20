@@ -604,11 +604,16 @@ MR_PATCH3_CODE = '''
                 _hlog.warning('[HOST-COMPRESS] TidalCache manager not available: %s', _e)
             if _mgr is not None:
                 # Snapshot HBM BEFORE replacement — for drop-verification.
+                # Use self.device explicitly (not current_device) so numbers
+                # match the worker's actual NPU across DP/TP ranks.
+                _hbm_dev = getattr(self, 'device', None)
                 try:
-                    _hbm_before_alloc = _torch_h.npu.memory_allocated() / 1024**3
-                    _hbm_before_resv = _torch_h.npu.memory_reserved() / 1024**3
+                    _hbm_before_alloc = _torch_h.npu.memory_allocated(_hbm_dev) / 1024**3
+                    _hbm_before_resv = _torch_h.npu.memory_reserved(_hbm_dev) / 1024**3
+                    _hbm_curdev = _torch_h.npu.current_device()
                 except Exception:
                     _hbm_before_alloc = _hbm_before_resv = -1.0
+                    _hbm_curdev = -1
                 # Detect compress layers by name suffix: '.self_attn.attn'
                 _COMPRESS_SFX = '.self_attn.attn'
                 # Group by identity: multiple DSA layers may share ONE raw_tensor
@@ -676,9 +681,34 @@ MR_PATCH3_CODE = '''
                     del _old_t
                 except Exception:
                     pass
-                # HBM AFTER dict replace, BEFORE empty_cache — shows if refs remain
+                # Ref-count probe on ONE surviving old tensor — tells us if
+                # something else in the enclosing frame is holding a ref.
+                # Grab the FIRST replaced entry's *previous* tensor by peeking
+                # at kv_cache_raw_tensors after replacement (need a probe target).
                 try:
-                    _hbm_mid_alloc = _torch_h.npu.memory_allocated() / 1024**3
+                    import sys as _tcsys
+                    # Pick the last _seen key's new tensor's shape to sanity-check;
+                    # this doesn't tell us about the OLD tensor, but forces us to
+                    # log what's still referenced.
+                    _hlog.info(
+                        '[HOST-COMPRESS] refprobe: dict size=%d, _seen size=%d, '
+                        'first_new_key=%s',
+                        len(kv_cache_raw_tensors), len(_seen),
+                        next(iter(kv_cache_raw_tensors), 'N/A'),
+                    )
+                except Exception:
+                    pass
+                # Force Python GC BEFORE empty_cache — dict replace may leave
+                # transient refs from `list(dict.items())` or the loop frame.
+                try:
+                    import gc as _tcgc
+                    _n_before_gc = _tcgc.collect()
+                    _hlog.info('[HOST-COMPRESS] gc.collect returned %d', _n_before_gc)
+                except Exception:
+                    pass
+                # HBM AFTER dict replace + gc, BEFORE empty_cache
+                try:
+                    _hbm_mid_alloc = _torch_h.npu.memory_allocated(_hbm_dev) / 1024**3
                 except Exception:
                     _hbm_mid_alloc = -1.0
                 try:
@@ -687,8 +717,8 @@ MR_PATCH3_CODE = '''
                     pass
                 # HBM AFTER empty_cache — shows what allocator returned to driver
                 try:
-                    _hbm_after_alloc = _torch_h.npu.memory_allocated() / 1024**3
-                    _hbm_after_resv = _torch_h.npu.memory_reserved() / 1024**3
+                    _hbm_after_alloc = _torch_h.npu.memory_allocated(_hbm_dev) / 1024**3
+                    _hbm_after_resv = _torch_h.npu.memory_reserved(_hbm_dev) / 1024**3
                 except Exception:
                     _hbm_after_alloc = _hbm_after_resv = -1.0
                 _hlog.info(
@@ -699,10 +729,12 @@ MR_PATCH3_CODE = '''
                 )
                 _hlog.info(
                     '[HOST-COMPRESS] HBM diag: allocated %.2f→%.2f→%.2f GB, '
-                    'reserved %.2f→%.2f GB (expected drop ~%.2f GB)',
+                    'reserved %.2f→%.2f GB (expected drop ~%.2f GB) '
+                    '[dev=%s curdev=%d]',
                     _hbm_before_alloc, _hbm_mid_alloc, _hbm_after_alloc,
                     _hbm_before_resv, _hbm_after_resv,
                     _total_bytes / 1024**3,
+                    _hbm_dev, _hbm_curdev,
                 )
 
 '''
