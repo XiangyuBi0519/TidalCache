@@ -443,7 +443,11 @@ just_finished_prefill[R] = was_prefilling and will_be_done
 
 **验收标准**: `npu-smi info` 显示 ON 模式比 OFF 模式 HBM 占用明显更低（预期减少 ~1.5 GB/请求 × 并发数）。
 
-#### 6.8 Phase B3 v2 — Host-backed Compress Group（2026-09-14 定案）
+#### 6.8 Phase B3 v2 — Host-backed Compress Group（2026-09-14 定案，**已被 6.9 修正**）
+
+> ⚠️ **本节结论被 6.9 推翻**：`kv_cache_groups` 的 group 划分和 `kv_cache_tensors.shared_by` 是**两个正交的概念**。
+> group 独立 ≠ raw_tensor 独立。真实情况是**一个 raw_tensor 被跨 group 的多个 spec 共享**——这也是 B3 v2 首个版本 HBM 完全不降的根因。
+> 保留本节作为历史记录。
 
 **背景**：B3.1 尝试"物理替换 Device tensor"失败——vllm 的 kv_cache 视图共享 raw_tensor storage，`resize_(0)` 会连带干碎 state_cache。同时"分配新 Device tensor" HBM 双倍无法承受。
 
@@ -452,31 +456,108 @@ just_finished_prefill[R] = was_prefilling and will_be_done
 | Group | Layers | 后缀 | 说明 |
 |-------|--------|------|------|
 | 0 | 42 | `self_attn.indexer.k_cache` | Indexer |
-| 1 | 20 | `self_attn.attn` | **compress_kv_cache（B3 目标）** |
+| 1 | 20 | `self_attn.attn` | compress_kv_cache（B3 目标）|
 | 2 | 22 | `self_attn.swa_cache` | SWA |
 | 3 | 22 | `self_attn.swa_cache` | SWA-另一波 |
 | 4 | 42 | `self_attn.compressor.state_cache` | 压缩器状态 |
 | 5 | 20 | `self_attn.compressor.state_cache` | 压缩器状态-另一波 |
 
-**关键发现**：compress (group 1) **独立成 group**，raw_tensor 不与 indexer/state/swa 共享。改动集中在这一 group。
+**当时结论（后被修正）**：compress (group 1) 独立成 group → 以为改这一 group 就完事。
 
-**方案：Host-backed 替换**
+**方案：Host-backed 替换**（首个版本）
 - 在 `_allocate_kv_cache_tensors` 返回前，识别属于 compress group 的 raw_tensors（layer 名 `.self_attn.attn`）
 - 分配同大小的 Host hugepage + `aclrtHostRegisterV2` NPU MMU 映射
 - 用 Host-backed NPU tensor 替换 vllm 原 Device 分配
 - `torch.npu.empty_cache()` 强制释放原 Device tensor
-- 从 vllm 的角度：tensor 的 shape/dtype/device 完全一样，reshape/binding 代码无需改动
-- 从 HBM 角度：compress group 的 ~23 GB Device 分配变成 0 GB（数据在 Host DDR）
 
-**开关**：`TIDALCACHE_HOST_COMPRESS=1`
+**开关**：`TIDALCACHE_HOST_COMPRESS=1`  
+**实现位置**：`apply_patches.py` MR_PATCH3
 
-**实现位置**：`apply_patches.py` MR_PATCH3 hook `_allocate_kv_cache_tensors`
+**首个版本运行结果（2026-09-20）**：
+- ✅ 服务能起来，推理正常
+- ✅ `replaced=41 layers, total=23.48 GB → Host` — dict 替换生效
+- ❌ **`memory_allocated: 51.64→51.64→51.64 GB`（drop=0）**
+- ❌ `npu-smi HBM-Usage: 61 GB`（跟 baseline 完全一样，没省任何 HBM）
 
-**预期收益**：
-- Device HBM: ~60 GB/卡 → **~37 GB/卡**（节省 23 GB）
-- 并发能力: 2-3×
-- Prefill scatter 变慢（写 Host 经 PCIe）
-- Attention 通过 B2 读 sel_kv（Device 小缓冲），不触发慢速 Host 读
+⇒ 问题定位见 6.9。
+
+#### 6.9 shared_by 共享 raw_tensor 的真相（2026-09-20 定位）
+
+**用 `gc.get_referrers` 追引用链定位到根因**：
+
+- Python 层加了完整链条的 HBM diag：`torch.npu.memory_allocated / reserved`（自 self.device 而非 current_device）、`gc.collect()` 触发释放、`sys.getrefcount` 数引用、`torch.zeros` self-probe 验证 API 有效
+- api-probe 结果：`allocated 51.64 → 51.89 → 51.64 GB (delta up=256 MB down=256 MB)` ✅ API 精确追踪
+- probe old tensor 只剩 **1 个 referrer**，是 `kv_cache_raw_tensors` 自己
+- 展开该 dict 找"还指向老 tensor 的 keys" — 得到 **stubborn refs**：
+
+  ```
+  ['model.layers.0.self_attn.swa_cache',
+   'model.layers.1.self_attn.swa_cache',
+   'model.layers.2.self_attn.compressor.state_cache',
+   'model.layers.3.self_attn.compressor.state_cache']
+  ```
+
+**真实结构**（推翻 6.8 的独立 group 假设）：
+
+```
+一个 kv_cache_tensor（一次 torch.zeros ~1.1 GB）
+  └── shared_by 列表包含跨 group 的多个 spec：
+      ├── layer_0.swa_cache        ← 在 group 2/3
+      ├── layer_1.swa_cache        ← 在 group 2/3
+      ├── layer_2.self_attn.attn   ← 在 group 1 (compress)
+      ├── layer_3.self_attn.attn   ← 在 group 1 (compress)
+      ├── layer_2.compressor.state_cache  ← 在 group 4/5
+      └── layer_3.compressor.state_cache  ← 在 group 4/5
+```
+
+每个 spec 从这个 raw_tensor 的**不同 offset 切 view**，共同拼成完整分配。
+
+**推翻的结论**：
+- ❌ "group 独立 ⇒ raw_tensor 独立"
+- ✅ 实际是：`kv_cache_groups` 是逻辑分组（管理 block 分配），`kv_cache_tensors[i].shared_by` 是物理分配的共享列表，两者**跨切**
+
+**为什么首版 MR_PATCH3 失败**：
+- 只替换了 `.self_attn.attn` 后缀（2 个 dict entry）
+- swa/state 的 4 个 dict entry 依然指向老 Device tensor
+- 老 tensor refcount > 0 → Python GC 不释放 → `torch.npu.empty_cache()` 无块可回收 → HBM 不降
+- 而且额外分了 23 GB Host —— **净效果：多用 23 GB Host，HBM 一点没省**
+
+#### 6.10 三条修复路径（2026-09-20 讨论）
+
+##### 路径 A：把 swa + state 也 offload 到 Host（最快落地）
+
+**做法**：MR_PATCH3 匹配后缀扩宽到 `['.self_attn.attn', '.swa_cache', '.compressor.state_cache']`。`_seen` dedup 按 `id()` 天然处理"多 key 共享一 tensor"，所有 6 个 dict entry 都会替换成同一个新 Host tensor。
+
+**Commit**：[93206a3](https://github.com/XiangyuBi0519/TidalCache/commit/93206a3) `feat(b3-v2 path A)`
+
+**预期**：
+- ✅ 老 Device tensor 引用归零 → HBM 真降 23 GB
+- ⚠️ SWA + state 也走 Host DMA → **每步都跨 PCIe 访问**，延迟大概率下降
+
+**测试计划（进行中）**：
+1. 起服务看 HBM 是否降到 ~38 GB
+2. curl 单请求测延迟，对比 baseline 16.7s / 128 tokens
+3. 判定：
+   - 延迟涨 1.5-2× → 路径 A 可用，作为 quick win
+   - 延迟涨 3× 以上 → 转路径 B
+
+##### 路径 B：改 vllm 让 compress 独立成 kv_cache_tensor（正统深改）
+
+在 vllm 生成 `kv_cache_config` 的地方（如 `get_kv_cache_config` / `_estimate_kv_cache_workspace`），拆开 `shared_by`：compress spec 分到自己独立的 kv_cache_tensor，不再和 swa/state 打包。
+
+**优点**：只 offload 真正稀疏访问的 compress，swa/state 保持 Device 高速访问。真正兑现 DSA 稀疏红利。
+
+**缺点**：改动深入 vllm 内部内存规划器，风险高。需要理解 KVCacheManager 的 group→tensor 映射逻辑。
+
+##### 路径 C：raw_tensor 底层 storage 替换（zero-copy 极限）
+
+保持 raw_tensor 对象不变（所有 dict entry 继续引用），**换掉它底层 storage 的物理页面**。所有基于该 tensor 的 view 自动跟随到 Host。
+
+**优点**：不需要理解 shared_by 结构，天然覆盖所有 spec。
+
+**缺点**：需要 hack PyTorch storage 层，Ascend NPU 的 storage 语义不完全清楚；即便做成，swa/state 依然是 Host-backed（性能问题同路径 A）。
+
+**结论**：先路径 A 摸底延迟，再决定要不要走路径 B。
 
 ### Step 7: 性能优化
 
