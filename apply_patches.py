@@ -603,6 +603,12 @@ MR_PATCH3_CODE = '''
                 _mgr = None
                 _hlog.warning('[HOST-COMPRESS] TidalCache manager not available: %s', _e)
             if _mgr is not None:
+                # Snapshot HBM BEFORE replacement — for drop-verification.
+                try:
+                    _hbm_before_alloc = _torch_h.npu.memory_allocated() / 1024**3
+                    _hbm_before_resv = _torch_h.npu.memory_reserved() / 1024**3
+                except Exception:
+                    _hbm_before_alloc = _hbm_before_resv = -1.0
                 # Detect compress layers by name suffix: '.self_attn.attn'
                 _COMPRESS_SFX = '.self_attn.attn'
                 # Group by identity: multiple DSA layers may share ONE raw_tensor
@@ -662,16 +668,41 @@ MR_PATCH3_CODE = '''
                         )
                 # Drop references to old tensors and force NPU allocator to reclaim.
                 _seen.clear()
-                del _rt
+                try:
+                    del _rt
+                except Exception:
+                    pass
+                try:
+                    del _old_t
+                except Exception:
+                    pass
+                # HBM AFTER dict replace, BEFORE empty_cache — shows if refs remain
+                try:
+                    _hbm_mid_alloc = _torch_h.npu.memory_allocated() / 1024**3
+                except Exception:
+                    _hbm_mid_alloc = -1.0
                 try:
                     _torch_h.npu.empty_cache()
                 except Exception:
                     pass
+                # HBM AFTER empty_cache — shows what allocator returned to driver
+                try:
+                    _hbm_after_alloc = _torch_h.npu.memory_allocated() / 1024**3
+                    _hbm_after_resv = _torch_h.npu.memory_reserved() / 1024**3
+                except Exception:
+                    _hbm_after_alloc = _hbm_after_resv = -1.0
                 _hlog.info(
                     '[HOST-COMPRESS] done: replaced=%d layers, total=%.2f GB → Host '
                     '(rank=%d)',
                     _replaced_layers, _total_bytes / 1024**3,
                     getattr(self, 'rank', 0),
+                )
+                _hlog.info(
+                    '[HOST-COMPRESS] HBM diag: allocated %.2f→%.2f→%.2f GB, '
+                    'reserved %.2f→%.2f GB (expected drop ~%.2f GB)',
+                    _hbm_before_alloc, _hbm_mid_alloc, _hbm_after_alloc,
+                    _hbm_before_resv, _hbm_after_resv,
+                    _total_bytes / 1024**3,
                 )
 
 '''
