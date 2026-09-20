@@ -780,6 +780,21 @@ MR_PATCH3_CODE = '''
                                 '[HOST-COMPRESS] referrer[%d]: type=%s id=0x%x %s',
                                 _i, _t, _rid, _summary,
                             )
+                            # If it's kv_cache_raw_tensors, list ALL keys whose
+                            # value still points at the old tensor.
+                            if isinstance(_r, dict) and _rid == id(kv_cache_raw_tensors):
+                                _stubborn_keys = []
+                                for _k, _v in _r.items():
+                                    if _v is _probe_old:
+                                        _stubborn_keys.append(_k)
+                                    elif isinstance(_v, (tuple, list)):
+                                        for _idx, _elem in enumerate(_v):
+                                            if _elem is _probe_old:
+                                                _stubborn_keys.append(f'{_k}[{_idx}]')
+                                _hlog.info(
+                                    '[HOST-COMPRESS] stubborn refs in kv_cache_raw_tensors: %s',
+                                    _stubborn_keys,
+                                )
                         del _pr_referrers
                 except Exception as _pe:
                     _hlog.warning('[HOST-COMPRESS] referrer probe failed: %s', _pe)
