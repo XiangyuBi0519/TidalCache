@@ -524,30 +524,53 @@ just_finished_prefill[R] = was_prefilling and will_be_done
 
 #### 6.10 三条修复路径（2026-09-20 讨论）
 
-##### 路径 A：把 swa + state 也 offload 到 Host（最快落地）
+##### 路径 A：把 swa + state 也 offload 到 Host（已试，**HBM 省成但正确性崩**）
 
-**做法**：MR_PATCH3 匹配后缀扩宽到 `['.self_attn.attn', '.swa_cache', '.compressor.state_cache']`。`_seen` dedup 按 `id()` 天然处理"多 key 共享一 tensor"，所有 6 个 dict entry 都会替换成同一个新 Host tensor。
+**做法演化**：
+- v1 [93206a3]：MR_PATCH3 匹配后缀扩宽 `['.self_attn.attn', '.swa_cache', '.compressor.state_cache']`。→ 崩，Host OOM（多分配了纯 SWA / 纯 state raw_tensor，突破 Host 内存上限）
+- v2 [bbfe14f]：改成**按 tensor identity 两遍扫描**。Pass 1 只从 `.self_attn.attn` 收集 compress raw_tensor 的 `id()`；Pass 2 走全 dict，只替换 id 命中集合的条目。这样只碰"和 compress 共享 raw_tensor 的" swa/state，不动纯 swa / 纯 state 的独立分配。
 
-**Commit**：[93206a3](https://github.com/XiangyuBi0519/TidalCache/commit/93206a3) `feat(b3-v2 path A)`
+**v2 实测结果（2026-09-20）**：
 
-**预期**：
-- ✅ 老 Device tensor 引用归零 → HBM 真降 23 GB
-- ⚠️ SWA + state 也走 Host DMA → **每步都跨 PCIe 访问**，延迟大概率下降
+| 指标 | 结果 |
+|------|------|
+| `replaced=124 layers, total=23.48 GB` | ✅ 124 个 dict entry 全被正确替换到同一批 21 个 Host tensor |
+| `HBM diag: 51.64→28.16→28.16 GB` | ✅ **Device HBM 真降 23.48 GB**——首次达成"物理 HBM 节省"目标 |
+| `npu-smi: HBM-Usage 61 → 37 GB / chip` | ✅ 每张卡节省 24 GB |
+| 短请求（13 tokens）| ✅ 正常，0.89 s |
+| 中请求（128 tokens）| ✅ 正常，3.7 s（比 baseline 甚至更快，疑似 cold graph 加暖导致的对比失真）|
+| **长 prompt（1604 tokens）→ 32 decode** | ❌ **首 token 起就乱码**：`#EA software aspectsus AIDS (nullius...` |
+| **长输出（1024 tokens）** | ❌ 前 200 tokens 正常，之后 `MB-MB-MB-MB...` → 随机 garbage → 无限重复 `unnecessarily unnecessarily...` |
 
-**测试计划（进行中）**：
-1. 起服务看 HBM 是否降到 ~38 GB
-2. curl 单请求测延迟，对比 baseline 16.7s / 128 tokens
-3. 判定：
-   - 延迟涨 1.5-2× → 路径 A 可用，作为 quick win
-   - 延迟涨 3× 以上 → 转路径 B
+**根因**：**path A 把 swa_cache / state_cache 也搬到 Host 破坏了它们的 kernel 正确性**。
 
-##### 路径 B：改 vllm 让 compress 独立成 kv_cache_tensor（正统深改）
+- swa_cache 的 sliding-window attention kernel 假设 Device HBM 语义（顺序、一致性）
+- state_cache 是 indexer 的 stateful compressor 缓存，每步 read-then-write，对内存 coherency 敏感
+- Host-mapped NPU 内存不提供 NPU L1/L2 cache 参与的 coherency 保证
+- 结果：写后读拿到 stale 数据 → attention 计算错 → hidden states 逐步偏离 → decode 到一定长度后完全崩坏
 
-在 vllm 生成 `kv_cache_config` 的地方（如 `get_kv_cache_config` / `_estimate_kv_cache_workspace`），拆开 `shared_by`：compress spec 分到自己独立的 kv_cache_tensor，不再和 swa/state 打包。
+**为什么短请求看着行**：污染在 KV cache 里累积，token 少的时候数据量小、topk 命中随机侥幸没炸；一旦 decode 步数上去，错误数据主导 attention → 崩
 
-**优点**：只 offload 真正稀疏访问的 compress，swa/state 保持 Device 高速访问。真正兑现 DSA 稀疏红利。
+**结论**：**路径 A 不可用**。HBM 省了但推理坏了，等价于没用。撤退。
 
-**缺点**：改动深入 vllm 内部内存规划器，风险高。需要理解 KVCacheManager 的 group→tensor 映射逻辑。
+##### 路径 B：改 vllm 让 compress 独立成 kv_cache_tensor（**next step**）
+
+**为什么必须走这条**：path A v2 证明了 Host offload 机制本身没问题（HBM 真降、短请求正常），但**只要 swa/state 被拽到 Host 就崩**。要既省 HBM 又保正确性，唯一办法是**让 compress 有自己独立的 raw_tensor**，替换它不影响 swa/state。
+
+**改动位置**（待挖）：vllm 生成 `kv_cache_config` 的地方，负责决定 `kv_cache_tensors[i].shared_by` 列表的函数。搜索关键点：
+
+- `vllm/v1/core/sched/kv_cache_manager.py` 或 `vllm/v1/kv_cache_interface.py`：`get_kv_cache_config` 逻辑
+- `vllm/v1/core/kv_cache_utils.py`：可能有 `_generate_kv_cache_config` / `_group_kv_cache_tensors` 之类
+- vllm-ascend 的 `worker/model_runner_v1.py`：可能 override 或调用 vllm 主库的 config 生成
+
+**改动策略**（初步）：
+1. 找到 spec → shared_by 分组的逻辑
+2. 加一个 hook / patch：对 `.self_attn.attn` 后缀的 spec，强制它独占一个 `kv_cache_tensors[i]`，不与 `.swa_cache` / `.compressor.state_cache` 打包
+3. 副作用：分配次数变多、总内存可能略增（对齐 padding 增加），但从 15+% 到几个 %，可接受
+
+**优点**：只 offload 真正稀疏访问的 compress，swa/state 保持 Device 高速访问且正确性不变。真正兑现 DSA 稀疏红利。
+
+**缺点**：改动深入 vllm 内部内存规划器，需要理解 KVCacheManager 的 group→tensor 映射逻辑。风险中等。
 
 ##### 路径 C：raw_tensor 底层 storage 替换（zero-copy 极限）
 
@@ -557,7 +580,7 @@ just_finished_prefill[R] = was_prefilling and will_be_done
 
 **缺点**：需要 hack PyTorch storage 层，Ascend NPU 的 storage 语义不完全清楚；即便做成，swa/state 依然是 Host-backed（性能问题同路径 A）。
 
-**结论**：先路径 A 摸底延迟，再决定要不要走路径 B。
+**结论（2026-09-20 更新）**：路径 A 已试并证伪——机制通、HBM 省，但正确性崩。**转路径 B**：改 vllm 让 compress 独占 raw_tensor。这是唯一能既省 HBM 又保对齐推理的道路。
 
 ### Step 7: 性能优化
 
