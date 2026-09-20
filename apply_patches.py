@@ -660,9 +660,32 @@ MR_PATCH3_CODE = '''
                 # Save ONE probe old-tensor so we can inspect its referrers
                 # after the loop finishes and after gc.collect runs.
                 _probe_old = None
-                for _ln, _rt in list(kv_cache_raw_tensors.items()):
-                    if not _match_offload_suffix(_ln):
+
+                # PASS 1: find raw_tensors that have at least one `.self_attn.attn`
+                # entry pointing at them. Only THESE tensors are candidates for
+                # offload — pure-swa or pure-state raw_tensors (never shared with
+                # compress) stay on Device. This prevents Host memory blowup
+                # when non-compress groups have their own dedicated raw_tensors.
+                _compress_tensor_ids = set()
+                for _ln, _rt in kv_cache_raw_tensors.items():
+                    if not _ln.endswith('.self_attn.attn'):
                         continue
+                    if _rt is None:
+                        continue
+                    if isinstance(_rt, _torch_h.Tensor):
+                        _compress_tensor_ids.add(id(_rt))
+                    elif isinstance(_rt, (tuple, list)) and len(_rt) > 0 and isinstance(_rt[0], _torch_h.Tensor):
+                        _compress_tensor_ids.add(id(_rt[0]))
+                _hlog.info(
+                    '[HOST-COMPRESS] pass 1: %d unique compress raw_tensors identified',
+                    len(_compress_tensor_ids),
+                )
+
+                # PASS 2: replace ANY dict entry whose (value or value[0]) id is
+                # in the compress set. Matches by identity, not by name suffix,
+                # so it correctly catches swa/state entries that share the same
+                # raw_tensor as compress.
+                for _ln, _rt in list(kv_cache_raw_tensors.items()):
                     if _rt is None:
                         continue
                     # raw_tensors entries can be a single tensor OR a tuple
@@ -679,6 +702,11 @@ MR_PATCH3_CODE = '''
                     else:
                         continue
                     _key = id(_old_t)
+                    # Skip raw_tensors that no compress layer references. This
+                    # keeps pure-swa/state allocations on Device (they're small
+                    # or performance-sensitive; not our target).
+                    if _key not in _compress_tensor_ids:
+                        continue
                     if _key in _seen:
                         _new_t = _seen[_key]
                     else:
