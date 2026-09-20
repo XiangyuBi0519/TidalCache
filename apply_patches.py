@@ -603,6 +603,20 @@ MR_PATCH3_CODE = '''
                 _mgr = None
                 _hlog.warning('[HOST-COMPRESS] TidalCache manager not available: %s', _e)
             if _mgr is not None:
+                # Path A: also match swa_cache / state_cache so ALL dict entries
+                # pointing to the same raw_tensor get redirected to Host.
+                # vllm groups compress + swa + state into ONE kv_cache_tensor,
+                # so we must replace all suffixes to actually free HBM.
+                _MATCH_SUFFIXES = (
+                    '.self_attn.attn',                    # compress KV
+                    '.swa_cache',                          # sliding-window attn
+                    '.compressor.state_cache',            # indexer compressor state
+                )
+                def _match_offload_suffix(_name):
+                    for _sfx in _MATCH_SUFFIXES:
+                        if _name.endswith(_sfx):
+                            return True
+                    return False
                 # Snapshot HBM BEFORE replacement — for drop-verification.
                 # Use self.device explicitly (not current_device) so numbers
                 # match the worker's actual NPU across DP/TP ranks.
@@ -636,7 +650,7 @@ MR_PATCH3_CODE = '''
                 except Exception as _pe:
                     _hlog.warning('[HOST-COMPRESS] api-probe failed: %s', _pe)
                 # Detect compress layers by name suffix: '.self_attn.attn'
-                _COMPRESS_SFX = '.self_attn.attn'
+                _COMPRESS_SFX = '.self_attn.attn'  # kept for legacy log messages
                 # Group by identity: multiple DSA layers may share ONE raw_tensor
                 # object (line 4239/4251 branches assign same tensor to all
                 # shared_by layers). Replace once per unique tensor object.
@@ -647,7 +661,7 @@ MR_PATCH3_CODE = '''
                 # after the loop finishes and after gc.collect runs.
                 _probe_old = None
                 for _ln, _rt in list(kv_cache_raw_tensors.items()):
-                    if not _ln.endswith(_COMPRESS_SFX):
+                    if not _match_offload_suffix(_ln):
                         continue
                     if _rt is None:
                         continue
@@ -692,7 +706,7 @@ MR_PATCH3_CODE = '''
                         _new_tuple = (_new_t,) + tuple(_rt[1:])
                         kv_cache_raw_tensors[_ln] = _new_tuple
                     _replaced_layers += 1
-                    if _rank0_h and _replaced_layers <= 2:
+                    if _rank0_h and _replaced_layers <= 6:
                         # Count refs to old tensor BEFORE replacement. Expected
                         # refs (baseline):
                         #   - _rt (loop var)             = 1
@@ -708,7 +722,7 @@ MR_PATCH3_CODE = '''
                             _refs = -1
                             _mystery = -1
                         _hlog.info(
-                            '[HOST-COMPRESS] %s: replaced Device compress → Host-mapped NPU tensor '
+                            '[HOST-COMPRESS] %s: replaced Device → Host-mapped NPU tensor '
                             '(shape=%s, dtype=%s, %.1f MB, old_dev=%s old_ptr=0x%x '
                             'new_dev=%s new_ptr=0x%x, refcount=%d, mystery_holders≈%d)',
                             _ln, tuple(_old_t.shape), _old_t.dtype,
