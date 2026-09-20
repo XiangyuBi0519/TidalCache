@@ -18,6 +18,10 @@ Usage in vllm-ascend:
 
 import os
 import mmap
+import atexit
+import signal
+import weakref
+import glob
 import logging
 from dataclasses import dataclass
 
@@ -29,6 +33,82 @@ logger = logging.getLogger("tidalcache")
 
 HUGEPAGE_SIZE = 2 * 1024 * 1024  # 2MB
 TOPK_SPLIT_NUM = 32  # CANN operator requires block_size=1 when topk>32; split to stay on scalar path
+
+# ── Hugepage leak prevention ─────────────────────────────────────────────
+# Track every live manager so we can release its files on process exit.
+_LIVE_MANAGERS: "weakref.WeakSet" = weakref.WeakSet()
+_SIGNAL_HANDLERS_INSTALLED = False
+
+
+def _cleanup_all_managers(*_args, **_kwargs):
+    """atexit / signal handler: unlink hugepage files created by any live manager."""
+    for mgr in list(_LIVE_MANAGERS):
+        try:
+            mgr.cleanup()
+        except Exception as e:  # pragma: no cover — best-effort
+            logger.warning("cleanup_all: manager cleanup failed: %s", e)
+
+
+def _install_signal_handlers():
+    """Install SIGTERM/SIGINT handlers ONCE per process."""
+    global _SIGNAL_HANDLERS_INSTALLED
+    if _SIGNAL_HANDLERS_INSTALLED:
+        return
+    for sig in (signal.SIGTERM, signal.SIGINT, signal.SIGHUP):
+        try:
+            prev = signal.getsignal(sig)
+
+            def _make_handler(_prev, _sig):
+                def _handler(signum, frame):
+                    _cleanup_all_managers()
+                    # Chain to previous handler if it was callable
+                    if callable(_prev) and _prev not in (signal.SIG_DFL, signal.SIG_IGN):
+                        try:
+                            _prev(signum, frame)
+                            return
+                        except SystemExit:
+                            raise
+                        except Exception:
+                            pass
+                    # Restore default and re-raise so the process exits cleanly
+                    signal.signal(_sig, signal.SIG_DFL)
+                    os.kill(os.getpid(), _sig)
+                return _handler
+
+            signal.signal(sig, _make_handler(prev, sig))
+        except (ValueError, OSError):
+            # Signals not settable in this thread (e.g. non-main). Skip.
+            pass
+    _SIGNAL_HANDLERS_INSTALLED = True
+
+
+def _sweep_stale_hugepage_files():
+    """Best-effort: remove `tidalcache_*` / `group_*` files from `/dev/hugepages/`
+    that aren't held open by any live process.
+
+    Enabled by env `TIDALCACHE_SWEEP_STALE=1`. Safe when this process is the
+    only TidalCache instance on the host (typical single-service deployment).
+    """
+    if os.environ.get("TIDALCACHE_SWEEP_STALE", "0") != "1":
+        return
+    patterns = [
+        os.path.join(HUGEPAGE_PATH, "tidalcache_*"),
+        os.path.join(HUGEPAGE_PATH, "group_*"),
+    ]
+    swept = 0
+    for pat in patterns:
+        for path in glob.glob(pat):
+            try:
+                os.unlink(path)
+                swept += 1
+            except OSError:
+                pass  # file busy or gone — ok
+    if swept:
+        logger.info("[cleanup] swept %d stale hugepage files from %s", swept, HUGEPAGE_PATH)
+
+
+# Register global cleanup once at module import.
+atexit.register(_cleanup_all_managers)
 
 
 @dataclass
@@ -97,6 +177,13 @@ class TidalCacheManager:
         self.layers: dict[str, LayerOffloadState] = {}
         self._zero_copy_npu = None
         self._alloc_count = 0
+        # Track every hugepage file we create; cleanup() unlinks these.
+        self._created_hugepage_paths: set[str] = set()
+
+        # Register for atexit / signal cleanup, sweep stale files (opt-in).
+        _sweep_stale_hugepage_files()
+        _install_signal_handlers()
+        _LIVE_MANAGERS.add(self)
 
         # B3 v2: Unified Host allocation — vllm's Host-backed compress_kv_cache
         # is reused as TidalCache's per-layer host_kv_cache. When this map has
@@ -185,6 +272,7 @@ class TidalCacheManager:
                 mmap_obj, dtype=dtype, count=numel
             ).view(shape)
             tensor.zero_()
+            self._created_hugepage_paths.add(path)
             logger.info(
                 "Hugepage alloc: %s shape=%s bytes=%d path=%s",
                 name, shape, data_bytes, path,
@@ -562,26 +650,100 @@ class TidalCacheManager:
     # ── Cleanup ──
 
     def cleanup(self):
-        """Release all hugepage allocations and NPU registrations."""
-        zcn = self._get_zero_copy()
-        for name, state in self.layers.items():
-            try:
-                zcn.unregister_host(state.host_kv_cache)
-                zcn.unregister_host(state.host_k_rope)
-            except Exception as e:
-                logger.warning("Unregister failed for %s: %s", name, e)
-            try:
-                state.mmap_kv.close()
-                state.mmap_rope.close()
-                os.close(state.fd_kv)
-                os.close(state.fd_rope)
-                os.unlink(state.hugepage_path_kv)
-                os.unlink(state.hugepage_path_rope)
-            except Exception as e:
-                logger.warning("Cleanup failed for %s: %s", name, e)
+        """Release all hugepage allocations, NPU registrations, and unlink files.
+
+        Robust to B3 v2 fast-path state (mmap_kv=None, fd_kv=-1, path_kv=""),
+        idempotent, and never raises. Also unlinks any file we recorded in
+        `_created_hugepage_paths` that survived the per-state pass — protects
+        against leaks when state fields were not populated (partial init crash).
+        """
+        # 1) Per-layer state: unregister from NPU, close mmap+fd, unlink files
+        try:
+            zcn = self._get_zero_copy()
+        except Exception:
+            zcn = None
+        for name, state in list(self.layers.items()):
+            for host_tensor_attr in ("host_kv_cache", "host_k_rope"):
+                if zcn is None:
+                    break
+                t = getattr(state, host_tensor_attr, None)
+                # Skip vllm-owned compress view — we didn't register it.
+                if t is None or host_tensor_attr == "host_kv_cache" and state.mmap_kv is None:
+                    continue
+                try:
+                    zcn.unregister_host(t)
+                except Exception as e:
+                    logger.debug("unregister %s/%s: %s", name, host_tensor_attr, e)
+            for mmap_attr, fd_attr, path_attr in (
+                ("mmap_kv", "fd_kv", "hugepage_path_kv"),
+                ("mmap_rope", "fd_rope", "hugepage_path_rope"),
+            ):
+                m = getattr(state, mmap_attr, None)
+                fd = getattr(state, fd_attr, -1)
+                path = getattr(state, path_attr, "")
+                try:
+                    if m is not None:
+                        m.close()
+                except Exception:
+                    pass
+                try:
+                    if fd is not None and fd >= 0:
+                        os.close(fd)
+                except Exception:
+                    pass
+                if path:
+                    try:
+                        os.unlink(path)
+                    except OSError:
+                        pass
+                    self._created_hugepage_paths.discard(path)
         self.layers.clear()
-        logger.info("TidalCache cleanup complete")
+
+        # 2) Group allocations (B3 v2 compress group from alloc_group_host_tensor)
+        for grp in list(getattr(self, "_group_allocations", []) or []):
+            try:
+                if zcn is not None and grp.get("host") is not None:
+                    try:
+                        zcn.unregister_host(grp["host"])
+                    except Exception:
+                        pass
+                m = grp.get("mmap")
+                if m is not None:
+                    try:
+                        m.close()
+                    except Exception:
+                        pass
+                fd = grp.get("fd", -1)
+                if fd is not None and fd >= 0:
+                    try:
+                        os.close(fd)
+                    except Exception:
+                        pass
+                path = grp.get("path", "")
+                if path:
+                    try:
+                        os.unlink(path)
+                    except OSError:
+                        pass
+                    self._created_hugepage_paths.discard(path)
+            except Exception as e:
+                logger.debug("group cleanup: %s", e)
+        if hasattr(self, "_group_allocations"):
+            self._group_allocations.clear()
+
+        # 3) Safety net: unlink any file we created but didn't remove above
+        for path in list(self._created_hugepage_paths):
+            try:
+                os.unlink(path)
+            except OSError:
+                pass
+        self._created_hugepage_paths.clear()
+
+        logger.info("TidalCache cleanup complete (pid=%d)", os.getpid())
 
     def __del__(self):
-        if self.layers:
+        # __del__ runs during interpreter shutdown; be defensive.
+        try:
             self.cleanup()
+        except Exception:
+            pass
