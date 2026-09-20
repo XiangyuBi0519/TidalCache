@@ -16,3 +16,11 @@ _fh.setFormatter(logging.Formatter(
     datefmt="%Y-%m-%d %H:%M:%S",
 ))
 logger.addHandler(_fh)
+
+# Path B: apply vllm kv_cache_config isolation patch (compress no longer shares
+# raw_tensor with swa/state). Gated by TIDALCACHE_ISOLATE_COMPRESS=1.
+try:
+    from tidalcache.vllm_config_patch import apply_kv_config_isolation_patch as _apply_iso
+    _apply_iso()
+except Exception as _e:
+    logger.warning("[init] failed to apply kv config isolation patch: %s", _e)
