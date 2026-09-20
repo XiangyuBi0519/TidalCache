@@ -614,6 +614,27 @@ MR_PATCH3_CODE = '''
                 except Exception:
                     _hbm_before_alloc = _hbm_before_resv = -1.0
                     _hbm_curdev = -1
+                # Sanity: does memory_allocated track fresh torch.zeros?
+                # If YES → API works, and 0 drop means real refs are held.
+                # If NO  → API blind to some allocs; conclusion inverts.
+                try:
+                    _probe_alloc_before = _torch_h.npu.memory_allocated(_hbm_dev)
+                    _probe_t = _torch_h.zeros(1024*1024*256, dtype=_torch_h.int8, device=_hbm_dev)  # 256 MB
+                    _probe_alloc_mid = _torch_h.npu.memory_allocated(_hbm_dev)
+                    del _probe_t
+                    _torch_h.npu.empty_cache()
+                    _probe_alloc_after = _torch_h.npu.memory_allocated(_hbm_dev)
+                    _hlog.info(
+                        '[HOST-COMPRESS] api-probe: allocated %.2f → %.2f → %.2f GB '
+                        '(delta up=%.2f MB, delta down=%.2f MB) — expected 256 MB',
+                        _probe_alloc_before / 1024**3,
+                        _probe_alloc_mid / 1024**3,
+                        _probe_alloc_after / 1024**3,
+                        (_probe_alloc_mid - _probe_alloc_before) / 1024**2,
+                        (_probe_alloc_mid - _probe_alloc_after) / 1024**2,
+                    )
+                except Exception as _pe:
+                    _hlog.warning('[HOST-COMPRESS] api-probe failed: %s', _pe)
                 # Detect compress layers by name suffix: '.self_attn.attn'
                 _COMPRESS_SFX = '.self_attn.attn'
                 # Group by identity: multiple DSA layers may share ONE raw_tensor
@@ -667,9 +688,12 @@ MR_PATCH3_CODE = '''
                     if _rank0_h and _replaced_layers <= 2:
                         _hlog.info(
                             '[HOST-COMPRESS] %s: replaced Device compress → Host-mapped NPU tensor '
-                            '(shape=%s, dtype=%s, %.1f MB)',
+                            '(shape=%s, dtype=%s, %.1f MB, old_dev=%s old_ptr=0x%x '
+                            'new_dev=%s new_ptr=0x%x)',
                             _ln, tuple(_old_t.shape), _old_t.dtype,
                             _old_t.numel() * _old_t.element_size() / 1024**2,
+                            _old_t.device, _old_t.data_ptr(),
+                            _new_t.device, _new_t.data_ptr(),
                         )
                 # Drop references to old tensors and force NPU allocator to reclaim.
                 _seen.clear()
