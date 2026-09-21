@@ -625,6 +625,80 @@ unset TIDALCACHE_ATTN_ON_SEL
 - 异步 DMA overlap
 - 跨层 gather plan 复用
 
+#### 6.12 硬件异常发现 — Path B 独立不够生产用（2026-09-21 下午）
+
+**新发现推翻了 "Path B v2 成功"的乐观判断**：
+
+同一个 Path B 配置能过 T1/T3/T6（1+1, 1024 tokens 科幻, 勾股定理），但**"请写一首七言绝句"请求触发 NPU 硬件级崩溃**。
+
+**错误现场**：
+```
+error code is 507035 (aivec error / vector core exception)
+[Error]: The vector core execution is abnormal.
+When the D-cache reads and writes data to the UB,
+the response value returned by the bus is a non-zero value.
+```
+
+栈路径：
+```
+dsa_cp.py:1215 attention forward
+  → dsa_cp.py:1301 hidden_states = all_gather(...)
+    → HCCL all_gather → aclnnInplaceCopy → 507035
+```
+
+**根因推测**：**Ascend 910 vector cores 不是设计来跨 PCIe 从 Host DDR 直接读取数据的**。DMA 引擎设计来跨设备访问，但 vector cores 只擅长本地 HBM。用 NPU MMU 让 vector cores 看到 Host 地址在**某些访问模式**下能工作（我们撞对了 T1/T3/T6），**其他访问模式**会命中总线响应异常。这是硬件语义限制，不是 Python 层可修的问题。
+
+**为什么当前 Path B 配置有这个问题**：
+- `TIDALCACHE_ATTN_ON_SEL=0` 意味着 attention 直接读 compress_kv_cache
+- Path B v2 让 compress_kv_cache 落在 Host 上（NPU MMU 映射）
+- Attention kernel（vector cores）跨 PCIe 读 Host → 不稳定
+
+**正确的生产架构**（**必须**搭配 B2 通路）：
+```
+1. gather (DMA 引擎)：Host compress → Device sel_kv
+2. attention (vector cores)：读 Device sel_kv（本地 HBM，稳定）
+```
+
+- Vector cores 只碰 Device
+- Host 只被 DMA 引擎读（DMA 就是干这个的）
+- 这才是 DSA sparse offload 原本设计的初衷
+
+**当前状态：TidalCache 不能生产用**
+
+- Path B 隔离机制正确，也确实省了 12 GB HBM
+- 但 attention 直读 Host 会随机触发硬件异常
+- **必须先修 B2 才能安全启用**
+
+**推荐服务器配置（避免崩溃，保住可用性）**：
+```bash
+unset VLLM_DSA_KV_OFFLOAD  # 或 =0
+# 完全关闭 TidalCache，等 B2 修好再启用
+```
+
+**下一阶段核心工作：修 B2 gather+rebind 通路**
+
+已知 B2 bug：长上下文乱码（之前 path A 试验中看到）。定位方向：
+- `apply_patches.py:PATCH2_GATHER_CODE`（DSA gather 插桩）
+- `apply_patches.py:PATCH4_attn_arg`（把 `cmp_block_table` 改成 `_tc_cmp_block_table`）
+- 检查 sel_kv 大小是否正确
+- 检查 gather 索引 (`topk_idxs`) 是否正确翻译到 Host block IDs
+- 检查 `mini_cmp_block_table` 构建是否正确
+
+修好 B2 后的目标配置：
+```bash
+export VLLM_DSA_KV_OFFLOAD=1
+export TIDALCACHE_ISOLATE_COMPRESS=1  # Path B 隔离
+export TIDALCACHE_HOST_COMPRESS=1     # compress on Host
+export TIDALCACHE_PREFILL_MODE=B      # dual-write
+export TIDALCACHE_ATTN_ON_SEL=1       # ★ B2 rebind ★
+```
+
+**关键教训（写给未来的自己）**：
+1. 短请求 T1/T3/T6 全过不代表"成功"——需要多样化测试 workload
+2. Ascend vector cores 不能可靠读 Host memory，Path B 单独不够
+3. "省 HBM" 和 "稳定推理" 需要 B2 通路搭配，缺一不可
+4. 之前 "Path A 崩" 的根因判断（swa/state on Host 破坏 kernel）**部分正确**——但更本质的是 vector cores 不能读 Host，无论是 compress 还是 swa/state
+
 ### Step 7: 性能优化
 
 **目标**: 将单请求开销从 ~+30% 降至 +5-8%
