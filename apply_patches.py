@@ -929,16 +929,18 @@ def main():
     dsa_path = os.path.join(vllm_dir, "vllm_ascend/attention/dsa_v1.py")
     mr_path = os.path.join(vllm_dir, "vllm_ascend/worker/model_runner_v1.py")
     dsa_cp_path = os.path.join(vllm_dir, "vllm_ascend/attention/context_parallel/dsa_cp.py")
+    kv_util_path = os.path.join(vllm_dir, "vllm_ascend/patch/platform/patch_kv_cache_utils.py")
 
     for p in [dsa_path, mr_path]:
         if not os.path.exists(p):
             print(f"ERROR: {p} not found")
             sys.exit(1)
     has_dsa_cp = os.path.exists(dsa_cp_path)
+    has_kv_util = os.path.exists(kv_util_path)
 
     if action == "--rollback":
         print("=== TidalCache Rollback ===")
-        for p in [dsa_path, mr_path, dsa_cp_path]:
+        for p in [dsa_path, mr_path, dsa_cp_path, kv_util_path]:
             bak = p + ".bak"
             if os.path.exists(bak):
                 shutil.copy2(bak, p)
@@ -1335,6 +1337,136 @@ def main():
                 print("  (dry-run, not written)")
     else:
         print(f"\n--- dsa_cp.py not found (V3-only mode) ---")
+
+    # Patch vllm-ascend's patch_kv_cache_utils.py — isolate compress from
+    # swa/state at kv_cache_config generation. This is a SOURCE-level patch
+    # (not runtime monkey-patch) so that main-process kv_cache_config
+    # generation also uses the isolated layout — necessary because the
+    # vllm engine core (main process) generates configs BEFORE any worker
+    # imports tidalcache.
+    #
+    # Original mixing loop (line ~238-245 in vllm-ascend/patch/platform/
+    # patch_kv_cache_utils.py): for each (tuple_idx, page_size), packs one
+    # layer from each group into a single KVCacheTensor.shared_by list,
+    # mixing compress + swa + state.
+    #
+    # Patched: split each tuple's shared_by into compress-only and
+    # non-compress. Recompute num_blocks based on the new tensor count so
+    # total memory stays within available_memory.
+    if has_kv_util:
+        print(f"\n--- {kv_util_path} ---")
+        with open(kv_util_path, "r") as f:
+            kv_content = f.read()
+
+        if MARKER in kv_content:
+            print("  SKIP (already patched)")
+        else:
+            kv_anchor = '''    num_layer_tuples = max(len(layers) for b in bucketed for layers in b.values()) + len(mtp_layer_names)
+
+    num_blocks = available_memory // (layer_tuple_page_bytes * num_layer_tuples)
+    num_blocks = may_override_num_blocks(vllm_config, num_blocks)
+
+    kv_cache_tensors: list[KVCacheTensor] = []
+    for tuple_idx in range(num_layer_tuples - len(mtp_layer_names)):
+        for ps in page_sizes:
+            shared_by: list[str] = []
+            for b in bucketed:
+                bucket = b.get(ps)
+                if bucket is not None and tuple_idx < len(bucket):
+                    shared_by.append(bucket[tuple_idx])
+            kv_cache_tensors.append(KVCacheTensor(size=ps * num_blocks, shared_by=shared_by))
+    for i in range(len(mtp_layer_names)):
+        kv_cache_tensors.append(KVCacheTensor(size=mtp_page_size * num_blocks, shared_by=[mtp_layer_names[i]]))'''
+
+            kv_replacement = '''    num_layer_tuples = max(len(layers) for b in bucketed for layers in b.values()) + len(mtp_layer_names)
+
+    # ── TidalCache Path B (source-patched): isolate compress at source ──
+    import os as _tc_os_kv
+    _tc_isolate = _tc_os_kv.environ.get('TIDALCACHE_ISOLATE_COMPRESS', '0') == '1'
+    _COMPRESS_SFX = '.self_attn.attn'
+
+    # Build (ps, shared_by) slots for non-MTP tensors. When isolating,
+    # each (tuple_idx, ps) that mixes compress+other becomes TWO tensors.
+    _slots: list = []
+    for tuple_idx in range(num_layer_tuples - len(mtp_layer_names)):
+        for ps in page_sizes:
+            if _tc_isolate:
+                _compress_sb: list = []
+                _other_sb: list = []
+                for b in bucketed:
+                    bucket = b.get(ps)
+                    if bucket is not None and tuple_idx < len(bucket):
+                        _ln = bucket[tuple_idx]
+                        if _ln.endswith(_COMPRESS_SFX):
+                            _compress_sb.append(_ln)
+                        else:
+                            _other_sb.append(_ln)
+                if _compress_sb:
+                    _slots.append((ps, _compress_sb))
+                if _other_sb:
+                    _slots.append((ps, _other_sb))
+            else:
+                shared_by: list[str] = []
+                for b in bucketed:
+                    bucket = b.get(ps)
+                    if bucket is not None and tuple_idx < len(bucket):
+                        shared_by.append(bucket[tuple_idx])
+                _slots.append((ps, shared_by))
+
+    if _tc_isolate:
+        # Accurate: total bytes = sum(ps for non-MTP slots) + MTP contribution
+        _total_bytes_per_block = (
+            sum(ps for ps, _ in _slots)
+            + mtp_page_size * len(mtp_layer_names)
+        )
+        num_blocks = (
+            available_memory // _total_bytes_per_block
+            if _total_bytes_per_block > 0 else 0
+        )
+    else:
+        num_blocks = available_memory // (layer_tuple_page_bytes * num_layer_tuples)
+    num_blocks = may_override_num_blocks(vllm_config, num_blocks)
+
+    if _tc_isolate:
+        try:
+            import logging as _tc_log_kv
+            _tclg = _tc_log_kv.getLogger('tidalcache')
+            _n_c = sum(1 for _, sb in _slots if any(ln.endswith(_COMPRESS_SFX) for ln in sb))
+            _n_o = len(_slots) - _n_c
+            _tclg.info(
+                '[ascend-isolate] Path B FIRED (source-patched). '
+                'compress_tensors=%d, other_tensors=%d, mtp_tensors=%d, '
+                'num_blocks=%d, total_bytes_per_block=%d',
+                _n_c, _n_o, len(mtp_layer_names),
+                num_blocks, _total_bytes_per_block,
+            )
+        except Exception:
+            pass
+
+    kv_cache_tensors: list[KVCacheTensor] = []
+    for _ps, _sb in _slots:
+        kv_cache_tensors.append(KVCacheTensor(size=_ps * num_blocks, shared_by=_sb))
+    for i in range(len(mtp_layer_names)):
+        kv_cache_tensors.append(KVCacheTensor(size=mtp_page_size * num_blocks, shared_by=[mtp_layer_names[i]]))'''
+
+            if kv_anchor not in kv_content:
+                print("  ERROR: KV_UTIL_PATCH anchor not found (vllm-ascend version mismatch?)")
+                sys.exit(1)
+            kv_content = kv_content.replace(kv_anchor, kv_replacement, 1)
+            print("  KV_UTIL_PATCH_isolate_compress: OK")
+
+            if not dry_run:
+                bak = kv_util_path + ".bak"
+                if not os.path.exists(bak):
+                    shutil.copy2(kv_util_path, bak)
+                    print(f"  Backed up: {bak}")
+                with open(kv_util_path, "w") as f:
+                    f.write(kv_content)
+                print(f"  Written: {kv_util_path}")
+            else:
+                print("  (dry-run, not written)")
+    else:
+        print(f"\n--- patch_kv_cache_utils.py not found (Path B not available) ---")
 
     print("\n=== Done ===")
     if not dry_run:
