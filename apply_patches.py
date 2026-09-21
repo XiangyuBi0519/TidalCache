@@ -1193,6 +1193,24 @@ def main():
                 _max_batch = _state.mini_cmp_block_table.shape[0]
                 # attn_op's query B is num REQUESTS = original block_table dim 0
                 _actual_reqs = _cam.req_metadata.block_table.shape[0]
+                # Diagnostic: log real compress_topk_idxs value range BEFORE rebind.
+                # If values grow with decode context → confirms positional info
+                # (used by attn kernel for mask/RoPE/pos-bias) will be corrupted
+                # by our arange(topk) override.
+                if _tcos_b2cp.environ.get("TIDALCACHE_LOG_TOPK_IDXS", "0") == "1":
+                    try:
+                        _tk_flat = compress_topk_idxs.flatten().to(_torch.int64)
+                        _tk_min = int(_tk_flat.min().item())
+                        _tk_max = int(_tk_flat.max().item())
+                        _tk_sample = _tk_flat[:8].tolist()
+                        _tclog.info(
+                            "[TOPK-IDXS-CP] %s reqs=%d topk=%d "
+                            "range=[%d, %d] first_8=%s",
+                            layer_name, _actual_reqs, _orig_shape[-1] if compress_topk_idxs.dim() else -1,
+                            _tk_min, _tk_max, _tk_sample,
+                        )
+                    except Exception:
+                        pass
                 if _attn_on_sel and _state.sel_kv_cache is not None and _actual_reqs <= _max_batch:
                     # Phase B2 (CP): attn_op reads sel-side directly, no copy-back.
                     compress_kv_cache = _state.mini_compress_kv
