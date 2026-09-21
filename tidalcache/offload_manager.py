@@ -604,6 +604,36 @@ class TidalCacheManager:
             "[GATHER] %s batch=%d topk=%d splits=%d state.local_topk=%s",
             layer_name, batch_size, topk, n_splits, state.local_topk,
         )
+        # Diagnostic: on rank 0, first-decode-step log block_status stats to
+        # confirm reset behavior and detect stale entries.
+        if os.environ.get('TIDALCACHE_LOG_GATHER', '0') == '1':
+            try:
+                _bs0 = state.sel_block_status_list[0][:batch_size]
+                _neg = (_bs0 < 0).sum().item()
+                _tot = _bs0.numel()
+                _first = _bs0.flatten()[:min(8, _tot)].tolist()
+                logger.info(
+                    "[GATHER-STATS] %s batch=%d topk=%d "
+                    "block_status[0]: total=%d, invalid(-1)=%d, first_%d=%s",
+                    layer_name, batch_size, topk,
+                    _tot, _neg, len(_first), _first,
+                )
+            except Exception:
+                pass
+
+        # B2 correctness fix (2026-09-21): force fresh gather every call.
+        # `sel_block_status` is a kernel-level cache tracking which blocks are
+        # currently in `sel_kv`. reset_requests()/reset_all() are defined but
+        # never called from anywhere — so status leaks across requests. When a
+        # batch slot is reused, kernel may see "cached" == new block-id and
+        # skip the copy, serving stale data. Symptom: long-context corruption
+        # and, downstream, NPU vector-core faults.
+        #
+        # Default: force fresh copy (fill -1 before each chunk). Set
+        # `TIDALCACHE_GATHER_CACHE=1` to opt back into the cached path
+        # (only when you know reset is being called properly).
+        import os as _tc_os_g
+        _tc_gather_cache = _tc_os_g.environ.get('TIDALCACHE_GATHER_CACHE', '0') == '1'
 
         sel_actual_seq = None
         for s in range(n_splits):
@@ -614,6 +644,8 @@ class TidalCacheManager:
             chunk_indices = topk_indices[:, :, :, k_start:k_end].contiguous()
             chunk_bt = state.sel_block_table[:batch_size, k_start:k_end].contiguous()
             chunk_bs = state.sel_block_status_list[s][:batch_size]
+            if not _tc_gather_cache:
+                chunk_bs.fill_(-1)  # invalidate → kernel must copy
 
             sel_actual_seq = gw.npu_gather_selection_kv_cache(
                 state.sel_k_rope,
