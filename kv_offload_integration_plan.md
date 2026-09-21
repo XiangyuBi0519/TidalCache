@@ -699,6 +699,29 @@ export TIDALCACHE_ATTN_ON_SEL=1       # ★ B2 rebind ★
 3. "省 HBM" 和 "稳定推理" 需要 B2 通路搭配，缺一不可
 4. 之前 "Path A 崩" 的根因判断（swa/state on Host 破坏 kernel）**部分正确**——但更本质的是 vector cores 不能读 Host，无论是 compress 还是 swa/state
 
+#### 6.13 阶段性停顿点（2026-09-21 晚）
+
+**当前状态**：Path B 源码修改 + B2 rebind 已让服务不崩，短请求全对；但 1024 tokens 前 ~300 tokens 正常后累积失真。
+
+**已排除的原因**：
+- 不是硬件崩溃（vector core 问题已解决）
+- 不是 swa/state 破坏（Path B 已隔离）
+
+**未定论的候选嫌疑**（3 个，需继续挖）：
+1. **aclgraph replay 吃 Python** —— `cudagraph_mode: FULL_DECODE_ONLY` + `enable_npugraph_ex:true`，decode 阶段可能重播捕获的 kernel 序列而跳过 Python 代码。证据：`TOPK-IDXS-CP` 诊断（无 log-once 守卫，应每步打）从未出现，只有 warmup 时的 `first`-一次性日志出现
+2. **`compressor_attn_metadata` 分支不匹配** —— dsa_cp.py:1294/1296 有两种 tuple 解构分支，真 inference 可能走没有 `compressor_attn_metadata` 定义的分支 → `locals().get()` 返回 None → PATCH2 整块跳过
+3. **`compress_topk_idxs = arange(topk)` 丢位置语义** —— 若 attention kernel 用真实 topk_idxs 值算 RoPE/mask/pos-bias，rebind 成 [0..63] 在长上下文错位。**这个嫌疑目前诊断日志没出来没法证实**
+
+**下一步调试起点**：
+1. 加"必打 tracepoint"到 PATCH2 最外层（无 env var 条件、无守卫）—— 一次重启就能知道代码到底进没进
+2. `cat /proc/<worker_pid>/environ` 验证 env var 是否传给 worker
+3. 对照实验：`cudagraph_mode: NONE` 禁 aclgraph 测长上下文，可作旁证
+4. 阅读 dsa_cp.py:1285-1305 附近分支条件
+
+**当前生产建议**：`unset VLLM_DSA_KV_OFFLOAD` 完全关闭 TidalCache，直到 B2 长上下文修好。已实现的 HBM 节省机制、Path B 隔离、hugepage cleanup 等基础设施保留在代码库，不影响。
+
+**评估**：核心机制已通、量化 HBM 节省已达成、硬件边界已探明。剩下是精细通路正确性问题，非根本技术障碍。如果继续挖，从"必打 tracepoint"开始最省时间。
+
 ### Step 7: 性能优化
 
 **目标**: 将单请求开销从 ~+30% 降至 +5-8%
