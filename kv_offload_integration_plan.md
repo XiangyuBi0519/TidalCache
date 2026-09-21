@@ -582,6 +582,49 @@ just_finished_prefill[R] = was_prefilling and will_be_done
 
 **结论（2026-09-20 更新）**：路径 A 已试并证伪——机制通、HBM 省，但正确性崩。**转路径 B**：改 vllm 让 compress 独占 raw_tensor。这是唯一能既省 HBM 又保对齐推理的道路。
 
+#### 6.11 Path B 源码级修改最终成功（2026-09-21）
+
+**关键定位（推翻 6.10 里 monkey-patch 方案）**：
+- 之前的 `vllm_config_patch.py` monkey-patch 从未 fire——原因是**vllm 引擎在主进程生成 KV cache config**（`get_kv_cache_configs`），然后广播给 workers。而 tidalcache 只在 worker 子进程 `model_runner_v1.__init__` 中导入，主进程从来没导过 tidalcache
+- 时序上 monkey-patch 永远晚一步
+
+**修复方案：源码级修改** `vllm_ascend/patch/platform/patch_kv_cache_utils.py:238-245`
+- 这是 vllm-ascend 自己在早期 import 时注册的 `_get_kv_cache_config_deepseek_v4` 函数
+- 主进程和 worker 加载同一份源码，改了就都生效
+- 修改逻辑：把跨 group 打包的循环拆成"compress-only shared_by"和"non-compress shared_by"两组 KVCacheTensor，`num_blocks` 相应调整以维持内存预算
+- 开关：`TIDALCACHE_ISOLATE_COMPRESS=1`
+- 由 `apply_patches.py` 落地为源码文件修改（有 `.bak` 备份，支持 `--rollback`）
+
+**实测结果（Commit `91c236e`, 2026-09-21）**：
+
+| 指标 | Baseline | Path B v2 |
+|------|----------|-----------|
+| npu-smi HBM / chip | 61 GB | **48.9 GB** (省 12 GB) |
+| Process mem / worker | 58 GB | 45.8 GB |
+| `[HOST-COMPRESS] replaced` | - | **41 layers**（纯 compress，无 swa/state）|
+| `[HOST-COMPRESS] total` | - | 13.04 GB Host |
+| Stubborn refs | - | 空（完全释放）|
+| T1 (1+1) | ✅ | ✅ |
+| T3 (1024 tokens 科幻) | ✅ | ✅ 完整连贯故事 |
+| T6 (勾股定理) | ✅ | ✅ 正确论证 |
+
+**HBM 省 12 GB 而非 24 GB 的原因**：现在只 offload 纯 compress（13 GB）到 Host，swa/state 留在 Device（打包在一起的额外 10 GB 保持 HBM）。这是"该省的部分"，是纯净收益。想省更多需要更深的优化。
+
+**生产可用配置**：
+```bash
+export VLLM_DSA_KV_OFFLOAD=1
+export TIDALCACHE_ISOLATE_COMPRESS=1
+export TIDALCACHE_HOST_COMPRESS=1
+unset TIDALCACHE_PREFILL_MODE       # B2 通路有 bug，暂关
+unset TIDALCACHE_ATTN_ON_SEL
+```
+
+**下一步优化候选**：
+- 修 B2 gather bug → attention 通过 sel_kv 读 Device 小缓冲，进一步降延迟并可能省更多 HBM
+- Prefill 优化（当前每步 attention 走 PCIe 读 Host compress）
+- 异步 DMA overlap
+- 跨层 gather plan 复用
+
 ### Step 7: 性能优化
 
 **目标**: 将单请求开销从 ~+30% 降至 +5-8%
