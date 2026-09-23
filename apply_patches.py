@@ -86,6 +86,27 @@ PATCH2_GATHER_CODE = '''
         # Save reference to vllm's compress_kv_cache BEFORE any rebind so a
         # later compress-poison test can target the original tensor.
         _orig_compress_ref = compress_kv_cache
+        # ── TRACE: unconditional entry logger (V1/non-CP path) ──
+        # Fires every call regardless of env vars or guard conditions.
+        # Rate-limited to 1-per-500 to avoid log spam. If this never
+        # appears during real inference, we know Python isn't running
+        # here (aclgraph replay skipping) OR we're on the CP path.
+        try:
+            import os as _tc_tr_os
+            import logging as _tc_tr_lg
+            _tr_log = _tc_tr_lg.getLogger('tidalcache')
+            _tr_attr = '_tc_trace_ctr_v1_' + layer_name.replace('.', '_')
+            _tr_counter = getattr(self, _tr_attr, 0)
+            if _tr_counter % 500 == 0:
+                _tr_log.info(
+                    "[TC-TRACE-V1] %s call#%d pid=%d kv_offload=%s cdm=%s",
+                    layer_name, _tr_counter, _tc_tr_os.getpid(),
+                    getattr(self, 'kv_offload_enabled', False),
+                    'None' if _cdm is None else 'present',
+                )
+            setattr(self, _tr_attr, _tr_counter + 1)
+        except Exception:
+            pass
         if self.kv_offload_enabled and _cdm is not None:
             if self._tidalcache_mgr is None:
                 import tidalcache as _tc
@@ -1163,6 +1184,27 @@ def main():
         _tc_cmp_block_table = _cam.req_metadata.block_table if _cam is not None else None
         # Save reference for compress-poison test (Step 1 of B3)
         _orig_compress_ref = compress_kv_cache
+        # ── TRACE: unconditional entry logger (CP path) ──
+        # Fires every call regardless of env vars or guard conditions.
+        # Rate-limited to 1-per-500 to avoid log spam. Verifies whether
+        # Python actually runs during real inference (vs aclgraph replay
+        # skipping it) and whether _cam is defined in the taken branch.
+        try:
+            import os as _tc_tr_os
+            import logging as _tc_tr_lg
+            _tr_log = _tc_tr_lg.getLogger('tidalcache')
+            _tr_attr = '_tc_trace_ctr_cp_' + layer_name.replace('.', '_')
+            _tr_counter = getattr(self, _tr_attr, 0)
+            if _tr_counter % 500 == 0:
+                _tr_log.info(
+                    "[TC-TRACE-CP] %s call#%d pid=%d kv_offload=%s cam=%s",
+                    layer_name, _tr_counter, _tc_tr_os.getpid(),
+                    getattr(self, 'kv_offload_enabled', False),
+                    'None' if _cam is None else 'present',
+                )
+            setattr(self, _tr_attr, _tr_counter + 1)
+        except Exception:
+            pass
         if getattr(self, 'kv_offload_enabled', False) and _cam is not None:
             if self._tidalcache_mgr is None:
                 import tidalcache as _tc
