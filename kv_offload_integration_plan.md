@@ -722,6 +722,45 @@ export TIDALCACHE_ATTN_ON_SEL=1       # ★ B2 rebind ★
 
 **评估**：核心机制已通、量化 HBM 节省已达成、硬件边界已探明。剩下是精细通路正确性问题，非根本技术障碍。如果继续挖，从"必打 tracepoint"开始最省时间。
 
+#### 6.14 层结构查清 + 三候选逐一证伪（2026-10-08）
+
+**接上一轮"必打 tracepoint"的结果 → 把 6.13 的三个候选嫌疑逐个处理：**
+
+**候选 1（aclgraph 吃 Python）证伪**：改 `--enforce-eager` 全程 eager 跑，长上下文**仍然崩**。aclgraph 不是（唯一）原因。
+
+**候选 3（arange 丢位置语义）基本证伪**：查 CANN 官方 doc `SparseAttnSharedkv` README —— `cmp_sparse_indices` 定义是"离散取 cmpKvCache 的索引"，kernel 公式 `O=softmax(Q@K^T·scale)@V` **无 RoPE/位置 bias**（RoPE 在写入前已烘焙进 K）。所以 arange rebind 语义上应无害。
+
+**真正的突破——查清 DSV4-Flash 真实层结构**（用户提供官方架构 + TC-TRACE 每层 compress_ratio 确认）：
+
+```
+43 层：
+  Layer 0-1    ratio=0    SWA          kv_offload=False
+  Layer 2-42   交替：
+    偶数(2,4,…,42) ratio=4   CSA 稀疏  kv_offload=True   ← 21 层
+    奇数(3,5,…,41) ratio=128 HCA 稠密  kv_offload=False  ← 20 层
+```
+
+- **CSA（ratio=4）**：Lightning Indexer 选 topk=512 压缩块，稀疏 → 可 gather offload
+- **HCA（ratio=128）**：稠密 attend 全部压缩块，无 topk 选择（代码里 128 分支不传 `cmp_sparse_indices`）→ **不能 offload**
+- HCA 的 `kv_offload=False` 是因为它们没 Lightning Indexer，CP_PATCH1 的 anchor `self.index_topk = self.indexer.index_topk` 不存在，flag 没被设上
+
+**候选：HCA 读 Host 导致崩坏**。MR_PATCH3 按 `.self_attn.attn` 后缀无差别 offload 了全部 41 层（含 20 个 HCA）到 Host。HCA 稠密读 Host-mapped 内存 → 随序列增长读越来越多块 → 失真。
+
+**修复（commit 57eee52）**：`TIDALCACHE_CSA_ONLY`（默认开）—— MR_PATCH3 PASS 1 按 `compress_ratio` 过滤，只 offload ratio=4(CSA) 的 21 层，HCA 留 Device。
+- 过滤验证通过：`pass 1: csa_only=True, 21 compress raw_tensors selected`，per-layer ratio 精确 4/128 交替。
+- **但长上下文仍然崩坏**（结尾多语言乱码、`#####`、无意义 token）。
+
+**当前定论**：**HCA 不是（唯一）真凶。bug 就在 CSA offload 通路本身**（L2 host-compress / L4 dual-write scatter / L5 gather+rebind 三者之一）。范围已从"41 层混合"收窄到"21 个 CSA 层的 offload 链"。
+
+**下一步（决定性 bisection）**：POISON 测试 `TIDALCACHE_POISON=1`（gather 后把 sel_kv 填 -1000）：
+- 短请求立刻崩 → attention 真读 sel_kv → 查 gather 数据正确性 / index 映射
+- 短请求仍正常 → rebind 空转（attn 没读 sel_kv）→ 崩坏来自别处（scatter 写坏 Host compress？metadata 过期？）
+
+**诊断基础设施**（本轮新增，保留在 `apply_patches.py`）：
+- `TC-TRACE-V1 / TC-TRACE-CP`：PATCH2 入口无条件 tracepoint，打 `kv_offload / cam / compress_ratio / topk_idxs` 状态
+- `TIDALCACHE_CSA_ONLY`：按 compress_ratio 过滤 offload（默认只 CSA）
+- `TIDALCACHE_LOG_TOPK_IDXS`：打真实 topk_idxs 值域
+
 ### Step 7: 性能优化
 
 **目标**: 将单请求开销从 ~+30% 降至 +5-8%
