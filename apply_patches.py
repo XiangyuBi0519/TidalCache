@@ -687,19 +687,65 @@ MR_PATCH3_CODE = '''
                 # offload — pure-swa or pure-state raw_tensors (never shared with
                 # compress) stay on Device. This prevents Host memory blowup
                 # when non-compress groups have their own dedicated raw_tensors.
+                #
+                # CSA-ONLY FILTER (TIDALCACHE_CSA_ONLY, default on):
+                # DSV4-Flash alternates CSA (compress_ratio=4, sparse topk) and
+                # HCA (compress_ratio=128, DENSE over all compressed blocks).
+                # Only CSA can be offloaded — the decode gather fetches topk
+                # blocks to Device. HCA does dense attention over the WHOLE
+                # compressed sequence; if its compress lives on Host, the dense
+                # read corrupts long-context output. So offload ONLY ratio=4.
+                _csa_only = _tcos_h.environ.get('TIDALCACHE_CSA_ONLY', '1') == '1'
+
+                def _layer_compress_ratio(_name):
+                    # Resolve compress_ratio from the spec map that
+                    # `_allocate_kv_cache_tensors` built (closure over enclosing
+                    # frame's `layer_kv_cache_spec`). Fall back to layer-index
+                    # parity (even idx=CSA 4, odd=HCA 128) only if lookup fails.
+                    _spec = None
+                    try:
+                        _spec = layer_kv_cache_spec.get(_name) if isinstance(layer_kv_cache_spec, dict) else None
+                    except Exception:
+                        _spec = None
+                    if _spec is not None:
+                        _cr = getattr(_spec, 'compress_ratio', 0)
+                        if (not _cr) and hasattr(_spec, 'kv_cache_specs'):
+                            try:
+                                _sub = _spec.kv_cache_specs.get(_name)
+                                _cr = getattr(_sub, 'compress_ratio', 0) if _sub is not None else 0
+                            except Exception:
+                                _cr = 0
+                        if _cr:
+                            return int(_cr)
+                    try:
+                        _idx = int(_name.split('.layers.')[-1].split('.')[0])
+                        return 4 if (_idx % 2 == 0) else 128
+                    except Exception:
+                        return 0
+
                 _compress_tensor_ids = set()
+                _ratio_dbg = {}
                 for _ln, _rt in kv_cache_raw_tensors.items():
                     if not _ln.endswith('.self_attn.attn'):
                         continue
                     if _rt is None:
                         continue
+                    _cr = _layer_compress_ratio(_ln)
+                    try:
+                        _ldbg = _ln.split('.layers.')[-1].split('.')[0]
+                        _ratio_dbg[_ldbg] = _cr
+                    except Exception:
+                        pass
+                    if _csa_only and _cr != 4:
+                        continue  # skip HCA(128)/unknown — keep on Device
                     if isinstance(_rt, _torch_h.Tensor):
                         _compress_tensor_ids.add(id(_rt))
                     elif isinstance(_rt, (tuple, list)) and len(_rt) > 0 and isinstance(_rt[0], _torch_h.Tensor):
                         _compress_tensor_ids.add(id(_rt[0]))
                 _hlog.info(
-                    '[HOST-COMPRESS] pass 1: %d unique compress raw_tensors identified',
-                    len(_compress_tensor_ids),
+                    '[HOST-COMPRESS] pass 1: csa_only=%s, %d compress raw_tensors '
+                    'selected for offload; per-layer ratio=%s',
+                    _csa_only, len(_compress_tensor_ids), _ratio_dbg,
                 )
 
                 # PASS 2: replace ANY dict entry whose (value or value[0]) id is
