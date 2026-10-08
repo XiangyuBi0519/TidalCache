@@ -1297,18 +1297,39 @@ def main():
                 # by our arange(topk) override.
                 if _tcos_b2cp.environ.get("TIDALCACHE_LOG_TOPK_IDXS", "0") == "1":
                     try:
+                        # Real selected positions (before arange rebind)
                         _tk_flat = compress_topk_idxs.flatten().to(_torch.int64)
                         _tk_min = int(_tk_flat.min().item())
                         _tk_max = int(_tk_flat.max().item())
-                        _tk_sample = _tk_flat[:8].tolist()
+                        _tk_topk = compress_topk_idxs.shape[-1]
+                        # Our mini buffer capacity (in 64-sized compressed blocks)
+                        _mini_shape = tuple(_state.mini_compress_kv.shape)
+                        _mini_blocks = _mini_shape[0]
+                        # DECISIVE: real compressed seq length that metadata encodes.
+                        # cu_cmp_seqlen_list last entry = total compressed positions.
+                        _reqmd = locals().get('req_metadata')
+                        _cu_cmp = None
+                        if _reqmd is not None and hasattr(_reqmd, 'cu_cmp_seqlen_list'):
+                            try:
+                                _cu = _reqmd.cu_cmp_seqlen_list
+                                _cu_cmp = int(_cu.flatten()[-1].item()) if _cu is not None else None
+                            except Exception:
+                                _cu_cmp = None
+                        # real compressor block table width (blocks per req in real cache)
+                        _real_bt_w = None
+                        try:
+                            _real_bt_w = int(_cam.req_metadata.block_table.shape[1])
+                        except Exception:
+                            _real_bt_w = None
                         _tclog.info(
-                            "[TOPK-IDXS-CP] %s reqs=%d topk=%d "
-                            "range=[%d, %d] first_8=%s",
-                            layer_name, _actual_reqs, _orig_shape[-1] if compress_topk_idxs.dim() else -1,
-                            _tk_min, _tk_max, _tk_sample,
+                            "[TOPK-IDXS-CP] %s reqs=%d topk=%d real_pos_range=[%d,%d] "
+                            "mini_blocks=%d real_cmp_seqlen=%s real_bt_width=%s first4=%s",
+                            layer_name, _actual_reqs, _tk_topk,
+                            _tk_min, _tk_max, _mini_blocks,
+                            _cu_cmp, _real_bt_w, _tk_flat[:4].tolist(),
                         )
-                    except Exception:
-                        pass
+                    except Exception as _tke:
+                        _tclog.warning("[TOPK-IDXS-CP] diag failed: %s", _tke)
                 if _attn_on_sel and _state.sel_kv_cache is not None and _actual_reqs <= _max_batch:
                     # Phase B2 (CP): attn_op reads sel-side directly, no copy-back.
                     compress_kv_cache = _state.mini_compress_kv
