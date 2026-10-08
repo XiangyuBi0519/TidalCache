@@ -1196,11 +1196,21 @@ def main():
             _tr_attr = '_tc_trace_ctr_cp_' + layer_name.replace('.', '_')
             _tr_counter = getattr(self, _tr_attr, 0)
             if _tr_counter % 500 == 0:
+                _tr_cti = locals().get('compress_topk_idxs', '<undef>')
+                if _tr_cti is None:
+                    _tr_cti_s = 'None(DENSE/HCA)'
+                elif _tr_cti == '<undef>':
+                    _tr_cti_s = '<undef>'
+                else:
+                    _tr_cti_s = 'shape' + str(tuple(_tr_cti.shape))
                 _tr_log.info(
-                    "[TC-TRACE-CP] %s call#%d pid=%d kv_offload=%s cam=%s",
+                    "[TC-TRACE-CP] %s call#%d pid=%d kv_offload=%s cam=%s "
+                    "compress_ratio=%s topk_idxs=%s",
                     layer_name, _tr_counter, _tc_tr_os.getpid(),
                     getattr(self, 'kv_offload_enabled', False),
                     'None' if _cam is None else 'present',
+                    getattr(self, 'compress_ratio', '?'),
+                    _tr_cti_s,
                 )
             setattr(self, _tr_attr, _tr_counter + 1)
         except Exception:
