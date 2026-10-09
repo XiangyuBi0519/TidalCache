@@ -814,7 +814,10 @@ export TIDALCACHE_ATTN_ON_SEL=1       # ★ B2 rebind ★
 
 **Break-even 标尺（给 Phase B）**：tidal 每单位吞吐 = baseline 的 76%，追平需 1/0.76 ≈ **1.32× 并发**。故 Phase B 核心问题：**省下的 12GB 能否让 `max-num-seqs` 提高 >32%？** 若 tidal 能跑到 >1.32×（baseline 的 max-num-seqs 天花板）还不 OOM → 净赢。
 
+**⚠️ 新发现（2026-10-09，待查，疑似真 bug）——TidalCache 丢早期上下文**：受控实验（同一 CLI 工具，只切换 TidalCache 开关）问"你是谁"——baseline 说 "opencode"（正确 follow CLI 注入的 system prompt），**tidal 说 "deepseek"（丢了 system prompt，退回模型底座身份）**。此前所有正确性测试（1+1/七言/1024/世界模型总结）内容全在 user message 近端，**从未测过对最早期上下文（system prompt，position 0）的注意力**——这个洞被 happy-path 盖住了；很可能也是早前 CLI 漂移（幻觉"刚才聊过"）的同一根因。机制怀疑：baseline/tidal 用同一 Indexer 选块，差异只在 gather 数据/块映射 → 疑 **gather 的 mini_cmp_block_table 对最前面的块（position-0 边界）处理有误**。复现：裸 curl 带 system `你叫小O…` 问"你是谁"，baseline 说小O、tidal 不说 → 坐实后查 gather 块映射边界。
+
 **下一步**：
+- **优先：查"丢早期上下文"bug**（影响正确性，可能比 Phase B 更该先修）。
 - Phase B（侧重并发）：两组各自把 max-num-seqs 顶到 OOM 找天花板，比 N' vs N；再测拉长 max-model-len。
 - 可选优化：profiling 定位 +150ms 固定 TTFT 开销来源。
 
