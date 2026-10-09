@@ -1222,6 +1222,35 @@ def main():
             cp_content = cp_content.replace(cp1_anchor, cp1_insert, 1)
             print("  CP_PATCH1_init: OK")
 
+            # CP_PATCH0: graph-params shim. AscendDSACPImpl is the ONLY attention
+            # impl that omits update_graph_params (all siblings — dsa_v1, mla_v1,
+            # attention_cp, mla_cp — define it). Under full aclgraph + MTP spec
+            # decode, llm_base_proposer.update_full_graph_params calls
+            # impl_cls.update_graph_params(...) on it -> AttributeError. The non-CP
+            # AscendDSAImpl's version is a pure no-op ("dsa does not need to update
+            # graph params"), so we mirror it here. Pre-existing vllm-ascend gap,
+            # independent of TidalCache (baseline hits it too under graph+MTP+DSACP).
+            cp0_anchor = (
+                "    wo_b_full_weight_scale_pool: ClassVar[torch.Tensor | None] = None\n\n"
+                "    def __init__(\n"
+            )
+            if cp0_anchor not in cp_content:
+                print("  WARNING: CP_PATCH0 anchor not found — skipping graph-params shim")
+            else:
+                cp0_insert = (
+                    "    wo_b_full_weight_scale_pool: ClassVar[torch.Tensor | None] = None\n\n"
+                    "    # ── TidalCache: graph-params shim (mirror AscendDSAImpl no-op) ──\n"
+                    "    @staticmethod\n"
+                    "    def update_graph_params(update_stream, forward_context, num_tokens,\n"
+                    "                            vllm_config=None, speculative_config=None,\n"
+                    "                            num_dcp_pcp_tokens=None, draft_attn_metadatas=None):\n"
+                    "        # DSA CP needs no graph-param update.\n"
+                    "        pass\n\n"
+                    "    def __init__(\n"
+                )
+                cp_content = cp_content.replace(cp0_anchor, cp0_insert, 1)
+                print("  CP_PATCH0_graph_shim: OK")
+
             # CP_PATCH2: gather — insert before attn_op in _forward
             # Use the same anchor: attn_op = DeviceOperator.get_dsa_sparse_attn_op()
             # But scope it to _forward by requiring notify_kv_cache_written before it
