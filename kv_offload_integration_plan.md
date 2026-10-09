@@ -781,6 +781,7 @@ export TIDALCACHE_ATTN_ON_SEL=1       # ★ B2 rebind ★
 - **ATTN-ON-SEL-CP**：8 个 worker 都打印 `attn reads sel_kv, orig_shape=(2,1,512)` → attention 真读 gather 出的 Device sel_kv ✅
 - **1024 token**：输出完整连贯（科幻故事 + 七言绝句格律正确）✅
 - **逻辑钉死非空转**："不崩（vector core 读 Host 会 507035）+ 输出对（空转会乱码）" 两件事同时成立，排除了退回原生路径的可能
+- **POISON 复测（100% 钉死）**：`TIDALCACHE_POISON=1`（gather 后 sel_kv.fill_(-1000)）重启后，最短请求 "1+1" 立刻变乱码（阿拉伯语 + 随机 token）→ attention **确实读我们 gather 的 sel_kv**，正常输出是真从本链路流出，非空转
 
 **里程碑**：核心机制 + 长上下文正确性**全部打通**，TidalCache 首次端到端可用（省 ~12GB HBM/chip 且输出正确）。
 
