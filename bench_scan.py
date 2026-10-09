@@ -207,6 +207,8 @@ def main():
                     help="throughput: concurrency levels to sweep")
     ap.add_argument("--thr-ctx", type=int, default=2048, help="throughput: context chars")
     ap.add_argument("--thr-out", type=int, default=512, help="throughput: output tokens")
+    ap.add_argument("--thr-repeats", type=int, default=1,
+                    help="throughput: repeat each concurrency level N times, report median (de-noise)")
     args = ap.parse_args()
 
     print("=" * 108)
@@ -260,7 +262,20 @@ def main():
         for _ in range(args.warmup):
             stream_request(args.url, args.model, prompt, args.thr_out)
         for conc in conc_list:
-            r = run_concurrent(args.url, args.model, prompt, args.thr_out, conc)
+            reps = [run_concurrent(args.url, args.model, prompt, args.thr_out, conc)
+                    for _ in range(max(1, args.thr_repeats))]
+            # median across repeats for the rate/latency fields; sum ok/fail
+            def _med(key):
+                vals = [x[key] for x in reps if x[key] is not None]
+                return statistics.median(vals) if vals else None
+            r = {
+                "agg_tok_s": _med("agg_tok_s"),
+                "ttft_p50": _med("ttft_p50"), "ttft_p99": _med("ttft_p99"),
+                "tpot_p50": _med("tpot_p50"), "tpot_p99": _med("tpot_p99"),
+                "ok": sum(x["ok"] for x in reps), "fail": sum(x["fail"] for x in reps),
+                "prompt_tok": next((x["prompt_tok"] for x in reps if x["prompt_tok"]), 0),
+                "tail": next((x["tail"] for x in reps if x["tail"]), ""),
+            }
             tail = (r["tail"] or "").replace("\n", " ")[-40:]
             print(f"{conc:>5d} {str(r['ok'])+'/'+str(r['fail']):>8s} "
                   f"{fmt(r['agg_tok_s']):>10s} {fmt(r['ttft_p50']):>9s} "
