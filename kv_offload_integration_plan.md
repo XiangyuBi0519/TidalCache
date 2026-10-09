@@ -761,6 +761,29 @@ export TIDALCACHE_ATTN_ON_SEL=1       # ★ B2 rebind ★
 - `TIDALCACHE_CSA_ONLY`：按 compress_ratio 过滤 offload（默认只 CSA）
 - `TIDALCACHE_LOG_TOPK_IDXS`：打真实 topk_idxs 值域
 
+#### 6.15 根因锁定 + 长上下文正确性打通（2026-10-09）✅
+
+**接 6.14 的 POISON bisection，用 `TIDALCACHE_LOG_TOPK_IDXS` + hidden_states 探针拿到决定性证据：**
+
+**现象（mode-B，dual-write 开）**：decode 步 1 topk_idxs 正常 `[0,1,2,…]`；步 2 起 topk_idxs **变成垃圾**（`real_pos_range=[-1167999635,…]`，bf16 数据被当成 int32 读），但**同一步的 hidden_states 完全正常（nan=0）**。即：Indexer 的**输入**是好的，**输出**被踩坏 —— 典型的内存越界踩踏，与模型输入无关。步 3 整个 hidden_states nan=4096 → 彻底崩。
+
+**bisection（关掉 dual-write）**：topk_idxs **全程保持有效**（`real_pos_range` 随上下文正常增长到 [-1,259]，first4 都是小整数），hidden_states 全程 nan=0，**1024 token 输出完整连贯**。
+
+**根因**：mode-B 的 **dual-write scatter**（往 `self._tidalcache_mgr.layers[layer_name].npu_kv_cache` 再写一份）是元凶。它越界写入，踩坏了相邻的 Lightning Indexer 输出缓冲 → topk_idxs 垃圾 → 选错块 → 累积失真 → NaN。
+
+**为什么是历史包袱**：dual-write 是 **compress-on-Device 时代**的设计——那时 compress_kv_cache 在 Device，需要额外写一份到 Host 供 gather 读。但启用 `HOST_COMPRESS=1` 后，**compress_kv_cache 本身就是 Host-backed 视图**（MR_PATCH3 offload），模型原生 scatter（dsa_cp.py:1425）每步直接写 Host，Host 一直是最新的。dual-write 既**冗余**又**有害**。
+
+**修复（本轮）**：`apply_patches.py` MR_PATCH3 / CP_PATCH3 —— `HOST_COMPRESS=1` 时，无论 `PREFILL_MODE` 设成什么，mode-B dual-write **强制禁用**（加 `and not _tc_host_compress_*` 守卫）。保留 compress-on-Device 老路径逃生口（`HOST_COMPRESS` 未设时 mode-B 行为不变）。
+
+**端到端验证（全链路在工作且正确）**：
+- 环境：`HOST_COMPRESS=1` + `ATTN_ON_SEL=1` + `PREFILL_MODE=A`（默认，无 dual-write）
+- **HBM**：每片 ~48GB / 65（满配 61）→ compress 真落 Host，省 ~12-13GB ✅
+- **ATTN-ON-SEL-CP**：8 个 worker 都打印 `attn reads sel_kv, orig_shape=(2,1,512)` → attention 真读 gather 出的 Device sel_kv ✅
+- **1024 token**：输出完整连贯（科幻故事 + 七言绝句格律正确）✅
+- **逻辑钉死非空转**："不崩（vector core 读 Host 会 507035）+ 输出对（空转会乱码）" 两件事同时成立，排除了退回原生路径的可能
+
+**里程碑**：核心机制 + 长上下文正确性**全部打通**，TidalCache 首次端到端可用（省 ~12GB HBM/chip 且输出正确）。
+
 ### Step 7: 性能优化
 
 **目标**: 将单请求开销从 ~+30% 降至 +5-8%

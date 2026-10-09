@@ -1070,6 +1070,13 @@ def main():
         #                              Post-prefill D2H sweep (TBD) will move
         #                              data to Host after prefill completes.
         #   TIDALCACHE_PREFILL_MODE=OFF: bypass all offload writes (compat).
+        #
+        #   NOTE (2026-10-09): when TIDALCACHE_HOST_COMPRESS=1, compress_kv_cache is
+        #   already the Host-backed view (MR_PATCH3 offload), so the native scatter
+        #   populates Host directly and the mode-B dual-write is both redundant and
+        #   BUGGY — it writes out-of-bounds into the Indexer buffer and garbles
+        #   long-context output. The dual-write is therefore force-disabled whenever
+        #   HOST_COMPRESS=1, regardless of PREFILL_MODE. See plan §6.15 for root cause.
         p3_pattern = re.compile(
             r'( +)(DeviceOperator\.dsa_kv_compress_scatter\()'
             r'\s*compress_kv_cache,\s*(.*?\))',
@@ -1087,6 +1094,11 @@ def main():
                 f"{indent}# ── TidalCache: mode-aware scatter (A=Device only, B=dual) ──\n"
                 f"{indent}import os as _tc_os_s\n"
                 f"{indent}_tc_mode_s = _tc_os_s.environ.get('TIDALCACHE_PREFILL_MODE', 'A')\n"
+                f"{indent}# HOST_COMPRESS: compress_kv_cache IS already the Host-backed view, so the\n"
+                f"{indent}# model's native scatter here populates Host directly. The mode-B dual-write\n"
+                f"{indent}# below is then redundant AND corrupts memory (out-of-bounds into the\n"
+                f"{indent}# Indexer buffer → garbled long-context output). Force-disable it.\n"
+                f"{indent}_tc_host_compress_s = _tc_os_s.environ.get('TIDALCACHE_HOST_COMPRESS', '0') == '1'\n"
                 f"{indent}if self.kv_offload_enabled and _tc_mode_s != 'OFF':\n"
                 f"{indent}    if self._tidalcache_mgr is None:\n"
                 f"{indent}        import tidalcache as _tc_s\n"
@@ -1094,7 +1106,7 @@ def main():
                 f"{indent}    if self._tidalcache_mgr is not None and layer_name not in self._tidalcache_mgr.layers:\n"
                 f"{indent}        self._tidalcache_mgr.ensure_host_allocated(layer_name)\n"
                 f"{indent}    {scatter}(compress_kv_cache, {args_inner})\n"
-                f"{indent}    if _tc_mode_s == 'B' and self._tidalcache_mgr is not None and layer_name in self._tidalcache_mgr.layers:\n"
+                f"{indent}    if _tc_mode_s == 'B' and not _tc_host_compress_s and self._tidalcache_mgr is not None and layer_name in self._tidalcache_mgr.layers:\n"
                 f"{indent}        _host_kv = self._tidalcache_mgr.layers[layer_name].npu_kv_cache\n"
                 f"{indent}        {scatter}(_host_kv, {args_inner})\n"
                 f"{indent}        import logging as _lg_s\n"
@@ -1409,6 +1421,8 @@ def main():
             #   TIDALCACHE_PREFILL_MODE=B: dual write (Device + Host)
             #   TIDALCACHE_PREFILL_MODE=A/unset: Device only (sweep TBD)
             #   TIDALCACHE_PREFILL_MODE=OFF: bypass
+            #   NOTE (2026-10-09): dual-write force-disabled when HOST_COMPRESS=1
+            #   (redundant + corrupts Indexer buffer). See plan §6.15.
             cp3_pattern = re.compile(
                 r'( +)(DeviceOperator\.dsa_kv_compress_scatter\()'
                 r'\s*compress_kv_cache,\s*(.*?\))',
@@ -1426,6 +1440,10 @@ def main():
                     f"{cp3_indent}# ── TidalCache: mode-aware scatter (CP) ──\n"
                     f"{cp3_indent}import os as _tc_os_cp\n"
                     f"{cp3_indent}_tc_mode_cp = _tc_os_cp.environ.get('TIDALCACHE_PREFILL_MODE', 'A')\n"
+                    f"{cp3_indent}# HOST_COMPRESS: compress_kv_cache IS already the Host-backed view, so the\n"
+                    f"{cp3_indent}# model's native scatter populates Host directly; the mode-B dual-write is\n"
+                    f"{cp3_indent}# redundant AND corrupts memory (out-of-bounds into Indexer buffer). Disable.\n"
+                    f"{cp3_indent}_tc_host_compress_cp = _tc_os_cp.environ.get('TIDALCACHE_HOST_COMPRESS', '0') == '1'\n"
                     f"{cp3_indent}if getattr(self, 'kv_offload_enabled', False) and _tc_mode_cp != 'OFF':\n"
                     f"{cp3_indent}    if self._tidalcache_mgr is None:\n"
                     f"{cp3_indent}        import tidalcache as _tc_cp\n"
@@ -1433,7 +1451,7 @@ def main():
                     f"{cp3_indent}    if self._tidalcache_mgr is not None and layer_name not in self._tidalcache_mgr.layers:\n"
                     f"{cp3_indent}        self._tidalcache_mgr.ensure_host_allocated(layer_name)\n"
                     f"{cp3_indent}    {scatter}(compress_kv_cache, {cp3_args})\n"
-                    f"{cp3_indent}    if _tc_mode_cp == 'B' and self._tidalcache_mgr is not None and layer_name in self._tidalcache_mgr.layers:\n"
+                    f"{cp3_indent}    if _tc_mode_cp == 'B' and not _tc_host_compress_cp and self._tidalcache_mgr is not None and layer_name in self._tidalcache_mgr.layers:\n"
                     f"{cp3_indent}        _host_kv_cp = self._tidalcache_mgr.layers[layer_name].npu_kv_cache\n"
                     f"{cp3_indent}        {scatter}(_host_kv_cp, {cp3_args})\n"
                     f"{cp3_indent}        import logging as _lg_cp\n"
