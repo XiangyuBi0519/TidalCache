@@ -785,6 +785,41 @@ export TIDALCACHE_ATTN_ON_SEL=1       # ★ B2 rebind ★
 
 **里程碑**：核心机制 + 长上下文正确性**全部打通**，TidalCache 首次端到端可用（省 ~12GB HBM/chip 且输出正确）。
 
+#### 6.16 图模式打通 + Phase A 基准（代价测量）（2026-10-09 晚）✅
+
+**图模式前置坑（非 TidalCache 问题）**：恢复 aclgraph 后 warmup 崩 `AttributeError: AscendDSACPImpl has no attribute 'update_graph_params'`。根因是 vllm-ascend 自身缺口——`AscendDSACPImpl` 是唯一漏实现 `update_graph_params` 的注意力类（dsa_v1/mla_v1/attention_cp/mla_cp 全有），full aclgraph + MTP spec-decode 会调它。修复 **CP_PATCH0**：照抄非 CP 版的 no-op `pass`。baseline（关 TidalCache）在图+MTP+DSACP 下一样会崩，所以这是图模式的通用前置条件。
+
+**图模式正确性 + POISON 复验**：图模式下正确性三连全连贯；图模式下 POISON（sel_kv=-1000）1+1 立刻乱码 → **aclgraph 重播没有跳过 gather，每步真跑**，图下全链路工作且正确。
+
+**Phase A 基准（bench_scan.py，baseline vs tidalcache，均图模式 max-num-seqs=16）**：
+
+延迟（batch=1，out=8）—— TPOT（解码每 token）：baseline 45-50ms / tidal 46-52ms，**几乎无差异，decode 侧免费**（gather ≈ +3ms/步）。TTFT gap 分两成分：
+- **固定开销 ~+150-200ms/请求**（141 token 就出现，到 2k token 持平）——不是 gather（TPOT 已证 gather ~3ms），是 prefill 侧每请求一次性成本（sel/mini 表构建 / 首次 Host 分配 / 首段 Host 写），**最大的通用优化杠杆，待 profiling 定位**。
+- **长上下文成分**：>4096 token（超 max-num-batched-tokens → 分块 prefill）gap 窜到 +380~530ms，是 compress 写 Host 随长度累积 + 分块 prefill 叠加；可用 "prefill 先写 HBM、结束后异步 sweep Host"（mode-A TBD）解。
+
+吞吐（ctx=2048，out=512，3 轮中位数去噪）：
+
+| 并发 | baseline tok/s | tidalcache tok/s | 比值 |
+|---|---|---|---|
+| 1 | 33.1 | 30.3 | 92% |
+| 4 | 129.9 | 102.5 | 79% |
+| 16 | 353.7 | 265.6 | 75% |
+| 32 | 521.0 | 396.1 | **76%** |
+
+**吞吐代价稳定 ~-24%**（早期中并发 37% 异常经去噪确认为噪声）。正确性两组全程无差异（含 16K 上下文）。
+
+**HBM 对照**：tidalcache ~48-50GB/片 vs baseline 61GB/片 → 省 ~12GB（但此轮两组均 max-num-seqs=16、都没 OOM，**只量到成本未量到收益**）。
+
+**Phase A 结论**：代价集中在 **prefill/TTFT + 并发吞吐（-24%）**，**解码几乎无损**。
+
+**Break-even 标尺（给 Phase B）**：tidal 每单位吞吐 = baseline 的 76%，追平需 1/0.76 ≈ **1.32× 并发**。故 Phase B 核心问题：**省下的 12GB 能否让 `max-num-seqs` 提高 >32%？** 若 tidal 能跑到 >1.32×（baseline 的 max-num-seqs 天花板）还不 OOM → 净赢。
+
+**下一步**：
+- Phase B（侧重并发）：两组各自把 max-num-seqs 顶到 OOM 找天花板，比 N' vs N；再测拉长 max-model-len。
+- 可选优化：profiling 定位 +150ms 固定 TTFT 开销来源。
+
+**交付物**：`baseline_start.sh`（TidalCache off + 图模式对照启动）、`bench_scan.py`（latency/throughput 扫描 + `--thr-repeats` 去噪 + CSV）、`docs/ARCHITECTURE_SUMMARY.md`。
+
 ### Step 7: 性能优化
 
 **目标**: 将单请求开销从 ~+30% 降至 +5-8%
