@@ -817,9 +817,28 @@ export TIDALCACHE_ATTN_ON_SEL=1       # ★ B2 rebind ★
 **⚠️ 新发现（2026-10-09，待查，疑似真 bug）——TidalCache 丢早期上下文**：受控实验（同一 CLI 工具，只切换 TidalCache 开关）问"你是谁"——baseline 说 "opencode"（正确 follow CLI 注入的 system prompt），**tidal 说 "deepseek"（丢了 system prompt，退回模型底座身份）**。此前所有正确性测试（1+1/七言/1024/世界模型总结）内容全在 user message 近端，**从未测过对最早期上下文（system prompt，position 0）的注意力**——这个洞被 happy-path 盖住了；很可能也是早前 CLI 漂移（幻觉"刚才聊过"）的同一根因。机制怀疑：baseline/tidal 用同一 Indexer 选块，差异只在 gather 数据/块映射 → 疑 **gather 的 mini_cmp_block_table 对最前面的块（position-0 边界）处理有误**。复现：裸 curl 带 system `你叫小O…` 问"你是谁"，baseline 说小O、tidal 不说 → 坐实后查 gather 块映射边界。
 
 **下一步**：
-- **优先：查"丢早期上下文"bug**（影响正确性，可能比 Phase B 更该先修）。
 - Phase B（侧重并发）：两组各自把 max-num-seqs 顶到 OOM 找天花板，比 N' vs N；再测拉长 max-model-len。
 - 可选优化：profiling 定位 +150ms 固定 TTFT 开销来源。
+
+#### 6.17 确凿发现：tidal 长开放式生成"不收尾"（2026-10-14）⚠️
+
+**"丢早期上下文"排除**：裸 curl 复现不出；给 system prompt 加强身份命令后 tidal 立刻遵守 → 原"deepseek"是 opencode 的弱角色描述压不住 DeepSeek 烘焙身份，与 tidal 无关。
+
+**但发现一个真 tidal 质量回归**：长开放式生成**不收尾**。5 次确定性对照（temp=0，max_tokens=2000）：
+
+| case | baseline | tidal |
+|---|---|---|
+| 介绍vllm | stop 5/5（~1400 token 自然收尾） | **length 0/5（全跑满 2000）** |
+| opencode 真实 payload | stop 5/5 | **length 0/5** |
+| 七言绝句（短/结构化） | stop | stop（~125 token，两边都正常）|
+
+**判读**：EOS 机制本身没坏（七言两边都停），但在**长开放式生成**下，tidal 让模型**停不下来**（内容连贯但一直发散/罗列）。叠加 opencode 的高温采样 → 语无伦次、人物漂移、话题塌缩 = 用户最早观察到的"CLI 怪回答"的根因。
+
+**机制猜测**：sparse gather 每步只喂 topk 子集 KV，长生成累积近似误差 → **EOS 附近 logits 被压低**，模型迟迟不结束。
+
+**影响**：不仅是质量问题——还**虚增输出长度（每次跑满 max）**，直接放大 6.16 测到的 TPOT×token 总延迟与吞吐代价。
+
+**下一步诊断**：① 判定"生成长度"vs"上下文长度"驱动（长 context + 只答一字，看是否停）；② 关 gather cache 复用看 stop 率是否恢复；③ tidal/baseline 同 prompt 逐 token diff 找分叉点。
 
 **交付物**：`baseline_start.sh`（TidalCache off + 图模式对照启动）、`bench_scan.py`（latency/throughput 扫描 + `--thr-repeats` 去噪 + CSV）、`docs/ARCHITECTURE_SUMMARY.md`。
 
