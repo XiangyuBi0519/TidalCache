@@ -840,6 +840,13 @@ export TIDALCACHE_ATTN_ON_SEL=1       # ★ B2 rebind ★
 
 **下一步诊断**：① 判定"生成长度"vs"上下文长度"驱动（长 context + 只答一字，看是否停）；② 关 gather cache 复用看 stop 率是否恢复；③ tidal/baseline 同 prompt 逐 token diff 找分叉点。
 
+**诊断结论（2026-10-17）**：
+- **生成长度驱动**：长 prompt+短答案 stop/22 正常；短 prompt+长生成才崩。
+- **EOS logprob 实验（铁证是 gather 路径，非稀疏固有代价）**：同一上文（baseline 的 1316-token 完整答案）续写，tidal 前缀 75%+ 塌到 `<｜begin▁of▁sentence｜>` p=0.92→0.999；baseline 全程正常内容 token。baseline **也是 DSA 稀疏**（同 Indexer/topk，原生从 Device 读）却不塌 → **稀疏本身没问题，是 tidal gather 搬运交付有误**。推翻"稀疏固有软代价"的判断。
+- **代码排查逐个证伪 4 个方向**：① 零 rope 是死的（ratio==4 attn 无独立 rope 参数，B2 只喂 `cmp_kv=mini_compress_kv`）；② arange 重绑自洽（`cmp_kv`/`cmp_sparse_indices`/`cmp_block_table` 三者一致换 mini 帧）；③ 无 OOB 索引；④ compress cache 是合并单 tensor（512=kv_lora_rank 维）、无独立 rope。
+- **根因仍未 pin**：剩余唯一可能是 gather 长上下文拷的块数据是否正确，但输出连贯说明数据大体对，很微妙。继续需 dump&diff 插桩（mini_compress_kv vs native 选块逐值比对），非 grep 能解。
+- **定性结论**：确认是 tidal gather 路径的真实回归；精确根因待专门插桩。此长文"不收尾"暂作已知限制。
+
 **交付物**：`baseline_start.sh`（TidalCache off + 图模式对照启动）、`bench_scan.py`（latency/throughput 扫描 + `--thr-repeats` 去噪 + CSV）、`docs/ARCHITECTURE_SUMMARY.md`。
 
 ### Step 7: 性能优化
