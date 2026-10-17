@@ -1341,20 +1341,19 @@ def main():
                         setattr(self, _dg_attr, _dg_n + 1)
                         if _dg_n % 50 == 0:
                             _reqs_dg = _cam.req_metadata.block_table.shape[0]
-                            _ti = compress_topk_idxs.view(_B, -1)[:_reqs_dg].to(_torch.int64)
-                            _timin = int(_ti.min().item()); _timax = int(_ti.max().item())
-                            _mk = _state.mini_compress_kv.flatten().to(_torch.float32)
-                            _tot = _mk.numel()
-                            _nan = int(_torch.isnan(_mk).sum().item())
-                            _zero = int((_mk == 0).sum().item())
-                            _absmax = float(_mk.abs().max().item())
-                            _sel = _sel_kv.flatten().to(_torch.float32)
-                            _sel_zero = int((_sel == 0).sum().item()); _sel_tot = _sel.numel()
+                            import os as _dg_os
+                            _pid_dg = _dg_os.getpid()
+                            _ti_full = compress_topk_idxs.view(_B, -1).to(_torch.int64)
+                            # Row 0 = the definitively-real request's first token selection
+                            _row0 = _ti_full[0]
+                            _r0min = int(_row0.min().item()); _r0max = int(_row0.max().item())
+                            _r0first = _row0[:6].tolist()
                             _tclog.info(
-                                "[DUMP-GATHER] %s step=%d reqs=%d real_topk=[%d,%d] "
-                                "mini: nan=%d zero=%.3f absmax=%.4f | sel zero=%.3f",
-                                layer_name, _dg_n, _reqs_dg, _timin, _timax,
-                                _nan, _zero / _tot, _absmax, _sel_zero / _sel_tot,
+                                "[DUMP-GATHER] %s step=%d pid=%d B=%d reqs=%d "
+                                "topk_shape=%s dtype=%s row0=[%d,%d] row0_first6=%s",
+                                layer_name, _dg_n, _pid_dg, _B, _reqs_dg,
+                                tuple(compress_topk_idxs.shape), str(compress_topk_idxs.dtype),
+                                _r0min, _r0max, _r0first,
                             )
                     except Exception as _dge:
                         _tclog.warning("[DUMP-GATHER] fail: %s", _dge)
