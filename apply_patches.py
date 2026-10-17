@@ -1328,6 +1328,36 @@ def main():
                     _tclog.info("[POISON-CP] %s gather output filled with -1000", layer_name)
 
                 _state = self._tidalcache_mgr.layers[layer_name]
+                # ── TidalCache DUMP-GATHER diag (safe: Device-only reads; reqs-sliced) ──
+                # Root-cause the long-gen non-termination: does gather deliver bad
+                # data at long context? Logs real topk range (sliced to reqs to avoid
+                # padding-row garbage) + mini_compress_kv health (nan/zero-frac/absmax).
+                # If zero-frac/nan rises as real_topk.max grows -> gather drops high-pos
+                # blocks. If mini stays clean -> data ok, issue is in attention compute.
+                if _tcos_b2cp.environ.get("TIDALCACHE_DUMP_GATHER", "0") == "1":
+                    try:
+                        _dg_attr = '_tc_dg_ctr_' + layer_name.replace('.', '_')
+                        _dg_n = getattr(self, _dg_attr, 0)
+                        setattr(self, _dg_attr, _dg_n + 1)
+                        if _dg_n % 50 == 0:
+                            _reqs_dg = _cam.req_metadata.block_table.shape[0]
+                            _ti = compress_topk_idxs.view(_B, -1)[:_reqs_dg].to(_torch.int64)
+                            _timin = int(_ti.min().item()); _timax = int(_ti.max().item())
+                            _mk = _state.mini_compress_kv.flatten().to(_torch.float32)
+                            _tot = _mk.numel()
+                            _nan = int(_torch.isnan(_mk).sum().item())
+                            _zero = int((_mk == 0).sum().item())
+                            _absmax = float(_mk.abs().max().item())
+                            _sel = _sel_kv.flatten().to(_torch.float32)
+                            _sel_zero = int((_sel == 0).sum().item()); _sel_tot = _sel.numel()
+                            _tclog.info(
+                                "[DUMP-GATHER] %s step=%d reqs=%d real_topk=[%d,%d] "
+                                "mini: nan=%d zero=%.3f absmax=%.4f | sel zero=%.3f",
+                                layer_name, _dg_n, _reqs_dg, _timin, _timax,
+                                _nan, _zero / _tot, _absmax, _sel_zero / _sel_tot,
+                            )
+                    except Exception as _dge:
+                        _tclog.warning("[DUMP-GATHER] fail: %s", _dge)
                 _attn_on_sel = _tcos_b2cp.environ.get("TIDALCACHE_ATTN_ON_SEL", "0") == "1"
                 _max_batch = _state.mini_cmp_block_table.shape[0]
                 # attn_op's query B is num REQUESTS = original block_table dim 0
