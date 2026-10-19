@@ -135,6 +135,36 @@ PATCH2_GATHER_CODE = '''
                     _tclog.info("[POISON] %s gather output filled with -1000", layer_name)
 
                 _state = self._tidalcache_mgr.layers[layer_name]
+                # ── TidalCache DUMP-GATHER diag (non-CP / dsa_v1) ──
+                if _tcos_b2.environ.get("TIDALCACHE_DUMP_GATHER", "0") == "1":
+                    try:
+                        _dg_attr = '_tc_dg_ctr_mr_' + layer_name.replace('.', '_')
+                        _dg_n = getattr(self, _dg_attr, 0)
+                        setattr(self, _dg_attr, _dg_n + 1)
+                        if _dg_n % 50 == 0:
+                            import os as _dg_os
+                            _pid_dg = _dg_os.getpid()
+                            _reqs_dg = _cdm.block_table.shape[0]
+                            _ti_full = compress_topk_idxs.view(B, -1).to(_torch.int64)
+                            _row0 = _ti_full[0]
+                            _r0min = int(_row0.min().item()); _r0max = int(_row0.max().item())
+                            _r0first = _row0[:6].tolist()
+                            _mk = _state.mini_compress_kv.flatten().to(_torch.float32)
+                            _tot = _mk.numel()
+                            _nan = int(_torch.isnan(_mk).sum().item())
+                            _zero = int((_mk == 0).sum().item())
+                            _absmax = float(_mk.abs().max().item())
+                            _tclog.info(
+                                "[DUMP-GATHER] %s step=%d pid=%d B=%d reqs=%d "
+                                "topk_shape=%s dtype=%s row0=[%d,%d] row0_first6=%s "
+                                "mini: nan=%d zero=%.3f absmax=%.4f",
+                                layer_name, _dg_n, _pid_dg, B, _reqs_dg,
+                                tuple(compress_topk_idxs.shape), str(compress_topk_idxs.dtype),
+                                _r0min, _r0max, _r0first,
+                                _nan, _zero / _tot, _absmax,
+                            )
+                    except Exception as _dge:
+                        _tclog.warning("[DUMP-GATHER] (mr) fail: %s", _dge)
                 _attn_on_sel = _tcos_b2.environ.get("TIDALCACHE_ATTN_ON_SEL", "0") == "1"
                 _max_batch = _state.mini_cmp_block_table.shape[0]
                 # attn_op's query B is the number of REQUESTS, which equals the
