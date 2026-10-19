@@ -1003,3 +1003,18 @@ std::tuple<Tensor, Tensor> register_hugepage_as_npu_tensor(
 | D2H offload 首 token 延迟 | 性能 | 待优化 | 异步 DMA + 独立 stream（优化路线 #2） |
 | 算子 topk 上限 2048 | 设计限制 | 无风险 | DSA 规范就是 2048 |
 | Mooncake + 本方案搭配时序 | 集成 | 待设计 | Mooncake RDMA 完成 → D2H offload |
+
+#### 6.18 根因确认：arange cmp_sparse_indices 破坏 MTP 因果 mask（2026-10-19）✅
+
+经多轮排除（稀疏固有/零rope/OOB/CP/cu_seqlen 全证伪），根因确认：
+
+- **非 CP + DUMP-GATHER 干净读数**：gather 输入 topk + 输出 mini 数据均健康、不随长度退化 → **排除"gather 交付坏数据"**，病在 attention 消费端。
+- **README**：`cmp_mask_mode=3`=rightDownCausal 因果 mask，`cmp_sparse_indices` 的值参与 mask；`cu_seqlens_cmp_kv` 为无效参数。
+- **B2 代码**：把 `cmp_sparse_indices` 重绑成 `arange(512)` → 喂给因果 mask 的是假位置。
+- **决定性实验**：关掉 MTP（去 `--speculative-config`）→ **finish=stop/2239**（MTP 开时 length/3000 永不收尾）。
+
+**机制**：MTP decode 每步 Q_S=2，因果 mask 依赖 cmp_sparse_indices 真实值；arange 破坏之，长生成累积 → 压垮 EOS。单 token decode（Q_S=1）mask 对 arange 不敏感，故短请求/关 MTP 正常。
+
+**实用结论**：TidalCache + 关 MTP = 可用（会正常收尾），代价是失去投机解码加速。
+
+**正根修法**：保留真实位置语义——把 gather 的块按真实位置升序排，arange 单调对应真实顺序，恢复 MTP 下因果 mask 正确。
