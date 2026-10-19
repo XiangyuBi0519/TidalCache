@@ -107,7 +107,7 @@ PATCH2_GATHER_CODE = '''
             setattr(self, _tr_attr, _tr_counter + 1)
         except Exception:
             pass
-        if self.kv_offload_enabled and _cdm is not None:
+        if self.kv_offload_enabled and _cdm is not None and locals().get('compress_topk_idxs') is not None:
             if self._tidalcache_mgr is None:
                 import tidalcache as _tc
                 self._tidalcache_mgr = _tc._GLOBAL_MANAGER
