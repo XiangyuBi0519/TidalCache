@@ -570,6 +570,22 @@ class TidalCacheManager:
         selection_topk_block_size=1 which conflicts with group-level
         indices. We split into chunks of ≤32 to stay on the scalar path.
         """
+        # ── TidalCache HOST-WRITE-STALE probe (TIDALCACHE_SYNC_GATHER=1) ──
+        # Hypothesis: during decode the model scatters the new token's compressed
+        # KV into the Host-mapped compress cache; if that device write hasn't
+        # landed before this gather's DMA read, the gather serves a STALE recent
+        # block -> model under-attends its own recent context -> long-gen drift.
+        # Force a full device sync so all prior ops (incl. this step's scatter)
+        # complete before we read Host. If drift disappears with this ON, the
+        # root cause is Host write/read visibility during decode.
+        if os.environ.get("TIDALCACHE_SYNC_GATHER", "0") == "1":
+            try:
+                torch.npu.synchronize()
+            except Exception:
+                try:
+                    torch.cuda.synchronize()
+                except Exception:
+                    pass
         state = self.layers[layer_name]
         # Auto-upgrade: if scatter (PATCH3) alloc'd host only, allocate sel
         # side now that we know the real local_topk from topk_indices shape.
